@@ -11,13 +11,14 @@ export interface Preferences {
   wordGoal: number;
   browserPath: string | null;
   checkSpelling: boolean;
+  updateNotifications: boolean;
   spellingWords: string[];
   spellingCorrections: SpellingCorrection[];
 }
 
 export const PREFERENCES_KEY = 'insyndoc.preferences.v1';
 export const DEFAULT_PREFERENCES: Preferences = {
-  theme: 'light', showRuler: true, showOutline: true, showWordCount: true, rulerUnit: 'inch', wordGoal: 0, browserPath: null, checkSpelling: true, spellingWords: [], spellingCorrections: []
+  theme: 'light', showRuler: true, showOutline: true, showWordCount: true, rulerUnit: 'inch', wordGoal: 0, browserPath: null, checkSpelling: true, updateNotifications: true, spellingWords: [], spellingCorrections: []
 };
 
 export function parsePreferences(value: string | null): Preferences {
@@ -33,6 +34,7 @@ export function parsePreferences(value: string | null): Preferences {
       showWordCount: typeof settings.showWordCount === 'boolean' ? settings.showWordCount : true,
       rulerUnit: settings.rulerUnit === 'cm' ? 'cm' : 'inch',
       checkSpelling: typeof settings.checkSpelling === 'boolean' ? settings.checkSpelling : true,
+      updateNotifications: typeof settings.updateNotifications === 'boolean' ? settings.updateNotifications : true,
       spellingCorrections: parseSpellingCorrections(settings.spellingCorrections),
       spellingWords: Array.isArray(settings.spellingWords) ? [...new Set(settings.spellingWords.filter((word): word is string => typeof word === 'string' && word.length > 0 && word.length <= 64 && /^[\p{L}'\u2019]+$/u.test(word)))].slice(0, 5000) : [],
       browserPath: typeof settings.browserPath === 'string' && settings.browserPath.trim() ? settings.browserPath : null,

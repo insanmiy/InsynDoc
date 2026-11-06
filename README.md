@@ -31,11 +31,29 @@ InsynDoc Is Designed To Work Offline. Opening Links In A Browser And Downloading
 
 ## Install
 
-Download The Latest Windows Installer From The Project's Releases Page And Run The Setup File. During Installation You Can Choose To Install For Just Your User, Which Does Not Require Administrator Access, Or For All Users, Which Installs To `Program Files` And Requires Administrator Approval. The Windows WebView2 Runtime Is Required; The Installer Can Download Its Bootstrapper When Needed.
+Download The Windows Installer From [GitHub Releases](https://github.com/insanmiy/InsynDoc/releases/latest) And Run The Setup File. Choose An Installation For Your User Or For All Users. Installing For All Users Requires Administrator Approval.
+
+The Windows WebView2 Runtime Is Required. The Installer Can Download It When Needed.
+
+## Getting Started
+
+1. Open InsynDoc And Start A New Document, Or Select **Import** To Open A DOCX File.
+2. Write And Format Your Document Using The Toolbar And Menus.
+3. Save Your Changes With **Ctrl+S**, Or Use The Download Menu To Export A Copy.
+
+| Shortcut | Action |
+| --- | --- |
+| `Ctrl+N` | New Document |
+| `Ctrl+O` | Open A Document |
+| `Ctrl+S` | Save |
+| `Ctrl+Shift+S` | Export A DOCX Copy |
+| `Ctrl+F` | Find Text |
+| `Ctrl+G` | Go To A Page |
+| `Ctrl+/` | Show Keyboard Shortcuts |
 
 ## Run From This Repository
 
-InsynDoc Targets Windows And Uses Node.js, npm, Rust, And The Tauri 2 Toolchain. Install The Windows Build Prerequisites For Tauri, Then Run:
+Install Node.js, npm, Rust 1.85 Or Newer, And The [Tauri Windows Prerequisites](https://v2.tauri.app/start/prerequisites/#windows), Including Microsoft C++ Build Tools And WebView2. From The Repository Directory, Run:
 
 ```powershell
 npm ci
@@ -73,6 +91,8 @@ The Installer Is Written Under `src-tauri/target/release/bundle/nsis/`. You Can 
 
 Documents Are Opened And Saved Locally. InsynDoc Does Not Require An Account Or A Hosted Service. Preferences, Including Personal Spelling Words And Learned Corrections, Are Stored On This Device.
 
+Opening External Links, Downloading Fonts, And Checking For Updates Can Use A Network Connection.
+
 ## License
 
-InsynDoc Is Licensed Under The MIT License. See [LICENSE](LICENSE). Third-Party Notices And Dependency Licenses Are Included In The Repository And Installer.
+InsynDoc Is Licensed Under The MIT License. See [LICENSE](LICENSE) And [Third Party Notices](THIRD_PARTY_NOTICES.md) For Dependency And Font Licensing Information.

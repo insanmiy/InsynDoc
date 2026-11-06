@@ -7,7 +7,8 @@ import { Settings } from './Settings';
 import { Modal } from './Modal';
 import { Icon } from './Icon';
 import { DownloadMenu } from './DownloadMenu';
-import { findUpdate, installUpdate, type PendingUpdate } from './updater';
+import { checkForUpdates, findUpdate, installUpdate, type PendingUpdate, type UpdateCheckResult } from './updater';
+import { version as appVersion } from '../package.json';
 
 const EditorWorkspace = lazy(() => import('./EditorWorkspace'));
 
@@ -85,10 +86,11 @@ export function App() {
   useEffect(() => { storePreferences(preferences); }, [preferences]);
 
   useEffect(() => {
+    if (!preferences.updateNotifications) return;
     let cancelled = false;
     void findUpdate().then((pending) => { if (!cancelled && pending) setUpdate(pending); });
     return () => { cancelled = true; };
-  }, []);
+  }, [preferences.updateNotifications]);
 
   useEffect(() => { void setWindowTitle(state.name, state.dirty).catch(() => undefined); }, [state.name, state.dirty]);
 
@@ -154,6 +156,17 @@ export function App() {
     confirmRef.current?.(choice); confirmRef.current = null; setConfirmation(false);
   }
 
+  const checkUpdates = useCallback(async (): Promise<UpdateCheckResult> => {
+    const result = await checkForUpdates();
+    if (result.pending) setUpdate(result.pending);
+    return result;
+  }, []);
+
+  const dismissUpdate = useCallback(() => {
+    updatePreferences({ ...preferences, updateNotifications: false });
+    setUpdate(null);
+  }, [preferences, updatePreferences]);
+
   async function applyUpdate(): Promise<void> {
     if (!update || updateInstalling) return;
     setUpdateInstalling(true);
@@ -207,7 +220,7 @@ export function App() {
       <div><div ref={setZoomHost} className="status-zoom" inert={unavailable}/><span className="status-separator"/><button aria-label="Continuous View" aria-pressed={state.view === 'continuous'} title={state.view === 'pages' ? 'Switch To Continuous View' : 'Switch To Separate Pages'} disabled={unavailable} onClick={() => session.setView(state.view === 'pages' ? 'continuous' : 'pages')}><Icon name="page" size={14}/>View: {state.view === 'pages' ? 'Separate Pages' : 'Continuous'}</button></div>
     </footer>
 
-    <Settings open={settingsOpen} onClose={() => setSettingsOpen(false)} preferences={preferences} onChange={updatePreferences}/>
+    <Settings open={settingsOpen} onClose={() => setSettingsOpen(false)} preferences={preferences} onChange={updatePreferences} appVersion={appVersion} onCheckForUpdates={checkUpdates}/>
     <Modal open={goToPageOpen} title="Go To Page" onClose={() => setGoToPageOpen(false)} className="page-modal">
       <form noValidate onSubmit={(event) => {
         event.preventDefault();
@@ -247,7 +260,7 @@ export function App() {
       <footer className="modal-footer">
         {updateInstalling
           ? <button className="secondary-button" disabled>Installing...</button>
-          : <><button className="text-button" onClick={() => setUpdate(null)}>Later</button><button className="primary-button" onClick={() => void applyUpdate()}>Update Now</button></>}
+          : <><button className="text-button" onClick={() => setUpdate(null)}>Later</button><button className="text-button" onClick={dismissUpdate}>Don't Ask Again</button><button className="primary-button" onClick={() => void applyUpdate()}>Update Now</button></>}
       </footer>
     </Modal>
     <Modal open={confirmation} title="Save Your Changes?" onClose={() => resolveConfirmation('cancel')} className="unsaved-dialog">

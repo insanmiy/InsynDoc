@@ -8,15 +8,23 @@ export interface PendingUpdate {
   notes: string | null;
 }
 
-export async function findUpdate(): Promise<PendingUpdate | null> {
-  if (!isTauri()) return null;
+export type UpdateCheckResult =
+  | { status: 'available'; pending: PendingUpdate }
+  | { status: 'current' | 'error' | 'unsupported'; pending: null };
+
+export async function checkForUpdates(): Promise<UpdateCheckResult> {
+  if (!isTauri()) return { status: 'unsupported', pending: null };
   try {
     const update = await check();
-    if (!update) return null;
-    return { update, version: update.version, notes: update.body ?? null };
+    if (!update) return { status: 'current', pending: null };
+    return { status: 'available', pending: { update, version: update.version, notes: update.body ?? null } };
   } catch {
-    return null;
+    return { status: 'error', pending: null };
   }
+}
+
+export async function findUpdate(): Promise<PendingUpdate | null> {
+  return (await checkForUpdates()).pending;
 }
 
 export async function installUpdate(pending: PendingUpdate, onProgress?: (downloaded: number, total: number | undefined) => void): Promise<void> {

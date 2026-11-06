@@ -3,6 +3,7 @@ import { chooseLinkBrowser } from './bridge';
 import { Modal } from './Modal';
 import { Icon, type IconName } from './Icon';
 import type { Preferences, Theme } from './preferences';
+import type { UpdateCheckResult } from './updater';
 
 const themes: { value: Theme; label: string; icon: IconName }[] = [
   { value: 'light', label: 'Light', icon: 'sun' },
@@ -10,11 +11,24 @@ const themes: { value: Theme; label: string; icon: IconName }[] = [
   { value: 'system', label: 'System', icon: 'monitor' }
 ];
 
-export function Settings({ open, onClose, preferences, onChange }: {
+type UpdateStatus = UpdateCheckResult['status'] | 'idle' | 'checking';
+
+export function Settings({ open, onClose, preferences, onChange, appVersion, onCheckForUpdates }: {
   open: boolean; onClose: () => void; preferences: Preferences; onChange: (settings: Preferences) => void;
+  appVersion: string; onCheckForUpdates: () => Promise<UpdateCheckResult>;
 }) {
   const [browserError, setBrowserError] = useState<string | null>(null);
   const [choosingBrowser, setChoosingBrowser] = useState(false);
+  const [updateStatus, setUpdateStatus] = useState<UpdateStatus>('idle');
+
+  async function checkUpdates(): Promise<void> {
+    setUpdateStatus('checking');
+    try {
+      setUpdateStatus((await onCheckForUpdates()).status);
+    } catch {
+      setUpdateStatus('error');
+    }
+  }
 
   async function chooseBrowser(): Promise<void> {
     setBrowserError(null);
@@ -64,6 +78,22 @@ export function Settings({ open, onClose, preferences, onChange }: {
     </section>
     {preferences.spellingWords.length > 0 && <div className="personal-dictionary-setting"><span>{preferences.spellingWords.length} {preferences.spellingWords.length === 1 ? 'Word' : 'Words'} In Your Personal Dictionary</span><button className="text-button" onClick={() => onChange({ ...preferences, spellingWords: [] })}>Reset Personal Dictionary</button></div>}
     {preferences.spellingCorrections.length > 0 && <div className="personal-dictionary-setting"><span>Suggestions Learn From Corrections You Accept On This Device.</span><button className="text-button" onClick={() => onChange({ ...preferences, spellingCorrections: [] })}>Reset Learned Suggestions</button></div>}
+    <section className="settings-section" aria-labelledby="updates-heading">
+      <h3 id="updates-heading">Updates</h3>
+      <p>Keep InsynDoc On The Latest Version.</p>
+      <label className="setting-row">
+        <span><strong id="update-notifications-label">Notify Me About Updates</strong><small id="update-notifications-description">Show A Prompt When A New Version Is Available.</small></span>
+        <input type="checkbox" role="switch" aria-labelledby="update-notifications-label" aria-describedby="update-notifications-description" checked={preferences.updateNotifications} onChange={(event) => onChange({ ...preferences, updateNotifications: event.target.checked })}/>
+      </label>
+      <div className="browser-actions">
+        <button className="secondary-button" disabled={updateStatus === 'checking'} onClick={() => void checkUpdates()}>{updateStatus === 'checking' ? 'Checking...' : 'Check For Updates'}</button>
+        <span className="modal-description">Version {appVersion}</span>
+      </div>
+      {updateStatus === 'current' && <p className="modal-description" role="status">You're Up To Date.</p>}
+      {updateStatus === 'available' && <p className="modal-description" role="status">A Newer Version Is Available. Finish Installing From The Update Prompt.</p>}
+      {updateStatus === 'error' && <p className="form-error" role="alert">Could Not Check For Updates. Check Your Connection And Try Again.</p>}
+      {updateStatus === 'unsupported' && <p className="modal-description" role="status">Update Checks Work In The Installed App.</p>}
+    </section>
     <section className="settings-section" aria-labelledby="links-heading">
       <h3 id="links-heading">Hyperlinks</h3><p>Open Links With Your System Default Or A Browser You Choose.</p>
       <label className="setting-field"><span>Link Browser</span><select aria-label="Link Browser" disabled={choosingBrowser} value={preferences.browserPath ? 'custom' : 'system'} onChange={(event) => {
