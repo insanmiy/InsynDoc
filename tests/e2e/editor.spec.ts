@@ -1140,6 +1140,36 @@ test('Inserts Tables And Local Images Into A Valid DOCX Package', async ({ page 
   await writeFile('test-results/Table And Image.docx', new Uint8Array(saved!));
 });
 
+test('Preserves Resized Image Dimensions In DOCX', async ({ page }) => {
+  await page.locator('.docx-page-content').first().click({ position: { x: 30, y: 12 } });
+  const png = await page.evaluate(() => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 400;
+    canvas.height = 400;
+    return canvas.toDataURL('image/png').split(',')[1];
+  });
+  const choosingImage = page.waitForEvent('filechooser');
+  await page.getByRole('menuitem', { name: 'Insert', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Image', exact: true }).click();
+  await (await choosingImage).setFiles({ name: 'Image.png', mimeType: 'image/png', buffer: Buffer.from(png, 'base64') });
+  const image = page.locator('.docx-page img').first();
+  await expect(image).toBeVisible();
+  await image.click();
+  const handle = page.getByRole('button', { name: 'Resize bottom-right corner' });
+  const box = (await handle.boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width / 2 - 250, box.y + box.height / 2 - 250, { steps: 10 });
+  await page.mouse.up();
+  await expect(page.locator('.docx-image-selection-overlay__frame')).toHaveCSS('width', '150px');
+  await page.keyboard.press('Control+s');
+  await expect.poll(() => page.evaluate(() => window.__nativeTest.saved !== null)).toBe(true);
+  const saved = await page.evaluate(() => window.__nativeTest.saved);
+  const xml = strFromU8(unzipSync(new Uint8Array(saved!))['word/document.xml']);
+  expect(xml).toMatch(/<wp:extent cx="1428750" cy="1428750"/);
+  expect(xml).toMatch(/<a:ext cx="1428750" cy="1428750"/);
+});
+
 test('Opens Multipage DOCX And Refuses Corrupt Input Without Losing Content', async ({ page }) => {
   await page.evaluate((bytes) => { window.__nativeTest.openBytes = bytes; }, fixture());
   await fileAction(page, 'Open');

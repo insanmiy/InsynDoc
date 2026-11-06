@@ -189,6 +189,9 @@ button svg { flex-shrink: 0; }
 .settings-section h3 { font-size: 13px; font-weight: 600; margin: 0 0 7px; }
 .settings-section > p, .modal-description { font-size: 13px; color: var(--app-muted); margin: 0 0 16px; line-height: 1.7; }
 .settings-intro { margin-top: 12px; margin-bottom: 0; }
+.settings-navigation { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 16px; }
+.settings-navigation button { padding: 6px 10px; border: 1px solid var(--app-border); border-radius: 6px; background: var(--app-surface); color: var(--app-text); font-size: 12px; cursor: pointer; }
+.settings-navigation button:hover { background: var(--app-hover); }
 .theme-options { display: flex; gap: 12px; margin-top: 20px; }
 .theme-option { flex: 1; background: transparent; border: 2px solid var(--app-border); padding: 5px; border-radius: 10px; color: var(--app-muted); }
 .theme-option[aria-pressed="true"] { border-color: var(--app-accent); color: var(--app-accent-ink); }

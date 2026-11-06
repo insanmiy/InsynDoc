@@ -9,6 +9,7 @@ const engine = vi.hoisted(() => ({
 }));
 vi.mock('../src/document-fonts', () => ({ localFonts: {} }));
 vi.mock('../src/blank-document', () => ({ createBlankDocument: () => new Uint8Array([4]) }));
+vi.mock('../src/image-export', () => ({ synchronizeImageExtents: (bytes: Uint8Array) => bytes }));
 vi.mock('@docx-editor.dev/core/editor', () => ({
   createDocxEditor: engine.createDocxEditor,
   createDocumentRefresh: engine.createDocumentRefresh

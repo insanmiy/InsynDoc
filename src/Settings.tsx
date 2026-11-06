@@ -42,7 +42,16 @@ export function Settings({ open, onClose, preferences, onChange, appVersion, onC
   }
 
   return <Modal open={open} title="Settings" onClose={onClose} className="settings-modal">
-    <p className="modal-description settings-intro">Personalize Your Writing Workspace.</p>
+    <p className="modal-description settings-intro">Personalize Your Writing Workspace. Changes Are Saved Automatically On This Device.</p>
+    <nav className="settings-navigation" aria-label="Settings Sections">
+      {[
+        ['appearance-heading', 'Appearance'],
+        ['writing-heading', 'Writing'],
+        ['editor-heading', 'Editor'],
+        ['updates-heading', 'Updates'],
+        ['links-heading', 'Hyperlinks']
+      ].map(([id, label]) => <button type="button" key={id} onClick={() => document.getElementById(id)?.scrollIntoView({ block: 'start' })}>{label}</button>)}
+    </nav>
     <section className="settings-section" aria-labelledby="appearance-heading">
       <h3 id="appearance-heading">Appearance</h3><p>Choose A Theme For The App. Your Document Colors Stay The Same.</p>
       <div className="theme-options" role="group" aria-label="App Theme">
@@ -75,9 +84,9 @@ export function Settings({ open, onClose, preferences, onChange, appVersion, onC
         <span><strong id={`${key}-label`}>{label}</strong><small id={`${key}-description`}>{description}</small></span>
         <input type="checkbox" role="switch" aria-labelledby={`${key}-label`} aria-describedby={`${key}-description`} checked={preferences[key]} onChange={(event) => onChange({ ...preferences, [key]: event.target.checked })}/>
       </label>)}
+      {preferences.spellingWords.length > 0 && <div className="personal-dictionary-setting"><span>{preferences.spellingWords.length} {preferences.spellingWords.length === 1 ? 'Word' : 'Words'} In Your Personal Dictionary</span><button className="text-button" onClick={() => onChange({ ...preferences, spellingWords: [] })}>Reset Personal Dictionary</button></div>}
+      {preferences.spellingCorrections.length > 0 && <div className="personal-dictionary-setting"><span>Suggestions Learn From Corrections You Accept On This Device.</span><button className="text-button" onClick={() => onChange({ ...preferences, spellingCorrections: [] })}>Reset Learned Suggestions</button></div>}
     </section>
-    {preferences.spellingWords.length > 0 && <div className="personal-dictionary-setting"><span>{preferences.spellingWords.length} {preferences.spellingWords.length === 1 ? 'Word' : 'Words'} In Your Personal Dictionary</span><button className="text-button" onClick={() => onChange({ ...preferences, spellingWords: [] })}>Reset Personal Dictionary</button></div>}
-    {preferences.spellingCorrections.length > 0 && <div className="personal-dictionary-setting"><span>Suggestions Learn From Corrections You Accept On This Device.</span><button className="text-button" onClick={() => onChange({ ...preferences, spellingCorrections: [] })}>Reset Learned Suggestions</button></div>}
     <section className="settings-section" aria-labelledby="updates-heading">
       <h3 id="updates-heading">Updates</h3>
       <p>Keep InsynDoc On The Latest Version.</p>
@@ -104,7 +113,6 @@ export function Settings({ open, onClose, preferences, onChange, appVersion, onC
       <div className="browser-actions"><button className="secondary-button" disabled={choosingBrowser} onClick={() => void chooseBrowser()}>{choosingBrowser ? 'Choosing Browser...' : 'Choose Browser'}</button></div>
       {browserError && <p className="form-error" role="alert">{browserError}</p>}
     </section>
-    <div className="settings-note"><Icon name="info" size={16}/><span>Your Preferences Are Saved Automatically On This Device.</span></div>
     <footer className="modal-footer"><button className="primary-button" onClick={onClose}>Done</button></footer>
   </Modal>;
 }

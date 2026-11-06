@@ -91,7 +91,7 @@ The Installer Is Written Under `src-tauri/target/release/bundle/nsis/`. You Can 
 
 Documents Are Opened And Saved Locally. InsynDoc Does Not Require An Account Or A Hosted Service. Preferences, Including Personal Spelling Words And Learned Corrections, Are Stored On This Device.
 
-Opening External Links, Downloading Fonts, And Checking For Updates Can Use A Network Connection.
+Opening External Links, Downloading Fonts, And Checking For Updates Require A Network Connection.
 
 ## License
 

@@ -3,6 +3,7 @@ import { createBlankDocument } from './blank-document';
 import type { Editor } from '@docx-editor.dev/core/contracts/editor';
 import { localFonts } from './document-fonts';
 import type { DocumentAdapter } from './document-session';
+import { synchronizeImageExtents } from './image-export';
 
 export { localFonts };
 
@@ -82,7 +83,7 @@ export function createEditorAdapter(editor: Editor): DocumentAdapter {
       const recovery = refresh.recoveryBytes();
       if (recovery) return new Uint8Array(recovery);
       await waitForDocument(editor);
-      return new Uint8Array(await editor.save());
+      return synchronizeImageExtents(new Uint8Array(await editor.save()));
     }
   };
 }

@@ -82,7 +82,7 @@ export function ParagraphStylePicker() {
     </button>
     {open && <div id={listId} role="listbox" aria-label="Paragraph Styles" className="docx-toolbar__menu paragraph-style-menu">
       <div className="docx-toolbar__menu-label">Paragraph Style</div>
-      {styles.options.map((style) => <button type="button" role="option" tabIndex={-1} aria-selected={styles.value === style.styleId}
+      {styles.options.filter((style) => !/^heading\s*[6-9]$/i.test(style.styleId)).map((style) => <button type="button" role="option" tabIndex={-1} aria-selected={styles.value === style.styleId}
         className="docx-toolbar__menu-item" key={style.styleId} onMouseDown={(event) => event.preventDefault()}
         onClick={() => { setOpen(false); applyStyle(style.styleId); }}>
         <span>{labelFor(style.name)}</span>{styles.value === style.styleId && <Icon name="check" size={14}/>}
