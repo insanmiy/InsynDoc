@@ -53,6 +53,8 @@ jobs:
 
       - name: Build Windows Installer
         run: npm run dist -- -- --locked
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
 
       - name: Upload Windows Installer
         uses: actions/upload-artifact@v4

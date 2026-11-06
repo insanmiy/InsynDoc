@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "InsynDoc",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "identifier": "com.insyndoc.editor",
   "build": {
     "beforeDevCommand": "npm run dev:web",
@@ -27,6 +27,7 @@
   "bundle": {
     "active": true,
     "targets": ["nsis"],
+    "createUpdaterArtifacts": true,
     "category": "Productivity",
     "shortDescription": "Offline DOCX Editor",
     "icon": ["icons/insyndoc/32x32.png", "icons/insyndoc/128x128.png", "icons/insyndoc/128x128@2x.png", "icons/insyndoc/icon.ico"],
@@ -34,6 +35,13 @@
     "windows": {
       "webviewInstallMode": { "type": "downloadBootstrapper", "silent": true },
       "nsis": { "installMode": "both", "installerHooks": "installer-hooks.nsh" }
+    }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDc0ODdGREYzREZBNDlBOUMKUldTY21xVGY4LzJIZEVvVEVpd0FnYXJGU0dIdFpsM0hRbVdpYWwwd1BIQTU4MUJsT3dkbWVHYTQK",
+      "endpoints": ["https://github.com/insanmiy/InsynDoc/releases/latest/download/latest.json"],
+      "windows": { "installMode": "passive" }
     }
   }
 }

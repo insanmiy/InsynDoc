@@ -275,6 +275,8 @@ fn replace_recent_path(directory: &Path, previous: &Path, renamed: &Path) -> Res
 
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_process::init())
         .manage(FileSessions::default())
         .manage(StartupDocument::from_args(std::env::args_os()))
         .manage(RecentAccess::default())

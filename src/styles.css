@@ -240,6 +240,7 @@ button svg { flex-shrink: 0; }
 .settings-note { display: flex; gap: 9px; color: var(--app-muted); font-size: 12px; line-height: 1.7; padding-top: 18px; }
 .settings-note svg { flex-shrink: 0; margin-top: 2px; }
 .modal-footer { display: flex; justify-content: flex-end; padding-top: 22px; }
+.update-notes { font-size: 13px; color: var(--app-muted); line-height: 1.6; max-height: 180px; overflow-y: auto; white-space: pre-wrap; margin: 0 0 8px; }
 .statistics-modal, .unsaved-dialog { width: 460px; }
 .statistics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin: 25px 0; }
 .statistics-grid dt { font-size: 11px; color: var(--app-muted); }

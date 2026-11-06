@@ -3,5 +3,5 @@
   "identifier": "main",
   "description": "Local Editor Window Lifecycle Only",
   "windows": ["main"],
-  "permissions": ["core:event:default", "core:window:allow-set-title", "core:window:allow-set-theme", "core:window:allow-destroy"]
+  "permissions": ["core:event:default", "core:window:allow-set-title", "core:window:allow-set-theme", "core:window:allow-destroy", "updater:default", "process:allow-restart"]
 }

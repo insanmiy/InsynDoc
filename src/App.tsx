@@ -7,6 +7,7 @@ import { Settings } from './Settings';
 import { Modal } from './Modal';
 import { Icon } from './Icon';
 import { DownloadMenu } from './DownloadMenu';
+import { findUpdate, installUpdate, type PendingUpdate } from './updater';
 
 const EditorWorkspace = lazy(() => import('./EditorWorkspace'));
 
@@ -55,6 +56,10 @@ export function App() {
   const [zoomHost, setZoomHost] = useState<HTMLElement | null>(null);
   const [renaming, setRenaming] = useState(false);
   const [titleDraft, setTitleDraft] = useState('');
+  const [update, setUpdate] = useState<PendingUpdate | null>(null);
+  const [updateInstalling, setUpdateInstalling] = useState(false);
+  const [updateProgress, setUpdateProgress] = useState<{ downloaded: number; total?: number } | null>(null);
+  const [updateError, setUpdateError] = useState<string | null>(null);
 
   const onReady = useCallback((instance: Editor, adapter: DocumentAdapter) => {
     editorRef.current = instance;
@@ -78,6 +83,12 @@ export function App() {
   }, [theme]);
 
   useEffect(() => { storePreferences(preferences); }, [preferences]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void findUpdate().then((pending) => { if (!cancelled && pending) setUpdate(pending); });
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => { void setWindowTitle(state.name, state.dirty).catch(() => undefined); }, [state.name, state.dirty]);
 
@@ -141,6 +152,19 @@ export function App() {
 
   function resolveConfirmation(choice: UnsavedChoice): void {
     confirmRef.current?.(choice); confirmRef.current = null; setConfirmation(false);
+  }
+
+  async function applyUpdate(): Promise<void> {
+    if (!update || updateInstalling) return;
+    setUpdateInstalling(true);
+    setUpdateError(null);
+    setUpdateProgress(null);
+    try {
+      await installUpdate(update, (downloaded, total) => setUpdateProgress({ downloaded, total }));
+    } catch (error: unknown) {
+      setUpdateInstalling(false);
+      setUpdateError(error instanceof Error ? error.message : String(error));
+    }
   }
 
   const unavailable = !state.ready || state.busy;
@@ -214,6 +238,17 @@ export function App() {
         <div><dt>Characters</dt><dd>{statistics.characters.toLocaleString()}</dd></div><div><dt>Characters Without Spaces</dt><dd>{statistics.charactersWithoutSpaces.toLocaleString()}</dd></div>
         <div><dt>Estimated Reading Time</dt><dd>{Math.ceil(statistics.words / 200)} Min</dd></div>
       </dl>{preferences.wordGoal > 0 && <div className="writing-goal"><div><span>Writing Goal</span><strong>{Math.min(100, Math.floor(statistics.words / preferences.wordGoal * 100))}%</strong></div><progress aria-label="Writing Goal Progress" value={Math.min(statistics.words, preferences.wordGoal)} max={preferences.wordGoal}/><p>{statistics.words >= preferences.wordGoal ? 'Goal Reached.' : `${(preferences.wordGoal - statistics.words).toLocaleString()} Words To Go.`}</p></div>}<footer className="modal-footer"><button className="primary-button" onClick={() => setStatisticsOpen(false)}>Done</button></footer>
+    </Modal>
+    <Modal open={update !== null} title="Update Available" onClose={() => { if (!updateInstalling) setUpdate(null); }} className="update-modal">
+      <p className="modal-description">InsynDoc {update?.version} Is Available.</p>
+      {update?.notes && <p className="update-notes">{update.notes}</p>}
+      {updateInstalling && <p className="modal-description" role="status">{updateProgress?.total ? `Downloading Update... ${Math.min(100, Math.round(updateProgress.downloaded / updateProgress.total * 100))}%` : 'Downloading Update...'}</p>}
+      {updateError && <p className="form-error" role="alert">{updateError}</p>}
+      <footer className="modal-footer">
+        {updateInstalling
+          ? <button className="secondary-button" disabled>Installing...</button>
+          : <><button className="text-button" onClick={() => setUpdate(null)}>Later</button><button className="primary-button" onClick={() => void applyUpdate()}>Update Now</button></>}
+      </footer>
     </Modal>
     <Modal open={confirmation} title="Save Your Changes?" onClose={() => resolveConfirmation('cancel')} className="unsaved-dialog">
       <p className="modal-description">Your Changes To <strong>{state.name}</strong> Have Not Been Saved.</p>

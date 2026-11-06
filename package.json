@@ -1,6 +1,6 @@
 {
   "name": "insyndoc",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Offline Windows DOCX Editor",
   "author": "InsynDoc",
   "license": "MIT",
@@ -29,6 +29,8 @@
     "@docx-editor.dev/i18n": "2.34.0",
     "@docx-editor.dev/react": "2.34.0",
     "@tauri-apps/api": "^2.10.0",
+    "@tauri-apps/plugin-process": "^2.4.0",
+    "@tauri-apps/plugin-updater": "^2.14.1",
     "dictionary-en": "^4.0.0",
     "fflate": "^0.8.3",
     "harper.js": "^3.0.0",

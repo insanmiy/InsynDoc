@@ -1,4 +1,5 @@
 import { existsSync } from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
 
@@ -9,6 +10,10 @@ if (existsSync(path.join(localCargo, 'bin/cargo.exe'))) {
   env.RUSTUP_HOME = path.resolve('.tools/rustup');
   const pathKey = Object.keys(env).find((key) => key.toLowerCase() === 'path') ?? 'PATH';
   env[pathKey] = [path.join(localCargo, 'bin'), path.resolve('.tools/msvcrt/mingw64/bin'), env[pathKey]].join(path.delimiter);
+}
+const signingKey = path.join(os.homedir(), '.tauri', 'insyndoc.key');
+if (!env.TAURI_SIGNING_PRIVATE_KEY && existsSync(signingKey)) {
+  env.TAURI_SIGNING_PRIVATE_KEY = signingKey;
 }
 const cargo = process.argv[2] === '--cargo';
 if (process.platform === 'win32' && !cargo && process.argv[2] === 'build') {
