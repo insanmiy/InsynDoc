@@ -18,6 +18,7 @@ public/licenses/
 public/fonts/
 THIRD_PARTY_NOTICES.md
 *.md
+!readme.md
 
 # Local Toolchains And Caches
 .tools/

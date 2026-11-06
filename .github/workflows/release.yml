@@ -84,7 +84,7 @@ jobs:
             platforms = [ordered]@{
               'windows-x86_64' = [ordered]@{
                 signature = (Get-Content $signaturePath -Raw).Trim()
-                url = "https://github.com/insanmiy/InsynDoc/releases/download/$tag/$($setup.Name)"
+                url = "https://github.com/insanmiy/InsynDoc/releases/download/$tag/$($setup.Name)"  
               }
             }
           }
