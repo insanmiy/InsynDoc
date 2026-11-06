@@ -1,0 +1,482 @@
+[
+  {
+    "family": "Comic Neue",
+    "weight": 400,
+    "style": "italic",
+    "url": "https://cdn.jsdelivr.net/gh/google/fonts@ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/comicneue/ComicNeue-Italic.ttf",
+    "byteLength": 54392,
+    "hash": "sha256:e06bfd1552f5c9464c5665733ffd69239b0593885dbb9e059688a5900f78cf98",
+    "file": "ComicNeue-Italic.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/comicneue/ComicNeue-Italic.ttf"
+  },
+  {
+    "family": "Comic Neue",
+    "weight": 400,
+    "style": "normal",
+    "url": "https://cdn.jsdelivr.net/gh/google/fonts@ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/comicneue/ComicNeue-Regular.ttf",
+    "byteLength": 57248,
+    "hash": "sha256:a0ee5a37c8b27c4db0700137d928598b1e23b0089e1546a8961909176b779360",
+    "file": "ComicNeue-Regular.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/comicneue/ComicNeue-Regular.ttf"
+  },
+  {
+    "family": "Comic Neue",
+    "weight": 700,
+    "style": "italic",
+    "url": "https://cdn.jsdelivr.net/gh/google/fonts@ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/comicneue/ComicNeue-BoldItalic.ttf",
+    "byteLength": 55928,
+    "hash": "sha256:5c312c2a2fa64eee82f3b87fcfab8f3b12a5e59b043124401d322eb323cfbf16",
+    "file": "ComicNeue-BoldItalic.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/comicneue/ComicNeue-BoldItalic.ttf"
+  },
+  {
+    "family": "Comic Neue",
+    "weight": 700,
+    "style": "normal",
+    "url": "https://cdn.jsdelivr.net/gh/google/fonts@ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/comicneue/ComicNeue-Bold.ttf",
+    "byteLength": 55716,
+    "hash": "sha256:3e7e5fccfd7e0788f317b43312151c1bd5cf058c9697a8d83eac3939050bd61e",
+    "file": "ComicNeue-Bold.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/comicneue/ComicNeue-Bold.ttf"
+  },
+  {
+    "family": "Crimson Text",
+    "weight": 400,
+    "style": "italic",
+    "url": "https://cdn.jsdelivr.net/gh/google/fonts@ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/crimsontext/CrimsonText-Italic.ttf",
+    "byteLength": 110216,
+    "hash": "sha256:4ed1699ac7c64e8b3d33f6bb8323c3d7206b0d7bacb9ee2d65c697e6014d29de",
+    "file": "CrimsonText-Italic.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/crimsontext/CrimsonText-Italic.ttf"
+  },
+  {
+    "family": "Crimson Text",
+    "weight": 400,
+    "style": "normal",
+    "url": "https://cdn.jsdelivr.net/gh/google/fonts@ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/crimsontext/CrimsonText-Regular.ttf",
+    "byteLength": 107200,
+    "hash": "sha256:48e6c5d5ad1d01599d374ecb817e15890d1feb3b8a3a88e527d44c90389e1f06",
+    "file": "CrimsonText-Regular.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/crimsontext/CrimsonText-Regular.ttf"
+  },
+  {
+    "family": "Crimson Text",
+    "weight": 700,
+    "style": "italic",
+    "url": "https://cdn.jsdelivr.net/gh/google/fonts@ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/crimsontext/CrimsonText-BoldItalic.ttf",
+    "byteLength": 115112,
+    "hash": "sha256:467013e913e46304760461c46661c994b2aa1769e3fbd31371026300315181b4",
+    "file": "CrimsonText-BoldItalic.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/crimsontext/CrimsonText-BoldItalic.ttf"
+  },
+  {
+    "family": "Crimson Text",
+    "weight": 700,
+    "style": "normal",
+    "url": "https://cdn.jsdelivr.net/gh/google/fonts@ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/crimsontext/CrimsonText-Bold.ttf",
+    "byteLength": 112796,
+    "hash": "sha256:a3a0765fc5e8d0b49b540a23aefe0184887dd79f06a0bdf4db7035cea6befa93",
+    "file": "CrimsonText-Bold.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/crimsontext/CrimsonText-Bold.ttf"
+  },
+  {
+    "family": "Fira Sans",
+    "weight": 400,
+    "style": "italic",
+    "url": "https://cdn.jsdelivr.net/gh/google/fonts@ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/firasans/FiraSans-Italic.ttf",
+    "byteLength": 472396,
+    "hash": "sha256:a4204f9a8029c1c55daa5385ac95936f74abea3e232770f1fb2862a19d1dfa13",
+    "file": "FiraSans-Italic.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/firasans/FiraSans-Italic.ttf"
+  },
+  {
+    "family": "Fira Sans",
+    "weight": 400,
+    "style": "normal",
+    "url": "https://cdn.jsdelivr.net/gh/google/fonts@ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/firasans/FiraSans-Regular.ttf",
+    "byteLength": 456996,
+    "hash": "sha256:c29556a2719bf613ef3d5e070e40d903a8965d9c081beca1375dc1e6e0f93c23",
+    "file": "FiraSans-Regular.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/firasans/FiraSans-Regular.ttf"
+  },
+  {
+    "family": "Fira Sans",
+    "weight": 700,
+    "style": "italic",
+    "url": "https://cdn.jsdelivr.net/gh/google/fonts@ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/firasans/FiraSans-BoldItalic.ttf",
+    "byteLength": 506864,
+    "hash": "sha256:1b96c16db9819bcaa9d588068bb397bb6e977c4874965d3d50d789a1943757eb",
+    "file": "FiraSans-BoldItalic.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/firasans/FiraSans-BoldItalic.ttf"
+  },
+  {
+    "family": "Fira Sans",
+    "weight": 700,
+    "style": "normal",
+    "url": "https://cdn.jsdelivr.net/gh/google/fonts@ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/firasans/FiraSans-Bold.ttf",
+    "byteLength": 489720,
+    "hash": "sha256:a4d8e149ecdd4874a0726eb0af894488b3b31c423d6b0017c8f415ed1b795b45",
+    "file": "FiraSans-Bold.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/firasans/FiraSans-Bold.ttf"
+  },
+  {
+    "family": "Lato",
+    "weight": 400,
+    "style": "italic",
+    "url": "https://cdn.jsdelivr.net/gh/google/fonts@ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/lato/Lato-Italic.ttf",
+    "byteLength": 722900,
+    "hash": "sha256:e399c44efe1387100531d26c7e4800c5d12251b890d6654a3098c7c679cb1786",
+    "file": "Lato-Italic.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/lato/Lato-Italic.ttf"
+  },
+  {
+    "family": "Lato",
+    "weight": 400,
+    "style": "normal",
+    "url": "https://cdn.jsdelivr.net/gh/google/fonts@ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/lato/Lato-Regular.ttf",
+    "byteLength": 656568,
+    "hash": "sha256:d636e4683231f931eda222d588e944d082bfd3bdba02f928bee461c0f185b251",
+    "file": "Lato-Regular.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/lato/Lato-Regular.ttf"
+  },
+  {
+    "family": "Lato",
+    "weight": 700,
+    "style": "italic",
+    "url": "https://cdn.jsdelivr.net/gh/google/fonts@ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/lato/Lato-BoldItalic.ttf",
+    "byteLength": 698364,
+    "hash": "sha256:62c1b7f0d2e74b45960154c3520efc337b553db0961bfdc950d5618334596cc8",
+    "file": "Lato-BoldItalic.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/lato/Lato-BoldItalic.ttf"
+  },
+  {
+    "family": "Lato",
+    "weight": 700,
+    "style": "normal",
+    "url": "https://cdn.jsdelivr.net/gh/google/fonts@ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/lato/Lato-Bold.ttf",
+    "byteLength": 656544,
+    "hash": "sha256:8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1",
+    "file": "Lato-Bold.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/lato/Lato-Bold.ttf"
+  },
+  {
+    "family": "Lobster Two",
+    "weight": 400,
+    "style": "italic",
+    "url": "https://cdn.jsdelivr.net/gh/google/fonts@ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/lobstertwo/LobsterTwo-Italic.ttf",
+    "byteLength": 249896,
+    "hash": "sha256:c727ae1d9e1e166a7c0679fcf79c2ff0c21bc5483ee253fdfee2f5792c0bebd9",
+    "file": "LobsterTwo-Italic.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/lobstertwo/LobsterTwo-Italic.ttf"
+  },
+  {
+    "family": "Lobster Two",
+    "weight": 400,
+    "style": "normal",
+    "url": "https://cdn.jsdelivr.net/gh/google/fonts@ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/lobstertwo/LobsterTwo-Regular.ttf",
+    "byteLength": 254332,
+    "hash": "sha256:be3d8ce18188bc559de37e4355f5f902b4960a7b65a99efb78c03bb65bb782e6",
+    "file": "LobsterTwo-Regular.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/lobstertwo/LobsterTwo-Regular.ttf"
+  },
+  {
+    "family": "Lobster Two",
+    "weight": 700,
+    "style": "italic",
+    "url": "https://cdn.jsdelivr.net/gh/google/fonts@ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/lobstertwo/LobsterTwo-BoldItalic.ttf",
+    "byteLength": 235632,
+    "hash": "sha256:980ee087455f1f0a96fb2ea74bef441a2bf29048e2c739d11683d330cfc19329",
+    "file": "LobsterTwo-BoldItalic.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/lobstertwo/LobsterTwo-BoldItalic.ttf"
+  },
+  {
+    "family": "Lobster Two",
+    "weight": 700,
+    "style": "normal",
+    "url": "https://cdn.jsdelivr.net/gh/google/fonts@ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/lobstertwo/LobsterTwo-Bold.ttf",
+    "byteLength": 241104,
+    "hash": "sha256:5255b383fc8aa432e4e7e5f8005210477c0983370adc6ad6205c9bd2cd1ceb76",
+    "file": "LobsterTwo-Bold.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/lobstertwo/LobsterTwo-Bold.ttf"
+  },
+  {
+    "family": "Montserrat",
+    "weight": 400,
+    "style": "italic",
+    "url": "https://cdn.jsdelivr.net/gh/google/fonts@160c7fe82ecb74b108d886ed8d27762f6e346163/ofl/montserrat/Montserrat-Italic.ttf",
+    "byteLength": 266628,
+    "hash": "sha256:4854167729baeda55f3169812cb10cfadad93614218c2cbe1274fb6123b3a916",
+    "file": "Montserrat-Italic.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/160c7fe82ecb74b108d886ed8d27762f6e346163/ofl/montserrat/Montserrat-Italic.ttf"
+  },
+  {
+    "family": "Montserrat",
+    "weight": 400,
+    "style": "normal",
+    "url": "https://cdn.jsdelivr.net/gh/google/fonts@160c7fe82ecb74b108d886ed8d27762f6e346163/ofl/montserrat/Montserrat-Regular.ttf",
+    "byteLength": 263192,
+    "hash": "sha256:81ebc3916b524007b756d91d9df13c7673ec401161f2cad161662d08dcf1cc72",
+    "file": "Montserrat-Regular.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/160c7fe82ecb74b108d886ed8d27762f6e346163/ofl/montserrat/Montserrat-Regular.ttf"
+  },
+  {
+    "family": "Montserrat",
+    "weight": 700,
+    "style": "italic",
+    "url": "https://cdn.jsdelivr.net/gh/google/fonts@160c7fe82ecb74b108d886ed8d27762f6e346163/ofl/montserrat/Montserrat-BoldItalic.ttf",
+    "byteLength": 266748,
+    "hash": "sha256:91371db417bc137a0edb00a9b441c0d4913bbf3320dd038dea124eaf8a565c23",
+    "file": "Montserrat-BoldItalic.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/160c7fe82ecb74b108d886ed8d27762f6e346163/ofl/montserrat/Montserrat-BoldItalic.ttf"
+  },
+  {
+    "family": "Montserrat",
+    "weight": 700,
+    "style": "normal",
+    "url": "https://cdn.jsdelivr.net/gh/google/fonts@160c7fe82ecb74b108d886ed8d27762f6e346163/ofl/montserrat/Montserrat-Bold.ttf",
+    "byteLength": 261588,
+    "hash": "sha256:c4c8cb572a5a2c43d78b3701f4b2349684e6ca4d1557e469af6065b1e099c26c",
+    "file": "Montserrat-Bold.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/160c7fe82ecb74b108d886ed8d27762f6e346163/ofl/montserrat/Montserrat-Bold.ttf"
+  },
+  {
+    "family": "Open Sans",
+    "weight": 400,
+    "style": "italic",
+    "url": "https://cdn.jsdelivr.net/gh/google/fonts@beaec0837bd21524b57ecb435158f9011fc03999/apache/opensans/OpenSans-Italic.ttf",
+    "byteLength": 212760,
+    "hash": "sha256:6cb918a707a06c4f98221d09344af4b98c9cb6184b13309a579caf0418d5eb74",
+    "file": "OpenSans-Italic.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/beaec0837bd21524b57ecb435158f9011fc03999/apache/opensans/OpenSans-Italic.ttf"
+  },
+  {
+    "family": "Open Sans",
+    "weight": 400,
+    "style": "normal",
+    "url": "https://cdn.jsdelivr.net/gh/google/fonts@beaec0837bd21524b57ecb435158f9011fc03999/apache/opensans/OpenSans-Regular.ttf",
+    "byteLength": 217276,
+    "hash": "sha256:13c03e22a633919beb2847c58c8285fb8a735ee97097d7c48fd403f8294b05f8",
+    "file": "OpenSans-Regular.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/beaec0837bd21524b57ecb435158f9011fc03999/apache/opensans/OpenSans-Regular.ttf"
+  },
+  {
+    "family": "Open Sans",
+    "weight": 700,
+    "style": "italic",
+    "url": "https://cdn.jsdelivr.net/gh/google/fonts@beaec0837bd21524b57ecb435158f9011fc03999/apache/opensans/OpenSans-BoldItalic.ttf",
+    "byteLength": 213168,
+    "hash": "sha256:3575d2afaaad69970380237a5d6357b6db241f53b77607482eaf9f299b8c07ec",
+    "file": "OpenSans-BoldItalic.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/beaec0837bd21524b57ecb435158f9011fc03999/apache/opensans/OpenSans-BoldItalic.ttf"
+  },
+  {
+    "family": "Open Sans",
+    "weight": 700,
+    "style": "normal",
+    "url": "https://cdn.jsdelivr.net/gh/google/fonts@beaec0837bd21524b57ecb435158f9011fc03999/apache/opensans/OpenSans-Bold.ttf",
+    "byteLength": 224452,
+    "hash": "sha256:1b43de2449d39b65ff6f63315d4afda585f72fbbec2e3d9a56f59de6c75149d3",
+    "file": "OpenSans-Bold.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/beaec0837bd21524b57ecb435158f9011fc03999/apache/opensans/OpenSans-Bold.ttf"
+  },
+  {
+    "family": "Poppins",
+    "weight": 400,
+    "style": "italic",
+    "url": "https://cdn.jsdelivr.net/gh/google/fonts@ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/poppins/Poppins-Italic.ttf",
+    "byteLength": 184544,
+    "hash": "sha256:4fa76ae75b40f926420514044722cb97f32186cafd3b38263cc34dad7174d46d",
+    "file": "Poppins-Italic.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/poppins/Poppins-Italic.ttf"
+  },
+  {
+    "family": "Poppins",
+    "weight": 400,
+    "style": "normal",
+    "url": "https://cdn.jsdelivr.net/gh/google/fonts@ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/poppins/Poppins-Regular.ttf",
+    "byteLength": 160316,
+    "hash": "sha256:7e65201e9b79159e2300267cc885e16c8dcef2424cdfa09a29bfb0980a94a7ba",
+    "file": "Poppins-Regular.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/poppins/Poppins-Regular.ttf"
+  },
+  {
+    "family": "Poppins",
+    "weight": 700,
+    "style": "italic",
+    "url": "https://cdn.jsdelivr.net/gh/google/fonts@ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/poppins/Poppins-BoldItalic.ttf",
+    "byteLength": 179108,
+    "hash": "sha256:3572ac8116a0ac7317d342262b29937bcbaf94d8f03f90df6fe666fa7e2fb43a",
+    "file": "Poppins-BoldItalic.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/poppins/Poppins-BoldItalic.ttf"
+  },
+  {
+    "family": "Poppins",
+    "weight": 700,
+    "style": "normal",
+    "url": "https://cdn.jsdelivr.net/gh/google/fonts@ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/poppins/Poppins-Bold.ttf",
+    "byteLength": 155996,
+    "hash": "sha256:983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+    "file": "Poppins-Bold.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/poppins/Poppins-Bold.ttf"
+  },
+  {
+    "family": "PT Sans",
+    "weight": 400,
+    "style": "italic",
+    "url": "https://cdn.jsdelivr.net/gh/google/fonts@ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/ptsans/PT_Sans-Web-Italic.ttf",
+    "byteLength": 436452,
+    "hash": "sha256:5a90fe2d0cd798700935240580bdcc12c0ffc9102c0c7163b3418e13bc21debd",
+    "file": "PT_Sans-Web-Italic.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/ptsans/PT_Sans-Web-Italic.ttf"
+  },
+  {
+    "family": "PT Sans",
+    "weight": 400,
+    "style": "normal",
+    "url": "https://cdn.jsdelivr.net/gh/google/fonts@ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/ptsans/PT_Sans-Web-Regular.ttf",
+    "byteLength": 442960,
+    "hash": "sha256:9cc831490532009bae2b3ce0d39c62adfc889060beb421593bfd9d2396d0f10a",
+    "file": "PT_Sans-Web-Regular.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/ptsans/PT_Sans-Web-Regular.ttf"
+  },
+  {
+    "family": "PT Sans",
+    "weight": 700,
+    "style": "italic",
+    "url": "https://cdn.jsdelivr.net/gh/google/fonts@ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/ptsans/PT_Sans-Web-BoldItalic.ttf",
+    "byteLength": 375204,
+    "hash": "sha256:81ac221cdd02bccfa679c74adb122478e9d092e65a722e31ca11469961483785",
+    "file": "PT_Sans-Web-BoldItalic.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/ptsans/PT_Sans-Web-BoldItalic.ttf"
+  },
+  {
+    "family": "PT Sans",
+    "weight": 700,
+    "style": "normal",
+    "url": "https://cdn.jsdelivr.net/gh/google/fonts@ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/ptsans/PT_Sans-Web-Bold.ttf",
+    "byteLength": 470240,
+    "hash": "sha256:3128bd5ecf01816e59a23d54c57a7a6b14615b07db53ff277c77376010265b05",
+    "file": "PT_Sans-Web-Bold.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/ptsans/PT_Sans-Web-Bold.ttf"
+  },
+  {
+    "family": "PT Serif",
+    "weight": 400,
+    "style": "italic",
+    "url": "https://cdn.jsdelivr.net/gh/google/fonts@ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/ptserif/PT_Serif-Web-Italic.ttf",
+    "byteLength": 375356,
+    "hash": "sha256:f57e95ff9dc85691a3b2e193f2028db36f6663939a46c0fc4f286d618b80b7ce",
+    "file": "PT_Serif-Web-Italic.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/ptserif/PT_Serif-Web-Italic.ttf"
+  },
+  {
+    "family": "PT Serif",
+    "weight": 400,
+    "style": "normal",
+    "url": "https://cdn.jsdelivr.net/gh/google/fonts@ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/ptserif/PT_Serif-Web-Regular.ttf",
+    "byteLength": 359048,
+    "hash": "sha256:a4951fade06ff8f09b7673aa81ffb65a8cd409e24d3289a6dc670bc4dda2557a",
+    "file": "PT_Serif-Web-Regular.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/ptserif/PT_Serif-Web-Regular.ttf"
+  },
+  {
+    "family": "PT Serif",
+    "weight": 700,
+    "style": "italic",
+    "url": "https://cdn.jsdelivr.net/gh/google/fonts@ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/ptserif/PT_Serif-Web-BoldItalic.ttf",
+    "byteLength": 337580,
+    "hash": "sha256:f003788ba08981eb0988b3557a6f224a53dab49c20e283e8b74d5af3c466f8be",
+    "file": "PT_Serif-Web-BoldItalic.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/ptserif/PT_Serif-Web-BoldItalic.ttf"
+  },
+  {
+    "family": "PT Serif",
+    "weight": 700,
+    "style": "normal",
+    "url": "https://cdn.jsdelivr.net/gh/google/fonts@ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/ptserif/PT_Serif-Web-Bold.ttf",
+    "byteLength": 339996,
+    "hash": "sha256:038ba7336bd7ea14f12ad155bed51a4345cac5153275d521dec3ba04021c526e",
+    "file": "PT_Serif-Web-Bold.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/ptserif/PT_Serif-Web-Bold.ttf"
+  },
+  {
+    "family": "Roboto",
+    "weight": 400,
+    "style": "italic",
+    "url": "https://cdn.jsdelivr.net/gh/google/fonts@ff11ed915971ee26c88f442f37308142d4217979/apache/roboto/static/Roboto-Italic.ttf",
+    "byteLength": 152384,
+    "hash": "sha256:0a571abea19be301a8bd851f8f70aad448e813f006b01d0c5583e419c9640b85",
+    "file": "Roboto-Italic.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/ff11ed915971ee26c88f442f37308142d4217979/apache/roboto/static/Roboto-Italic.ttf"
+  },
+  {
+    "family": "Roboto",
+    "weight": 400,
+    "style": "normal",
+    "url": "https://cdn.jsdelivr.net/gh/google/fonts@ff11ed915971ee26c88f442f37308142d4217979/apache/roboto/static/Roboto-Regular.ttf",
+    "byteLength": 146768,
+    "hash": "sha256:f9ced9ac76e56da8cca1048b21e0c7da83740296a949e1997ae5db04d7b18cec",
+    "file": "Roboto-Regular.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/ff11ed915971ee26c88f442f37308142d4217979/apache/roboto/static/Roboto-Regular.ttf"
+  },
+  {
+    "family": "Roboto",
+    "weight": 700,
+    "style": "italic",
+    "url": "https://cdn.jsdelivr.net/gh/google/fonts@ff11ed915971ee26c88f442f37308142d4217979/apache/roboto/static/Roboto-BoldItalic.ttf",
+    "byteLength": 153212,
+    "hash": "sha256:198174597fef001e3e133279af3842cf0b89f82f0b48f583e40e25d803a80054",
+    "file": "Roboto-BoldItalic.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/ff11ed915971ee26c88f442f37308142d4217979/apache/roboto/static/Roboto-BoldItalic.ttf"
+  },
+  {
+    "family": "Roboto",
+    "weight": 700,
+    "style": "normal",
+    "url": "https://cdn.jsdelivr.net/gh/google/fonts@ff11ed915971ee26c88f442f37308142d4217979/apache/roboto/static/Roboto-Bold.ttf",
+    "byteLength": 147472,
+    "hash": "sha256:ba82c0823fde58727ac97c2c6ceec967969a1082f1417aef7d4ffa5e5caef834",
+    "file": "Roboto-Bold.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/ff11ed915971ee26c88f442f37308142d4217979/apache/roboto/static/Roboto-Bold.ttf"
+  },
+  {
+    "family": "Space Mono",
+    "weight": 400,
+    "style": "italic",
+    "url": "https://cdn.jsdelivr.net/gh/google/fonts@ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/spacemono/SpaceMono-Italic.ttf",
+    "byteLength": 121396,
+    "hash": "sha256:eca264c8690a91fe837d19a6badf2d88961610c4c8aafcb196526192a9f258c5",
+    "file": "SpaceMono-Italic.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/spacemono/SpaceMono-Italic.ttf"
+  },
+  {
+    "family": "Space Mono",
+    "weight": 400,
+    "style": "normal",
+    "url": "https://cdn.jsdelivr.net/gh/google/fonts@ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/spacemono/SpaceMono-Regular.ttf",
+    "byteLength": 99356,
+    "hash": "sha256:95837e182baeeada83368f7748db28357f0a1b75c6b84ff7065b5edf933c8e18",
+    "file": "SpaceMono-Regular.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/spacemono/SpaceMono-Regular.ttf"
+  },
+  {
+    "family": "Space Mono",
+    "weight": 700,
+    "style": "italic",
+    "url": "https://cdn.jsdelivr.net/gh/google/fonts@ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/spacemono/SpaceMono-BoldItalic.ttf",
+    "byteLength": 111904,
+    "hash": "sha256:cdcc95eddee312879a9728494e595f591cb159f3f276d79bc58673dec7e57138",
+    "file": "SpaceMono-BoldItalic.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/spacemono/SpaceMono-BoldItalic.ttf"
+  },
+  {
+    "family": "Space Mono",
+    "weight": 700,
+    "style": "normal",
+    "url": "https://cdn.jsdelivr.net/gh/google/fonts@ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/spacemono/SpaceMono-Bold.ttf",
+    "byteLength": 98232,
+    "hash": "sha256:405e73d41afb7e5906efce206a326af5c956f38e255f35421c260e861e599c59",
+    "file": "SpaceMono-Bold.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/ea14f3c4c462af1d847b1abe96fcb3c3a8a66f97/ofl/spacemono/SpaceMono-Bold.ttf"
+  }
+]

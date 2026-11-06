@@ -1,0 +1,39 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "InsynDoc",
+  "version": "1.0.0",
+  "identifier": "com.insyndoc.editor",
+  "build": {
+    "beforeDevCommand": "npm run dev:web",
+    "devUrl": "http://127.0.0.1:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [{
+      "label": "main",
+      "title": "InsynDoc",
+      "width": 1280,
+      "height": 900,
+      "minWidth": 800,
+      "minHeight": 600,
+      "dragDropEnabled": false
+    }],
+    "security": {
+      "capabilities": ["main"],
+      "csp": "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; font-src 'self' blob: data:; connect-src 'self' ipc: http://ipc.localhost; worker-src 'self' blob:; object-src 'none'; frame-src 'none'; base-uri 'self'; form-action 'none'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis"],
+    "category": "Productivity",
+    "shortDescription": "Offline DOCX Editor",
+    "icon": ["icons/insyndoc/32x32.png", "icons/insyndoc/128x128.png", "icons/insyndoc/128x128@2x.png", "icons/insyndoc/icon.ico"],
+    "resources": ["../THIRD_PARTY_NOTICES.md", "../public/licenses/*"],
+    "windows": {
+      "webviewInstallMode": { "type": "downloadBootstrapper", "silent": true },
+      "nsis": { "installMode": "both", "installerHooks": "installer-hooks.nsh" }
+    }
+  }
+}
