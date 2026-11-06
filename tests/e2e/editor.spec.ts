@@ -766,9 +766,9 @@ test('Exports Superscript Formatting And Toggles Paragraph Marks Without Editing
   await page.locator('.docx-page-content').first().click({ position: { x: 30, y: 12 } });
   await page.keyboard.type('Exponent');
   await page.keyboard.press('Control+a');
-  await page.getByRole('menuitem', { name: 'Format', exact: true }).click();
-  await page.getByRole('menuitem', { name: 'Text Position', exact: true }).hover();
-  await page.getByRole('menuitemcheckbox', { name: 'Superscript', exact: true }).click();
+  await page.getByRole('button', { name: 'Menus', exact: true }).click();
+  await page.getByRole('textbox', { name: 'Search The Menus' }).fill('superscript');
+  await page.getByRole('button', { name: 'Superscript', exact: true }).click();
   await page.keyboard.press('Control+s');
   await expect(page.locator('.document-save-indicator')).toHaveText('Saved Locally');
   const saved = await page.evaluate(() => window.__nativeTest.saved);
