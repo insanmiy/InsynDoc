@@ -134,7 +134,7 @@ impl Editor {
                     search.response.rect.bottom() - 12.0,
                     Stroke::new(2.0_f32, colors.app_accent),
                 );
-                ui.add_space(12.0);
+                ui.add_space(32.0);
                 let query = self.search_query.trim().to_lowercase();
                 let filtered: Vec<_> = MENU_COMMANDS
                     .iter()
@@ -170,7 +170,7 @@ impl Editor {
                         selected = Some(command);
                     }
                 }
-                let results_height = 360.0_f32.min(ctx.screen_rect().height() * 0.55);
+                let results_height = 339.0_f32.min(ctx.screen_rect().height() * 0.55);
                 ui.allocate_ui_with_layout(
                     vec2(ui.available_width(), results_height),
                     egui::Layout::top_down(Align::LEFT),

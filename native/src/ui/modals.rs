@@ -119,7 +119,9 @@ pub fn draw(ctx: &egui::Context, state: &mut AppState, assets: &ChromeAssets, ou
 
     let screen = ctx.screen_rect();
     let content_width = (width - 58.0).min(screen.width() - 86.0).max(240.0);
-    let content_height = (screen.height() - 110.0).max(200.0);
+    let bottom_margin = if tall { 10 } else { 24 };
+    let content_height =
+        (screen.height() - 110.0).max(200.0) + (24.0 - bottom_margin as f32);
     let response = egui::Modal::new(Id::new(("application-modal", title)))
         .backdrop_color(c.modal_backdrop)
         .frame(
@@ -132,7 +134,7 @@ pub fn draw(ctx: &egui::Context, state: &mut AppState, assets: &ChromeAssets, ou
                     left: 28,
                     right: 28,
                     top: 24,
-                    bottom: 24,
+                    bottom: bottom_margin,
                 }),
         )
         .show(ctx, |ui| {
@@ -283,7 +285,7 @@ fn draw_settings(
         .show(ui, |ui| {
             ui.set_width(ui.available_width());
             // .settings-intro
-            ui.add_space(12.0);
+            ui.add_space(4.0);
             ui.label(
                 RichText::new(
                     "Personalize Your Writing Workspace. Changes Are Saved Automatically On This Device.",
@@ -294,7 +296,7 @@ fn draw_settings(
             );
 
             // Settings Navigation Scrolls To The Requested Section.
-            ui.add_space(16.0);
+            ui.add_space(11.0);
             ui.horizontal_wrapped(|ui| {
                 ui.spacing_mut().item_spacing = egui::vec2(6.0, 6.0);
                 for label in ["Appearance", "Writing", "Editor", "Updates", "Hyperlinks"] {
@@ -332,7 +334,7 @@ fn draw_settings(
                     .color(c.app_muted)
                     .line_height(Some(22.1)),
             );
-            ui.add_space(20.0);
+            ui.add_space(16.0);
             theme_options(ui, ctx, state, &c, out);
             section_separator(ui, &c);
 
@@ -380,6 +382,7 @@ fn draw_settings(
                     .color(c.app_muted)
                     .line_height(Some(22.1)),
             );
+            ui.add_space(18.0);
             editor_toggle(
                 ui,
                 &c,
@@ -652,7 +655,7 @@ fn theme_card(
     card_w: f32,
 ) {
     // .theme-option — flex 1, border 2px, padding 5, radius 10.
-    let preview_h = 92.0;
+    let preview_h = 86.0;
     let caption_h = 32.0;
     let (rect, response) = ui.allocate_exact_size(
         vec2(card_w, 7.0 + preview_h + caption_h + 7.0),
@@ -836,7 +839,7 @@ fn setting_field_select(
     options: &[&str],
     mut on_pick: impl FnMut(&mut egui::Ui, usize),
 ) {
-    ui.add_space(18.0);
+    ui.add_space(13.0);
     let width = ui.available_width();
     ui.horizontal(|ui| {
         ui.spacing_mut().item_spacing.x = 18.0;
@@ -920,7 +923,7 @@ fn setting_field_number(
     max: i64,
     mut on_change: impl FnMut(i64),
 ) {
-    ui.add_space(18.0);
+    ui.add_space(11.0);
     let width = ui.available_width();
     let draft_id = ui.make_persistent_id(("number-draft", label));
     let edit_id = ui.make_persistent_id(("number-edit", label));

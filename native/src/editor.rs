@@ -559,7 +559,7 @@ impl Editor {
         }
         self.page_count = groups.len() as u32;
         for group in groups {
-            let page = Frame::new()
+            Frame::new()
                 .fill(Color32::WHITE)
                 .shadow(if state.surface.view == ViewMode::Pages {
                     match theme {
@@ -602,14 +602,6 @@ impl Editor {
                     });
                     ui.add_space(self.document.page_setup.margin_bottom * zoom);
                 });
-            if state.surface.view == ViewMode::Pages {
-                ui.painter().rect_stroke(
-                    page.response.rect,
-                    0.0,
-                    Stroke::new(1.0_f32, ui.visuals().window_stroke.color),
-                    egui::StrokeKind::Outside,
-                );
-            }
             ui.add_space(if state.surface.view == ViewMode::Pages {
                 24.0 * zoom
             } else {
