@@ -1,0 +1,35 @@
+[package]
+name = "insyndoc-native"
+version = "1.0.1"
+description = "InsynDoc Native Rust UI"
+edition = "2021"
+
+[dependencies]
+egui = "0.31"
+egui-winit = "0.31"
+egui-wgpu = "0.31"
+wgpu = "24"
+winit = "0.30"
+pollster = "0.4"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+base64 = "0.22"
+tempfile = "3"
+unicode-segmentation = "1.13"
+zip = { version = "9.4.1", default-features = false, features = ["deflate-flate2-zlib-rs"] }
+roxmltree = "0.20"
+url = "2"
+rfd = "0.17"
+usvg = { version = "0.45", default-features = false }
+resvg = { version = "0.45", default-features = false }
+tiny-skia = "0.11"
+dirs = "6"
+image = { version = "0.25", default-features = false, features = ["png"] }
+krilla = "0.8.2"
+ttf-parser = "0.25.1"
+
+[build-dependencies]
+embed-resource = "3.0.12"
+
+[profile.dev]
+opt-level = 1

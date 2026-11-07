@@ -13,6 +13,30 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  native-windows:
+    name: Native Rust Tests And Build
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check Out Source
+        uses: actions/checkout@v4
+
+      - name: Set Up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Test Native App
+        run: cargo test --manifest-path native/Cargo.toml --locked
+
+      - name: Build Native App
+        run: cargo build --release --manifest-path native/Cargo.toml --locked
+
+      - name: Upload Native App
+        uses: actions/upload-artifact@v4
+        with:
+          name: InsynDoc-Native-Preview
+          path: native/target/release/insyndoc-native.exe
+          if-no-files-found: error
+
   windows:
     name: Windows Tests And Installer
     runs-on: windows-latest

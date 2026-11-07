@@ -17,6 +17,12 @@ Create, Edit, And Export DOCX Documents. Your Documents And Preferences Stay On 
 
 ---
 
+## Native Rust Rewrite
+
+`Start.bat` Now Builds And Launches The Native Rust Application In `native/`. It Uses Egui, Winit, And Wgpu Without WebView2, JavaScript, Node.js, Or A Web Bundle At Runtime. See [Native Build Instructions](native/README.md).
+
+The Rewrite Is In Progress. Full Feature And Visual Parity Have Not Been Reached. The Features And Installer Instructions Below Describe The Original Tauri Application, Which Remains In `src` And `src-tauri` As A Migration Reference. The Existing Release Installer Still Packages That Original Application.
+
 ## Features
 
 - Create A New Document Or Open An Existing DOCX File.
@@ -72,7 +78,7 @@ To Build The Windows Installer:
 npm run dist
 ```
 
-The Installer Is Written Under `src-tauri/target/release/bundle/nsis/`. You Can Also Run `Start.bat` On Windows To Build When Needed And Launch The Desktop App.
+The Installer Is Written Under `src-tauri/target/release/bundle/nsis/`. `Start.bat` Builds And Launches The Separate Native Rust Rewrite Described Above.
 
 ## Development Commands
 

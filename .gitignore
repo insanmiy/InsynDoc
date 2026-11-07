@@ -24,6 +24,10 @@ THIRD_PARTY_NOTICES.md
 .tools/
 src-tauri/target/
 src-tauri/gen/
+native/target/
+native/*.png
+native/err.txt
+native/out2.txt
 
 # Logs
 *.log
@@ -36,3 +40,4 @@ src-tauri/gen/
 # Windows Batch Files Except The Project Launcher
 *.bat
 Start.bat
+!Start.bat
