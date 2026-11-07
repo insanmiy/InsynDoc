@@ -127,11 +127,7 @@ impl App {
         let queue = Arc::new(queue);
 
         let caps = surface.get_capabilities(&adapter);
-        let format = caps
-            .formats
-            .iter()
-            .copied()
-            .find(|f| f.is_srgb())
+        let format = egui_wgpu::preferred_framebuffer_format(&caps.formats)
             .unwrap_or(caps.formats[0]);
         let config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,

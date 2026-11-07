@@ -19,7 +19,7 @@ fn render_comparison_images() {
     let (device, queue) =
         pollster::block_on(adapter.request_device(&wgpu::DeviceDescriptor::default(), None))
             .unwrap();
-    let format = wgpu::TextureFormat::Rgba8UnormSrgb;
+    let format = wgpu::TextureFormat::Rgba8Unorm;
     let mut renderer = egui_wgpu::Renderer::new(&device, format, None, 1, false);
     let width = 1280;
     let height = 900;
