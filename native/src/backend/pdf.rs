@@ -100,7 +100,7 @@ fn draw_marker(
     job.append(
         marker,
         0.0,
-        page_layout::text_format(ctx, &format, paragraph.line_spacing)?,
+        page_layout::text_format(ctx, &format, paragraph.line_spacing, paragraph.line_rule.is_some())?,
     );
     let galley = ctx.fonts(|fonts| fonts.layout_job(job));
     let glyph_fonts = page_layout::resolve_glyph_fonts(ctx, &galley);

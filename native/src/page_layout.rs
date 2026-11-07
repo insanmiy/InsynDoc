@@ -69,7 +69,7 @@ pub fn layout_document(ctx: &egui::Context, document: &Document) -> Result<Docum
         {
             return Err("The Paragraph Layout Contains An Invalid Value.".into());
         }
-        page_y = (page_y + paragraph.space_before.max(0.0)).min(page_bottom);
+        page_y = (page_y + paragraph.space_before.max(0.0) * 4.0 / 3.0).min(page_bottom);
         let marker = match paragraph.list.as_deref() {
             Some("bullet") => {
                 numbered_count = 0;
@@ -84,9 +84,14 @@ pub fn layout_document(ctx: &egui::Context, document: &Document) -> Result<Docum
                 None
             }
         };
-        let indent = paragraph.indent.max(0.0);
+        let indent = paragraph.indent.max(0.0)
+            + match paragraph.special.as_deref() {
+                Some(_) => paragraph.special_amount.max(0.0),
+                None => 0.0,
+            };
         let marker_width = if marker.is_some() { 24.0 } else { 0.0 };
-        let text_width = width - indent - marker_width;
+        let text_width = (width - indent - paragraph.indent_right.max(0.0) - marker_width)
+            .max(1.0);
         if text_width <= 0.0 {
             return Err("The Paragraph Indent Leaves No Space For Text.".into());
         }
@@ -139,7 +144,7 @@ pub fn layout_document(ctx: &egui::Context, document: &Document) -> Result<Docum
                 page_y = setup.margin_top;
             }
         }
-        page_y = (page_y + paragraph.space_after.max(0.0) + 8.0).min(page_bottom);
+        page_y = (page_y + paragraph.space_after.max(0.0) * 4.0 / 3.0 + 8.0).min(page_bottom);
     }
     Ok(layout)
 }
@@ -177,11 +182,12 @@ fn paragraph_galley(
         _ => Align::LEFT,
     };
     job.justify = paragraph.alignment == Alignment::Justify;
+    let absolute = paragraph.line_rule.is_some();
     for run in &paragraph.runs {
         job.append(
             &run.text,
             0.0,
-            text_format(ctx, &run.format, paragraph.line_spacing)?,
+            text_format(ctx, &run.format, paragraph.line_spacing, absolute)?,
         );
     }
     if job.text.is_empty() {
@@ -191,7 +197,7 @@ fn paragraph_galley(
             .map(|run| &run.format)
             .cloned()
             .unwrap_or_default();
-        job.append("", 0.0, text_format(ctx, &format, paragraph.line_spacing)?);
+        job.append("", 0.0, text_format(ctx, &format, paragraph.line_spacing, absolute)?);
     }
     Ok(ctx.fonts(|fonts| fonts.layout_job(job)))
 }
@@ -200,6 +206,7 @@ pub(crate) fn text_format(
     ctx: &egui::Context,
     format: &TextFormat,
     line_spacing: f32,
+    absolute_spacing: bool,
 ) -> Result<egui::TextFormat, String> {
     let size = format.font_size.unwrap_or(11.0);
     if !size.is_finite() || size <= 0.0 || line_spacing < 0.0 {
@@ -244,7 +251,11 @@ pub(crate) fn text_format(
         } else {
             Stroke::NONE
         },
-        line_height: (line_spacing > 0.0).then_some(font_size * line_spacing),
+        line_height: (line_spacing > 0.0).then_some(if absolute_spacing {
+            line_spacing * 4.0 / 3.0
+        } else {
+            font_size * line_spacing
+        }),
         ..Default::default()
     })
 }

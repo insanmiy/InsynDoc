@@ -35,6 +35,13 @@ pub enum Alignment {
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
+pub struct TabStop {
+    pub position: f32,
+    pub alignment: String,
+    pub leader: String,
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub struct Paragraph {
     pub runs: Vec<Run>,
     pub alignment: Alignment,
@@ -44,6 +51,43 @@ pub struct Paragraph {
     pub space_before: f32,
     pub space_after: f32,
     pub list: Option<String>,
+    pub bidi: bool,
+    pub indent_right: f32,
+    pub special: Option<String>,
+    pub special_amount: f32,
+    pub line_rule: Option<String>,
+    pub keep_next: bool,
+    pub keep_lines: bool,
+    pub widow_control: bool,
+    pub page_break_before: bool,
+    pub contextual_spacing: bool,
+    pub tabs: Vec<TabStop>,
+}
+
+impl Default for Paragraph {
+    fn default() -> Self {
+        Self {
+            runs: Vec::new(),
+            alignment: Alignment::default(),
+            style: None,
+            indent: 0.0,
+            line_spacing: 0.0,
+            space_before: 0.0,
+            space_after: 0.0,
+            list: None,
+            bidi: false,
+            indent_right: 0.0,
+            special: None,
+            special_amount: 0.0,
+            line_rule: None,
+            keep_next: false,
+            keep_lines: false,
+            widow_control: true,
+            page_break_before: false,
+            contextual_spacing: false,
+            tabs: Vec::new(),
+        }
+    }
 }
 
 impl Paragraph {
@@ -806,6 +850,23 @@ fn parse_paragraph(node: roxmltree::Node<'_, '_>) -> Paragraph {
             .and_then(|value| value.parse::<f32>().ok())
             .unwrap_or(0.0)
             / 240.0;
+        if let Some(ind) = child(properties, "ind") {
+            paragraph.indent_right = attribute(ind, "right")
+                .and_then(|value| value.parse::<f32>().ok())
+                .unwrap_or(0.0)
+                / 15.0;
+            if let Some(amount) = attribute(ind, "firstLine")
+                .and_then(|value| value.parse::<f32>().ok())
+            {
+                paragraph.special = Some("firstLine".into());
+                paragraph.special_amount = amount / 15.0;
+            } else if let Some(amount) = attribute(ind, "hanging")
+                .and_then(|value| value.parse::<f32>().ok())
+            {
+                paragraph.special = Some("hanging".into());
+                paragraph.special_amount = amount / 15.0;
+            }
+        }
         if let Some(spacing) = child(properties, "spacing") {
             paragraph.space_before = attribute(spacing, "before")
                 .and_then(|value| value.parse::<f32>().ok())
@@ -815,6 +876,40 @@ fn parse_paragraph(node: roxmltree::Node<'_, '_>) -> Paragraph {
                 .and_then(|value| value.parse::<f32>().ok())
                 .unwrap_or(0.0)
                 / 20.0;
+            let rule = attribute(spacing, "lineRule");
+            let line = attribute(spacing, "line")
+                .and_then(|value| value.parse::<f32>().ok())
+                .unwrap_or(0.0);
+            if matches!(rule.as_deref(), Some("atLeast" | "exact")) && line > 0.0 {
+                paragraph.line_rule = rule;
+                paragraph.line_spacing = line / 20.0;
+            } else {
+                paragraph.line_spacing = line / 240.0;
+            }
+        }
+        paragraph.bidi = child(properties, "bidi").is_some();
+        paragraph.keep_next = child(properties, "keepNext").is_some();
+        paragraph.keep_lines = child(properties, "keepLines").is_some();
+        paragraph.page_break_before = child(properties, "pageBreakBefore").is_some();
+        paragraph.contextual_spacing = child(properties, "contextualSpacing").is_some();
+        if let Some(widow) = child(properties, "widowControl") {
+            paragraph.widow_control = attribute(widow, "val")
+                .map(|value| !matches!(value.as_str(), "0" | "false" | "off" | "none"))
+                .unwrap_or(true);
+        }
+        if let Some(tabs) = child(properties, "tabs") {
+            paragraph.tabs = tabs
+                .children()
+                .filter(|value| value.has_tag_name((WORD_NAMESPACE, "tab")))
+                .map(|tab| TabStop {
+                    position: attribute(tab, "pos")
+                        .and_then(|value| value.parse::<f32>().ok())
+                        .unwrap_or(0.0)
+                        / 15.0,
+                    alignment: attribute(tab, "val").unwrap_or_else(|| "left".into()),
+                    leader: attribute(tab, "leader").unwrap_or_else(|| "none".into()),
+                })
+                .collect();
         }
         paragraph.list = child(properties, "numPr")
             .and_then(|value| child(value, "numId"))
@@ -1073,19 +1168,48 @@ fn paragraph_xml_with_numbering(paragraph: &Paragraph, source: Option<&str>, pre
     };
     let paragraph_attributes = preserved_attributes(original, &[]);
     let property_attributes = preserved_attributes(original.and_then(|node| child(node, "pPr")), &[]);
-    let mut xml = format!("<w:p{paragraph_attributes}><w:pPr{property_attributes}><w:jc w:val=\"{alignment}\"/>");
+    let mut xml = format!("<w:p{paragraph_attributes}><w:pPr{property_attributes}>");
     if let Some(style) = &paragraph.style {
         xml.push_str(&format!("<w:pStyle w:val=\"{}\"/>", escape_xml(style)));
     }
-    let original_properties = original.and_then(|node| child(node, "pPr"));
-    let original_indent = original_properties.and_then(|node| child(node, "ind"));
-    if paragraph.indent != 0.0 || original_indent.is_some() {
-        let extras = preserved_attributes(original_indent, &["left", "start"]);
+    if paragraph.keep_next {
+        xml.push_str("<w:keepNext/>");
+    }
+    if paragraph.keep_lines {
+        xml.push_str("<w:keepLines/>");
+    }
+    if paragraph.page_break_before {
+        xml.push_str("<w:pageBreakBefore/>");
+    }
+    if !paragraph.widow_control {
+        xml.push_str("<w:widowControl w:val=\"0\"/>");
+    }
+    if let Some(kind) = paragraph.list.as_ref().filter(|_| !preserve_numbering) {
+        let identifier = if kind == "bullet" {
+            2147483000_u32
+        } else {
+            2147483001
+        };
         xml.push_str(&format!(
-            "<w:ind w:left=\"{}\"{extras}/>",
-            (paragraph.indent * 15.0).round() as i32
+            "<w:numPr><w:ilvl w:val=\"0\"/><w:numId w:val=\"{identifier}\"/></w:numPr>"
         ));
     }
+    if !paragraph.tabs.is_empty() {
+        xml.push_str("<w:tabs>");
+        for tab in &paragraph.tabs {
+            xml.push_str(&format!(
+                "<w:tab w:val=\"{}\" w:pos=\"{}\" w:leader=\"{}\"/>",
+                escape_xml(&tab.alignment),
+                (tab.position * 15.0).round() as i32,
+                escape_xml(&tab.leader)
+            ));
+        }
+        xml.push_str("</w:tabs>");
+    }
+    if paragraph.bidi {
+        xml.push_str("<w:bidi/>");
+    }
+    let original_properties = original.and_then(|node| child(node, "pPr"));
     if paragraph.line_spacing > 0.0
         || paragraph.space_before > 0.0
         || paragraph.space_after > 0.0
@@ -1094,7 +1218,12 @@ fn paragraph_xml_with_numbering(paragraph: &Paragraph, source: Option<&str>, pre
             original_properties.and_then(|node| child(node, "spacing")),
             &["line", "lineRule", "before", "after"],
         );
-        let line = if paragraph.line_spacing > 0.0 {
+        let line = if let Some(rule) = paragraph.line_rule.as_deref() {
+            format!(
+                " w:line=\"{}\" w:lineRule=\"{rule}\"",
+                (paragraph.line_spacing * 20.0).round() as u32
+            )
+        } else if paragraph.line_spacing > 0.0 {
             format!(
                 " w:line=\"{}\" w:lineRule=\"auto\"",
                 (paragraph.line_spacing * 240.0).round() as u32
@@ -1114,21 +1243,59 @@ fn paragraph_xml_with_numbering(paragraph: &Paragraph, source: Option<&str>, pre
         };
         xml.push_str(&format!("<w:spacing{line}{before}{after}{extras}/>"));
     }
-    if let Some(kind) = paragraph.list.as_ref().filter(|_| !preserve_numbering) {
-        let identifier = if kind == "bullet" {
-            2147483000_u32
+    let original_indent = original_properties.and_then(|node| child(node, "ind"));
+    if paragraph.indent != 0.0
+        || paragraph.indent_right != 0.0
+        || paragraph.special.is_some()
+        || original_indent.is_some()
+    {
+        let extras = preserved_attributes(
+            original_indent,
+            &["left", "start", "right", "end", "firstLine", "hanging"],
+        );
+        let right = if paragraph.indent_right != 0.0 {
+            format!(
+                " w:right=\"{}\"",
+                (paragraph.indent_right * 15.0).round() as i32
+            )
         } else {
-            2147483001
+            String::new()
+        };
+        let special = match paragraph.special.as_deref() {
+            Some("firstLine") => format!(
+                " w:firstLine=\"{}\"",
+                (paragraph.special_amount * 15.0).round() as i32
+            ),
+            Some("hanging") => format!(
+                " w:hanging=\"{}\"",
+                (paragraph.special_amount * 15.0).round() as i32
+            ),
+            _ => String::new(),
         };
         xml.push_str(&format!(
-            "<w:numPr><w:ilvl w:val=\"0\"/><w:numId w:val=\"{identifier}\"/></w:numPr>"
+            "<w:ind w:left=\"{}\"{right}{special}{extras}/>",
+            (paragraph.indent * 15.0).round() as i32
         ));
     }
+    if paragraph.contextual_spacing {
+        xml.push_str("<w:contextualSpacing/>");
+    }
+    xml.push_str(&format!("<w:jc w:val=\"{alignment}\"/>"));
     if let Some(properties) = original.and_then(|node| child(node, "pPr")) {
         for property in properties.children().filter(|node| node.is_element()) {
-            if !matches!(property.tag_name().name(), "jc" | "pStyle" | "ind")
-                && !(property.tag_name().name() == "spacing" && paragraph.line_spacing > 0.0)
-                && !(property.tag_name().name() == "numPr" && !preserve_numbering)
+            if !matches!(
+                property.tag_name().name(),
+                "jc" | "pStyle"
+                    | "ind"
+                    | "spacing"
+                    | "bidi"
+                    | "keepNext"
+                    | "keepLines"
+                    | "widowControl"
+                    | "pageBreakBefore"
+                    | "contextualSpacing"
+                    | "tabs"
+            ) && !(property.tag_name().name() == "numPr" && !preserve_numbering)
             {
                 xml.push_str(&wrapped.as_deref().unwrap_or("")[property.range()]);
             }

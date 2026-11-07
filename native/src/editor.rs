@@ -611,10 +611,16 @@ impl Editor {
         zoom: f32,
     ) {
         let paragraph = &self.document.paragraphs[index];
-        let indent = paragraph.indent.max(0.0) * zoom;
+        let special_extra = match paragraph.special.as_deref() {
+            Some(_) => paragraph.special_amount.max(0.0),
+            None => 0.0,
+        };
+        let indent = (paragraph.indent.max(0.0) + special_extra) * zoom;
         let line_spacing = paragraph.line_spacing;
+        let absolute_spacing = paragraph.line_rule.is_some();
         let space_before = paragraph.space_before;
         let space_after = paragraph.space_after;
+        let indent_right = paragraph.indent_right.max(0.0) * zoom;
         let marker = match paragraph.list.as_deref() {
             Some("bullet") => Some("\u{2022}".to_string()),
             Some("number") => {
@@ -627,8 +633,11 @@ impl Editor {
             }
             _ => None,
         };
-        let available_width =
-            (width - indent - if marker.is_some() { 24.0 * zoom } else { 0.0 }).max(30.0);
+        let available_width = (width
+            - indent
+            - indent_right
+            - if marker.is_some() { 24.0 * zoom } else { 0.0 })
+        .max(30.0);
         let runs = paragraph.runs.clone();
         let alignment = paragraph.alignment.clone();
         let old_text = paragraph.plain_text();
@@ -642,7 +651,11 @@ impl Editor {
             }
             if line_spacing > 0.0 {
                 for section in &mut job.sections {
-                    section.format.line_height = Some(section.format.font_id.size * line_spacing);
+                    section.format.line_height = Some(if absolute_spacing {
+                        line_spacing * 4.0 / 3.0 * zoom
+                    } else {
+                        section.format.font_id.size * line_spacing
+                    });
                 }
             }
             ui.fonts(|fonts| fonts.layout_job(job))
@@ -692,7 +705,7 @@ impl Editor {
                     }
                 }
             });
-        ui.add_space(space_before.max(0.0) * zoom);
+        ui.add_space(space_before.max(0.0) * 4.0 / 3.0 * zoom);
         let output = ui
             .horizontal_top(|ui| {
                 ui.spacing_mut().item_spacing.x = 0.0;
@@ -715,7 +728,7 @@ impl Editor {
                     .show(ui)
             })
             .inner;
-        ui.add_space(space_after.max(0.0) * zoom);
+        ui.add_space(space_after.max(0.0) * 4.0 / 3.0 * zoom);
         self.track_text_drag(ui, index, &output);
         if output.response.clicked() {
             self.document_selected = false;

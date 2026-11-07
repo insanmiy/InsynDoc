@@ -2,7 +2,7 @@ use egui::{Align, RichText};
 use serde_json::Value;
 
 use super::{slice_runs, Editor};
-use crate::document::{PageSetup, Run, TextFormat};
+use crate::document::{Alignment, PageSetup, Paragraph, Run, TabStop, TextFormat};
 use crate::state::AppState;
 
 #[derive(Clone, Copy, PartialEq)]
@@ -29,6 +29,101 @@ pub(super) struct Tools {
     pub show_bookmarks: bool,
     copied_format: Option<TextFormat>,
     painter_armed: bool,
+    para_draft: Option<ParagraphDraft>,
+}
+
+#[derive(Clone)]
+struct ParagraphDraft {
+    alignment: String,
+    direction: String,
+    indent_left: f64,
+    indent_right: f64,
+    special: String,
+    special_amount: f64,
+    tab_position: f64,
+    tab_alignment: String,
+    tab_leader: String,
+    tabs: Vec<TabStop>,
+    space_before: f64,
+    space_after: f64,
+    line_rule: String,
+    line_value: f64,
+    contextual_spacing: bool,
+    keep_next: bool,
+    keep_lines: bool,
+    widow_control: bool,
+    page_break_before: bool,
+}
+
+impl ParagraphDraft {
+    fn from_paragraph(paragraph: Option<&Paragraph>) -> Self {
+        let Some(paragraph) = paragraph else {
+            return Self::default();
+        };
+        let alignment = match paragraph.alignment {
+            Alignment::Left => "left",
+            Alignment::Center => "center",
+            Alignment::Right => "right",
+            Alignment::Justify => "justify",
+        };
+        Self {
+            alignment: alignment.into(),
+            direction: if paragraph.bidi { "rtl" } else { "ltr" }.into(),
+            indent_left: (paragraph.indent / 96.0) as f64,
+            indent_right: (paragraph.indent_right / 96.0) as f64,
+            special: paragraph
+                .special
+                .clone()
+                .unwrap_or_else(|| "none".into()),
+            special_amount: (paragraph.special_amount / 96.0) as f64,
+            tab_position: 0.0,
+            tab_alignment: "left".into(),
+            tab_leader: "none".into(),
+            tabs: paragraph.tabs.clone(),
+            space_before: paragraph.space_before as f64,
+            space_after: paragraph.space_after as f64,
+            line_rule: paragraph
+                .line_rule
+                .clone()
+                .unwrap_or_else(|| "multiple".into()),
+            line_value: if paragraph.line_rule.is_some() {
+                paragraph.line_spacing as f64
+            } else {
+                (paragraph.line_spacing.max(0.01)) as f64
+            },
+            contextual_spacing: paragraph.contextual_spacing,
+            keep_next: paragraph.keep_next,
+            keep_lines: paragraph.keep_lines,
+            widow_control: paragraph.widow_control,
+            page_break_before: paragraph.page_break_before,
+        }
+    }
+}
+
+impl Default for ParagraphDraft {
+    fn default() -> Self {
+        Self {
+            alignment: "left".into(),
+            direction: "ltr".into(),
+            indent_left: 0.0,
+            indent_right: 0.0,
+            special: "none".into(),
+            special_amount: 0.0,
+            tab_position: 0.0,
+            tab_alignment: "left".into(),
+            tab_leader: "none".into(),
+            tabs: Vec::new(),
+            space_before: 0.0,
+            space_after: 8.0,
+            line_rule: "multiple".into(),
+            line_value: 1.08,
+            contextual_spacing: false,
+            keep_next: false,
+            keep_lines: false,
+            widow_control: true,
+            page_break_before: false,
+        }
+    }
 }
 
 impl Editor {
@@ -77,7 +172,10 @@ impl Editor {
                 self.tools.text.clear();
                 self.tools.dialog = Some(ToolDialog::MathText);
             }
-            "openParagraphDialog" => self.tools.dialog = Some(ToolDialog::Paragraph),
+            "openParagraphDialog" => {
+                self.tools.para_draft = None;
+                self.tools.dialog = Some(ToolDialog::Paragraph);
+            }
             "setTextColor" | "setColor" => {
                 let color = color_argument(args);
                 self.format.color = color.clone();
@@ -404,57 +502,152 @@ impl Editor {
                         });
                     }
                     ToolDialog::Paragraph => {
-                        let mut indent = self
-                            .document
-                            .paragraphs
-                            .get(self.active)
-                            .map(|paragraph| paragraph.indent / 96.0)
-                            .unwrap_or(0.0);
-                        let mut spacing = self
-                            .document
-                            .paragraphs
-                            .get(self.active)
-                            .map(|paragraph| paragraph.line_spacing.max(1.0))
-                            .unwrap_or(1.15);
-                        ui.horizontal(|ui| {
-                            ui.label("Left Indent (Inches)");
-                            if ui
-                                .add(
-                                    egui::DragValue::new(&mut indent)
-                                        .speed(0.05)
-                                        .range(0.0..=4.0),
-                                )
-                                .changed()
-                            {
-                                self.checkpoint();
-                                if let Some(paragraph) =
-                                    self.document.paragraphs.get_mut(self.active)
-                                {
-                                    paragraph.indent = indent * 96.0;
+                        if self.tools.para_draft.is_none() {
+                            self.tools.para_draft = Some(ParagraphDraft::from_paragraph(
+                                self.document.paragraphs.get(self.active),
+                            ));
+                        }
+                        let mut confirmed = false;
+                        let mut cancelled = false;
+                        {
+                            let draft = self.tools.para_draft.as_mut().unwrap();
+                            ui.columns(2, |columns| {
+                                columns[0].label(RichText::new("General").weak().small());
+                                field_row(&mut columns[0], "Alignment", |ui| {
+                                    combo(ui, "paragraph-align", &mut draft.alignment, &[
+                                        ("left", "Left"),
+                                        ("center", "Centered"),
+                                        ("right", "Right"),
+                                        ("justify", "Justified"),
+                                    ]);
+                                });
+                                field_row(&mut columns[0], "Direction", |ui| {
+                                    combo(ui, "paragraph-direction", &mut draft.direction, &[
+                                        ("rtl", "Right-to-left"),
+                                        ("ltr", "Left-to-right"),
+                                    ]);
+                                });
+                                columns[0]
+                                    .label(RichText::new("Indentation").weak().small());
+                                field_row(&mut columns[0], "Before text", |ui| {
+                                    unit_drag(ui, &mut draft.indent_left, "in");
+                                });
+                                field_row(&mut columns[0], "After text", |ui| {
+                                    unit_drag(ui, &mut draft.indent_right, "in");
+                                });
+                                field_row(&mut columns[0], "Special", |ui| {
+                                    combo(ui, "paragraph-special", &mut draft.special, &[
+                                        ("none", "(none)"),
+                                        ("firstLine", "First line"),
+                                        ("hanging", "Hanging"),
+                                    ]);
+                                });
+                                columns[0]
+                                    .label(RichText::new("Tab stops").weak().small());
+                                if draft.tabs.is_empty() {
+                                    columns[0].label(RichText::new("No tab stops set.").weak().small());
+                                } else {
+                                    let mut remove_tab = None;
+                                    for index in 0..draft.tabs.len() {
+                                        let tab = draft.tabs[index].clone();
+                                        columns[0].horizontal(|ui| {
+                                            ui.label(format!(
+                                                "{} in {} {}",
+                                                tab.position / 96.0,
+                                                tab.alignment,
+                                                tab.leader
+                                            ));
+                                            if ui.small_button("Remove").clicked() {
+                                                remove_tab = Some(index);
+                                            }
+                                        });
+                                    }
+                                    if let Some(index) = remove_tab {
+                                        draft.tabs.remove(index);
+                                    }
                                 }
-                                self.changed(state);
+                                field_row(&mut columns[0], "Position", |ui| {
+                                    unit_drag(ui, &mut draft.tab_position, "in");
+                                });
+                                field_row(&mut columns[0], "Alignment", |ui| {
+                                    combo(ui, "tab-align", &mut draft.tab_alignment, &[
+                                        ("left", "Left"),
+                                        ("center", "Center"),
+                                        ("right", "Right"),
+                                        ("decimal", "Decimal"),
+                                    ]);
+                                });
+                                field_row(&mut columns[0], "Leader", |ui| {
+                                    combo(ui, "tab-leader", &mut draft.tab_leader, &[
+                                        ("none", "None"),
+                                        ("dot", "Dotted"),
+                                        ("hyphen", "Dashed"),
+                                        ("underscore", "Underlined"),
+                                    ]);
+                                });
+                                columns[0].horizontal(|ui| {
+                                    if ui.button("Set").clicked() {
+                                        draft.tabs.retain(|tab| {
+                                            (tab.position as f64 - draft.tab_position * 96.0).abs() > 0.5
+                                        });
+                                        draft.tabs.push(TabStop {
+                                            position: (draft.tab_position * 96.0) as f32,
+                                            alignment: draft.tab_alignment.clone(),
+                                            leader: draft.tab_leader.clone(),
+                                        });
+                                        draft.tabs.sort_by(|a, b| {
+                                            a.position.partial_cmp(&b.position).unwrap()
+                                        });
+                                    }
+                                    if ui.button("Clear all").clicked() {
+                                        draft.tabs.clear();
+                                    }
+                                });
+
+                                columns[1].label(RichText::new("Spacing").weak().small());
+                                field_row(&mut columns[1], "Before", |ui| {
+                                    unit_drag(ui, &mut draft.space_before, "pt");
+                                });
+                                field_row(&mut columns[1], "After", |ui| {
+                                    unit_drag(ui, &mut draft.space_after, "pt");
+                                });
+                                field_row(&mut columns[1], "Line spacing", |ui| {
+                                    combo(ui, "line-rule", &mut draft.line_rule, &[
+                                        ("multiple", "Multiple"),
+                                        ("atLeast", "At least"),
+                                        ("exact", "Exactly"),
+                                    ]);
+                                });
+                                field_row(&mut columns[1], "At", |ui| {
+                                    unit_drag(ui, &mut draft.line_value, "");
+                                });
+                                columns[1].checkbox(
+                                    &mut draft.contextual_spacing,
+                                    "Don't add space between paragraphs of the same style",
+                                );
+                                columns[1]
+                                    .label(RichText::new("Pagination").weak().small());
+                                columns[1].checkbox(&mut draft.keep_next, "Keep with next");
+                                columns[1].checkbox(&mut draft.widow_control, "Widow/Orphan control");
+                                columns[1].checkbox(&mut draft.keep_lines, "Keep lines together");
+                                columns[1]
+                                    .checkbox(&mut draft.page_break_before, "Page break before");
+                            });
+                        }
+                        ui.horizontal(|ui| {
+                            if ui.button("Cancel").clicked() {
+                                cancelled = true;
+                            }
+                            if ui.button("OK").clicked() {
+                                confirmed = true;
                             }
                         });
-                        ui.horizontal(|ui| {
-                            ui.label("Line Spacing");
-                            if ui
-                                .add(
-                                    egui::DragValue::new(&mut spacing)
-                                        .speed(0.05)
-                                        .range(0.5..=5.0),
-                                )
-                                .changed()
-                            {
-                                self.checkpoint();
-                                if let Some(paragraph) =
-                                    self.document.paragraphs.get_mut(self.active)
-                                {
-                                    paragraph.line_spacing = spacing;
-                                }
-                                self.changed(state);
-                            }
-                        });
-                        if ui.button("Done").clicked() {
+                        if confirmed {
+                            let draft = self.tools.para_draft.take().unwrap();
+                            self.apply_paragraph_draft(&draft, state);
+                            close = true;
+                        } else if cancelled {
+                            self.tools.para_draft = None;
                             close = true;
                         }
                     }
@@ -600,6 +793,76 @@ impl Editor {
         self.selection = cursor..cursor;
         self.pending_selection = Some((self.active, cursor..cursor));
         self.changed(state);
+    }
+
+    fn apply_paragraph_draft(&mut self, draft: &ParagraphDraft, state: &mut AppState) {
+        self.checkpoint();
+        let mut indices = self.selected_paragraph_indices();
+        if indices.is_empty() {
+            indices.push(self.active.min(self.document.paragraphs.len().saturating_sub(1)));
+        }
+        for index in indices {
+            let Some(paragraph) = self.document.paragraphs.get_mut(index) else {
+                continue;
+            };
+            paragraph.alignment = match draft.alignment.as_str() {
+                "center" => Alignment::Center,
+                "right" => Alignment::Right,
+                "justify" => Alignment::Justify,
+                _ => Alignment::Left,
+            };
+            paragraph.bidi = draft.direction == "rtl";
+            paragraph.indent = (draft.indent_left.max(0.0) * 96.0) as f32;
+            paragraph.indent_right = (draft.indent_right.max(0.0) * 96.0) as f32;
+            paragraph.special = (draft.special != "none").then(|| draft.special.clone());
+            paragraph.special_amount = (draft.special_amount.max(0.0) * 96.0) as f32;
+            paragraph.space_before = draft.space_before.max(0.0) as f32;
+            paragraph.space_after = draft.space_after.max(0.0) as f32;
+            paragraph.line_rule =
+                (draft.line_rule != "multiple").then(|| draft.line_rule.clone());
+            paragraph.line_spacing = draft.line_value.max(0.01) as f32;
+            paragraph.contextual_spacing = draft.contextual_spacing;
+            paragraph.keep_next = draft.keep_next;
+            paragraph.keep_lines = draft.keep_lines;
+            paragraph.widow_control = draft.widow_control;
+            paragraph.page_break_before = draft.page_break_before;
+            paragraph.tabs = draft.tabs.clone();
+        }
+        self.changed(state);
+    }
+}
+
+fn field_row(ui: &mut egui::Ui, label: &str, content: impl FnOnce(&mut egui::Ui)) {
+    ui.horizontal(|ui| {
+        ui.add_sized(
+            egui::vec2(90.0, 24.0),
+            egui::Label::new(RichText::new(label)),
+        );
+        content(ui);
+    });
+}
+
+fn combo(ui: &mut egui::Ui, id: &str, value: &mut String, options: &[(&str, &str)]) {
+    let selected = options
+        .iter()
+        .find(|(key, _)| *key == value.as_str())
+        .map(|(_, label)| *label)
+        .unwrap_or(options[0].1);
+    egui::ComboBox::from_id_salt(id)
+        .selected_text(selected)
+        .show_ui(ui, |ui| {
+            for (key, label) in options {
+                if ui.selectable_label(value.as_str() == *key, *label).clicked() {
+                    *value = (*key).to_string();
+                }
+            }
+        });
+}
+
+fn unit_drag(ui: &mut egui::Ui, value: &mut f64, unit: &str) {
+    ui.add(egui::DragValue::new(value).speed(0.05).range(0.0..=999.0));
+    if !unit.is_empty() {
+        ui.label(unit);
     }
 }
 
