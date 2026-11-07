@@ -18,6 +18,16 @@ impl Editor {
                 Frame::new()
                     .fill(colors.app_surface)
                     .stroke(Stroke::new(1.0_f32, colors.app_border))
+                    .shadow(egui::Shadow {
+                        offset: [0, 12],
+                        blur: 24,
+                        spread: 0,
+                        color: Color32::from_black_alpha(if colors.app_bg.r() < 128 {
+                            120
+                        } else {
+                            70
+                        }),
+                    })
                     .corner_radius(18)
                     .inner_margin(28),
             )

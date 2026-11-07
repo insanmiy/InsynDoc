@@ -50,7 +50,7 @@ impl Editor {
                     let input_frame = Frame::new()
                         .stroke(Stroke::new(1.0_f32, colors.app_border))
                         .corner_radius(5)
-                        .inner_margin(Margin::symmetric(10, 4))
+                        .inner_margin(Margin::symmetric(10, 8))
                         .show(ui, |ui| {
                             ui.set_width((input_width - 20.0).max(80.0));
                             ui.horizontal(|ui| {
@@ -150,7 +150,7 @@ impl Editor {
                         ui.spacing_mut().item_spacing.x = 8.0;
                         let width = (ui.available_width() - 164.0).max(80.0);
                         let replacement = ui.add_sized(
-                            vec2(width, 34.0),
+                            vec2(width, 38.0),
                             TextEdit::singleline(&mut self.replacement)
                                 .hint_text("Replace With")
                                 .font(FontId::proportional(12.0)),
@@ -178,7 +178,7 @@ impl Editor {
                                 .size()
                                 .x;
                             let (rect, response) = ui.allocate_exact_size(
-                                vec2(text_w + 28.0, 24.0),
+                                vec2(text_w + 28.0, 30.0),
                                 egui::Sense::click(),
                             );
                             let hovered = enabled && response.hovered();

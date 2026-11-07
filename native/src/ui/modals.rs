@@ -126,6 +126,7 @@ pub fn draw(ctx: &egui::Context, state: &mut AppState, assets: &ChromeAssets, ou
             Frame::new()
                 .fill(c.app_surface)
                 .stroke(Stroke::new(1.0_f32, c.app_border))
+                .shadow(modal_shadow(&c))
                 .corner_radius(egui::CornerRadius::same(18))
                 .inner_margin(Margin {
                     left: 28,
@@ -178,6 +179,15 @@ fn close_download_on_outside_click(ctx: &egui::Context, state: &mut AppState) {
         .unwrap_or(Rect::NOTHING);
     if !trigger.contains(pos) && !popup.contains(pos) {
         state.modal = Modal::None;
+    }
+}
+
+fn modal_shadow(c: &UiColors) -> egui::Shadow {
+    egui::Shadow {
+        offset: [0, 12],
+        blur: 24,
+        spread: 0,
+        color: Color32::from_black_alpha(if c.app_bg.r() < 128 { 120 } else { 70 }),
     }
 }
 
