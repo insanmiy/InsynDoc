@@ -642,7 +642,7 @@ fn theme_card(
     card_w: f32,
 ) {
     // .theme-option — flex 1, border 2px, padding 5, radius 10.
-    let preview_h = 100.0;
+    let preview_h = 92.0;
     let caption_h = 32.0;
     let (rect, response) = ui.allocate_exact_size(
         vec2(card_w, 7.0 + preview_h + caption_h + 7.0),
@@ -1039,12 +1039,12 @@ fn editor_toggle(
     description: &str,
     field: fn(&mut Preferences) -> &mut bool,
 ) {
-    ui.add_space(13.0);
+    ui.add_space(11.0);
     let width = ui.available_width();
     ui.horizontal(|ui| {
         ui.spacing_mut().item_spacing.x = 16.0;
         ui.allocate_ui_with_layout(
-            vec2((width - 50.0).max(80.0), 40.0),
+            vec2((width - 50.0).max(80.0), 38.0),
             egui::Layout::top_down(egui::Align::LEFT),
             |ui| {
                 ui.set_min_width((width - 50.0).max(80.0));
@@ -1063,7 +1063,7 @@ fn editor_toggle(
             },
         );
         ui.allocate_ui_with_layout(
-            vec2(34.0, 40.0),
+            vec2(34.0, 38.0),
             egui::Layout::left_to_right(egui::Align::Center),
             |ui| {
                 let value_ref = field(&mut state.preferences);
@@ -1221,7 +1221,7 @@ fn draw_shortcuts(ui: &mut egui::Ui, c: &UiColors) {
         });
     }
     modal_footer(ui, |ui| {
-        let done = primary_button(ui, c, None, "Done", 28.0, true);
+        let done = primary_button(ui, c, None, "Done", 38.0, true);
         if done.clicked() {
             request_close(ui);
         }
@@ -1315,7 +1315,7 @@ fn draw_statistics(ui: &mut egui::Ui, state: &AppState, c: &UiColors) {
         ui.add_space(12.0);
     }
     modal_footer(ui, |ui| {
-        let done = primary_button(ui, c, None, "Done", 28.0, true);
+        let done = primary_button(ui, c, None, "Done", 38.0, true);
         if done.clicked() {
             request_close(ui);
         }

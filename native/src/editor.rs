@@ -97,7 +97,7 @@ impl Default for Editor {
             search_open: false,
             search_query: String::new(),
             search_needs_focus: false,
-            search_selected: 0,
+            search_selected: usize::MAX,
             horizontal_scroll: 0.0,
             viewport_width: 1050.0,
             queued_commands: Vec::new(),
@@ -265,6 +265,7 @@ impl Editor {
                 self.search_open = true;
                 self.search_needs_focus = true;
                 self.search_query.clear();
+                self.search_selected = usize::MAX;
             }
             "scrollToPage" => {
                 let page = args

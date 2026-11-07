@@ -131,7 +131,7 @@ impl Editor {
                     .filter(|(label, _, _)| label.to_lowercase().contains(&query))
                     .collect();
                 if query_changed {
-                    self.search_selected = 0;
+                    self.search_selected = usize::MAX;
                 }
                 if !filtered.is_empty() {
                     if nav_home {
@@ -139,18 +139,28 @@ impl Editor {
                     } else if nav_end {
                         self.search_selected = filtered.len() - 1;
                     } else if nav != 0 {
-                        self.search_selected = (self.search_selected as i32 + nav)
-                            .rem_euclid(filtered.len() as i32)
-                            as usize;
+                        self.search_selected = if self.search_selected == usize::MAX {
+                            if nav > 0 {
+                                0
+                            } else {
+                                filtered.len() - 1
+                            }
+                        } else {
+                            (self.search_selected as i32 + nav)
+                                .rem_euclid(filtered.len() as i32)
+                                as usize
+                        };
                     }
-                    self.search_selected = self.search_selected.min(filtered.len() - 1);
+                    if self.search_selected != usize::MAX {
+                        self.search_selected = self.search_selected.min(filtered.len() - 1);
+                    }
                 }
                 if nav_enter {
                     if let Some(&(_, command, _)) = filtered.get(self.search_selected) {
                         selected = Some(command);
                     }
                 }
-                let results_height = 400.0_f32.min(ctx.screen_rect().height() * 0.55);
+                let results_height = 360.0_f32.min(ctx.screen_rect().height() * 0.55);
                 ui.allocate_ui_with_layout(
                     vec2(ui.available_width(), results_height),
                     egui::Layout::top_down(Align::LEFT),
