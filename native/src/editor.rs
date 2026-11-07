@@ -21,6 +21,8 @@ pub struct Editor {
     selection: Range<usize>,
     document_selected: bool,
     cross_selection: Option<DocumentSelection>,
+    drag_anchor: Option<DocumentPosition>,
+    drag_best: Option<(f32, usize, usize)>,
     format: TextFormat,
     find: String,
     replacement: String,
@@ -77,6 +79,8 @@ impl Default for Editor {
             selection: 0..0,
             document_selected: false,
             cross_selection: None,
+            drag_anchor: None,
+            drag_best: None,
             format: TextFormat::default(),
             find: String::new(),
             replacement: String::new(),
@@ -110,6 +114,8 @@ impl Editor {
         self.selection = 0..0;
         self.document_selected = false;
         self.cross_selection = None;
+        self.drag_anchor = None;
+        self.drag_best = None;
         self.format = TextFormat::default();
         self.pending_selection = Some((0, 0..0));
         self.scroll_paragraph = Some(0);
@@ -491,6 +497,7 @@ impl Editor {
                     });
                 self.horizontal_scroll = scroll.state.offset.x;
             });
+        self.finish_text_drag(ctx);
         self.show_tools(ctx, state);
         self.show_menu_search(ctx, state, &colors);
         self.sync_state(state);
@@ -635,11 +642,25 @@ impl Editor {
                         egui::text::CCursor::new(range.end),
                     )));
                 edit_state.store(ui.ctx(), id);
-                if !state.surface.find_open {
-                    ui.memory_mut(|memory| memory.request_focus(id));
+                if !state.surface.find_open && self.cross_selection.is_none() {
+                    if !ui.memory(|memory| memory.has_focus(id)) {
+                        ui.memory_mut(|memory| memory.request_focus(id));
+                    }
+                    self.active_id = Some(id);
                 }
                 self.pending_selection = None;
             }
+        }
+        if self.cross_selection.is_some() && ui.memory(|memory| memory.has_focus(id)) {
+            let anchor = self.cross_selection.and_then(|selection| {
+                (selection.anchor.paragraph == index).then_some(selection.anchor.offset)
+            }).unwrap_or(0);
+            let mut edit_state =
+                egui::text_edit::TextEditState::load(ui.ctx(), id).unwrap_or_default();
+            edit_state.cursor.set_char_range(Some(egui::text::CCursorRange::one(
+                egui::text::CCursor::new(anchor),
+            )));
+            edit_state.store(ui.ctx(), id);
         }
         let selection = egui::text_edit::TextEditState::load(ui.ctx(), id)
                 .and_then(|edit| edit.cursor.char_range())
@@ -676,6 +697,7 @@ impl Editor {
                     .show(ui)
             })
             .inner;
+        self.track_text_drag(ui, index, &output);
         if output.response.clicked() {
             self.document_selected = false;
             self.cross_selection = None;
@@ -731,6 +753,83 @@ impl Editor {
                 edit_runs(&runs, &old_text, &text, &insertion_format);
             self.changed(state);
         }
+    }
+
+    fn track_text_drag(
+        &mut self,
+        ui: &egui::Ui,
+        index: usize,
+        output: &egui::text_edit::TextEditOutput,
+    ) {
+        if output.response.drag_started() && self.drag_anchor.is_none() {
+            if let Some(pos) = ui.input(|input| input.pointer.interact_pos()) {
+                self.document_selected = false;
+                let offset = output
+                    .galley
+                    .cursor_from_pos(pos.to_vec2() - output.galley_pos.to_vec2())
+                    .ccursor
+                    .index;
+                self.drag_anchor = Some(DocumentPosition {
+                    paragraph: index,
+                    offset,
+                });
+                self.drag_best = None;
+            }
+        }
+        if self.drag_anchor.is_none() {
+            return;
+        }
+        let Some(pos) = ui.input(|input| input.pointer.interact_pos()) else {
+            return;
+        };
+        if !ui.input(|input| input.pointer.primary_down()) {
+            return;
+        }
+        let offset = output
+            .galley
+            .cursor_from_pos(pos.to_vec2() - output.galley_pos.to_vec2())
+            .ccursor
+            .index;
+        let rect = output.galley.rect.translate(output.galley_pos.to_vec2());
+        let distance = if pos.y < rect.top() {
+            rect.top() - pos.y
+        } else if pos.y > rect.bottom() {
+            pos.y - rect.bottom()
+        } else {
+            0.0
+        };
+        let candidate = (distance, index, offset);
+        if self.drag_best.is_none_or(|best| candidate.0 < best.0) {
+            self.drag_best = Some(candidate);
+        }
+    }
+
+    fn finish_text_drag(&mut self, ctx: &egui::Context) {
+        let Some(anchor) = self.drag_anchor else {
+            return;
+        };
+        let down = ctx.input(|input| input.pointer.primary_down());
+        let Some((_, paragraph, offset)) = self.drag_best else {
+            if !down {
+                self.drag_anchor = None;
+            }
+            return;
+        };
+        let head = DocumentPosition { paragraph, offset };
+        self.cross_selection = if anchor == head {
+            None
+        } else {
+            Some(DocumentSelection { anchor, head })
+        };
+        self.active = head.paragraph;
+        self.selection = head.offset..head.offset;
+        self.scroll_paragraph = Some(head.paragraph);
+        if !down {
+            self.pending_selection = Some((head.paragraph, head.offset..head.offset));
+            self.drag_anchor = None;
+            self.drag_best = None;
+        }
+        ctx.request_repaint();
     }
 
     fn paste_paragraphs(
@@ -1472,6 +1571,27 @@ mod tests {
         assert!(editor.cross_selection.is_none());
         assert_eq!(editor.active, 0);
         assert_eq!(editor.selection, 1..1);
+    }
+
+    #[test]
+    fn drag_release_keeps_cross_paragraph_selection() {
+        let context = egui::Context::default();
+        crate::theme::install_fonts(&context, crate::INTER_TTF, crate::INTER_MEDIUM_TTF, crate::INTER_SEMIBOLD_TTF);
+        let mut editor = Editor::default();
+        editor.document.replace_plain_text("ab\ncd");
+        editor.drag_anchor = Some(DocumentPosition { paragraph: 0, offset: 1 });
+        editor.drag_best = Some((0.0, 1, 1));
+        let input = egui::RawInput {
+            screen_rect: Some(egui::Rect::from_min_size(egui::Pos2::ZERO, vec2(1280.0, 800.0))),
+            ..Default::default()
+        };
+        let _ = context.run(input, |ctx| editor.finish_text_drag(ctx));
+        assert_eq!(editor.selected_text().as_deref(), Some("b\nc"));
+        assert!(editor.drag_anchor.is_none());
+        assert!(editor.drag_best.is_none());
+        assert_eq!(editor.pending_selection, Some((1, 1..1)));
+        let _ = context.run(egui::RawInput::default(), |ctx| editor.finish_text_drag(ctx));
+        assert_eq!(editor.selected_text().as_deref(), Some("b\nc"));
     }
 
     #[test]
