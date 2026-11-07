@@ -404,6 +404,32 @@ pub fn draw_download_popup(
         return;
     }
     let pos = Pos2::new(rect.right() - 270.0, rect.bottom() + 6.0);
+    let selected_id = egui::Id::new("download_selected_index");
+    let mut selected = ctx
+        .data(|d| d.get_temp::<usize>(selected_id))
+        .unwrap_or(0)
+        .min(DOWNLOAD_FORMATS.len() - 1);
+    use egui::Key;
+    if ctx.input_mut(|input| input.consume_key(egui::Modifiers::NONE, Key::ArrowDown)) {
+        selected = (selected + 1) % DOWNLOAD_FORMATS.len();
+    }
+    if ctx.input_mut(|input| input.consume_key(egui::Modifiers::NONE, Key::ArrowUp)) {
+        selected = (selected + DOWNLOAD_FORMATS.len() - 1) % DOWNLOAD_FORMATS.len();
+    }
+    if ctx.input_mut(|input| input.consume_key(egui::Modifiers::NONE, Key::Home)) {
+        selected = 0;
+    }
+    if ctx.input_mut(|input| input.consume_key(egui::Modifiers::NONE, Key::End)) {
+        selected = DOWNLOAD_FORMATS.len() - 1;
+    }
+    let mut activated = None;
+    if ctx.input_mut(|input| {
+        input.consume_key(egui::Modifiers::NONE, Key::Enter)
+            || input.consume_key(egui::Modifiers::NONE, Key::Space)
+    }) {
+        activated = Some(selected);
+    }
+    ctx.data_mut(|d| d.insert_temp(selected_id, selected));
     let inner = egui::Area::new(egui::Id::new("download_popup"))
         .order(egui::Order::Foreground)
         .pivot(egui::Align2::RIGHT_TOP)
@@ -416,10 +442,11 @@ pub fn draw_download_popup(
                 .inner_margin(egui::Margin::same(5))
                 .show(ui, |ui| {
                     ui.set_width(270.0);
-                    for (format, label) in DOWNLOAD_FORMATS {
+                    for (index, (format, label)) in DOWNLOAD_FORMATS.iter().enumerate() {
+                        let highlighted = index == selected;
                         let (item_rect, response) =
                             ui.allocate_exact_size(vec2(260.0, 34.0), Sense::click());
-                        if response.hovered() {
+                        if response.hovered() || highlighted {
                             ui.painter().rect_filled(
                                 item_rect,
                                 egui::CornerRadius::same(4),
@@ -440,6 +467,11 @@ pub fn draw_download_popup(
                     }
                 });
         });
+    if let Some(index) = activated {
+        let (format, _) = DOWNLOAD_FORMATS[index];
+        out.command_args("download", json!({ "format": format }));
+        state.modal = Modal::None;
+    }
     ctx.data_mut(|d| {
         d.insert_temp(egui::Id::new("download_popup_rect"), inner.response.rect);
     });
