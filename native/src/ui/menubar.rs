@@ -335,13 +335,13 @@ const INSERT_ITEMS: &[MenuEntry] = &[
     submenu("insert.break", "Break", BREAK_ITEMS),
     item("Table Of Contents", None, MenuAction::EditorExec(r#"{"type":"insertToc"}"#)),
     item(
-        "Bookmark",
+        "Bookmark…",
         Some("Ctrl+Shift+F5"),
         MenuAction::EditorExec(r#"{"type":"openBookmarkDialog"}"#),
     ),
     item(
-        "Go To Bookmark",
-        Some("Ctrl+G"),
+        "Go To Bookmark…",
+        None,
         MenuAction::EditorExec(r#"{"type":"openBookmarkDialog"}"#),
     ),
     item("Watermark", None, MenuAction::EditorExec(r#"{"type":"openWatermarkDialog"}"#)),
