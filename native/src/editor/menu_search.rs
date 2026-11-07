@@ -22,7 +22,7 @@ impl Editor {
                     .inner_margin(28),
             )
             .show(ctx, |ui| {
-                ui.set_width(462.0_f32.min(ctx.screen_rect().width() - 80.0));
+                ui.set_width(524.0_f32.min(ctx.screen_rect().width() - 80.0));
                 ui.horizontal(|ui| {
                     ui.heading(
                         RichText::new("Search The Menus")
@@ -73,19 +73,19 @@ impl Editor {
                     });
                 ui.painter().hline(
                     search.response.rect.x_range(),
-                    search.response.rect.bottom(),
+                    search.response.rect.bottom() - 12.0,
                     Stroke::new(2.0_f32, colors.app_accent),
                 );
                 ui.add_space(12.0);
                 let query = self.search_query.trim().to_lowercase();
-                let results_height = 360.0_f32.min(ctx.screen_rect().height() * 0.5);
+                let results_height = 400.0_f32.min(ctx.screen_rect().height() * 0.55);
                 ui.allocate_ui_with_layout(
                     vec2(ui.available_width(), results_height),
                     egui::Layout::top_down(Align::LEFT),
                     |ui| {
                         ui.set_min_height(results_height);
                         ui.spacing_mut().scroll.foreground_color = false;
-                        ui.spacing_mut().scroll.floating = false;
+                        ui.spacing_mut().scroll.floating = true;
                         ui.visuals_mut().widgets.inactive.bg_fill = colors.app_border;
                         egui::ScrollArea::vertical()
                             .max_height(results_height)
@@ -99,7 +99,7 @@ impl Editor {
                                     }
                                     found = true;
                                     let (rect, response) = ui.allocate_exact_size(
-                                        vec2(ui.available_width(), 42.0),
+                                        vec2(ui.available_width(), 40.0),
                                         egui::Sense::click(),
                                     );
                                     if response.hovered() {

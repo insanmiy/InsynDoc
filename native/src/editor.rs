@@ -491,7 +491,7 @@ impl Editor {
                             ui.add_space(inset);
                             ui.vertical(|ui| {
                                 ui.set_width(page_width);
-                                self.pages(ui, state, page_width, margin, zoom);
+                                self.pages(ui, state, page_width, margin, zoom, theme);
                             });
                         });
                     });
@@ -510,6 +510,7 @@ impl Editor {
         width: f32,
         margin: f32,
         zoom: f32,
+        theme: Theme,
     ) {
         if self.document.paragraphs.is_empty() {
             self.document.paragraphs.push(Paragraph::default());
@@ -539,11 +540,19 @@ impl Editor {
             let page = Frame::new()
                 .fill(Color32::WHITE)
                 .shadow(if state.surface.view == ViewMode::Pages {
-                    egui::Shadow {
-                        offset: [0, 2],
-                        blur: 8,
-                        spread: 0,
-                        color: Color32::from_black_alpha(18),
+                    match theme {
+                        Theme::Light => egui::Shadow {
+                            offset: [0, 6],
+                            blur: 26,
+                            spread: 0,
+                            color: Color32::from_rgba_unmultiplied(0x26, 0x36, 0x50, 0x1a),
+                        },
+                        Theme::Dark => egui::Shadow {
+                            offset: [0, 4],
+                            blur: 24,
+                            spread: 0,
+                            color: Color32::from_black_alpha(30),
+                        },
                     }
                 } else {
                     egui::Shadow::NONE
@@ -1249,17 +1258,18 @@ fn ruler(
         (origin, false),
         (rect.right() - right_margin, false),
     ] {
-        let y = if top { rect.top() } else { rect.bottom() - 6.0 };
+        let marker_h = 9.0;
+        let y = if top { rect.top() } else { rect.bottom() - marker_h };
         let points = if top {
             vec![
-                egui::pos2(x - 5.0, y),
-                egui::pos2(x + 5.0, y),
-                egui::pos2(x, y + 6.0),
+                egui::pos2(x - 7.0, y),
+                egui::pos2(x + 7.0, y),
+                egui::pos2(x, y + marker_h),
             ]
         } else {
             vec![
-                egui::pos2(x - 5.0, y + 6.0),
-                egui::pos2(x + 5.0, y + 6.0),
+                egui::pos2(x - 7.0, y + marker_h),
+                egui::pos2(x + 7.0, y + marker_h),
                 egui::pos2(x, y),
             ]
         };

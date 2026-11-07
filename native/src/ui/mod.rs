@@ -248,13 +248,13 @@ pub fn primary_button(
         Color32::WHITE
     };
     let font = theme::ui_font_id_weight(13.0, 500);
-    let icon_w = if icon.is_some() { 16.0 + 7.0 } else { 0.0 };
+    let icon_w = if icon.is_some() { 16.0 + 9.0 } else { 0.0 };
     let text_w = ui
         .painter()
         .layout_no_wrap(label_text.to_string(), font.clone(), fg)
         .size()
         .x;
-    let width = (text_w + icon_w + 28.0).max(40.0);
+    let width = (text_w + icon_w + 40.0).max(40.0);
     let (rect, mut response) = ui.allocate_exact_size(vec2(width, height), Sense::click());
     if !enabled_state {
         response = response.on_disabled_hover_text("");
@@ -279,7 +279,7 @@ pub fn primary_button(
         (fg.b() as f32 * alpha) as u8,
         255,
     );
-    let mut x = rect.left() + 14.0;
+    let mut x = rect.left() + 20.0;
     let cy = rect.center().y;
     if let Some(ic) = icon {
         icons::paint_icon_at(
@@ -289,7 +289,7 @@ pub fn primary_button(
             Rect::from_center_size(Pos2::new(x + 8.0, cy), vec2(16.0, 16.0)),
             fg_dim,
         );
-        x += 16.0 + 7.0;
+        x += 16.0 + 9.0;
     }
     ui.painter().text(
         Pos2::new(x, cy),

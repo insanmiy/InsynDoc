@@ -50,9 +50,9 @@ fn load_logo(ctx: &Context, brighten: bool) -> Option<egui::TextureHandle> {
         // Approximate the CSS dark-theme filter `brightness(2) saturate(0.8)`:
         // push channels toward white, then pull saturation down ~20%.
         for px in rgba.pixels_mut() {
-            let r = f32::from(px[0]) * 1.7;
-            let g = f32::from(px[1]) * 1.7;
-            let b = f32::from(px[2]) * 1.7;
+            let r = f32::from(px[0]) * 2.0;
+            let g = f32::from(px[1]) * 2.0;
+            let b = f32::from(px[2]) * 2.0;
             let gray = (r + g + b) / 3.0;
             px[0] = (gray + (r - gray) * 0.8).min(255.0) as u8;
             px[1] = (gray + (g - gray) * 0.8).min(255.0) as u8;

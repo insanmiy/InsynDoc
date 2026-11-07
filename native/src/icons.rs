@@ -106,6 +106,52 @@ fn svg_body(name: IconName) -> &'static str {
     }
 }
 
+/// Filled Material-style glyph paths (viewBox "0 -960 960 960", fill only,
+/// no stroke) used by the web toolbar buttons. Returns the raw `d` attribute
+/// for the glyph, or `None` when no filled variant exists.
+fn svg_body_filled(name: IconName) -> Option<&'static str> {
+    let path = match name {
+        IconName::Undo => "M280-200v-80h284q63 0 109.5-40T720-420q0-60-46.5-100T564-560H312l104 104-56 56-200-200 200-200 56 56-104 104h252q97 0 166.5 63T800-420q0 94-69.5 157T564-200H280Z",
+        IconName::Redo => "M396-200q-97 0-166.5-63T160-420q0-94 69.5-157T396-640h252L544-744l56-56 200 200-200 200-56-56 104-104H396q-63 0-109.5 40T240-420q0 60 46.5 100T396-280h284v80H396Z",
+        IconName::Painter => "M440-80q-33 0-56.5-23.5T360-160v-160H240q-33 0-56.5-23.5T160-400v-280q0-66 47-113t113-47h480v440q0 33-23.5 56.5T720-320H600v160q0 33-23.5 56.5T520-80h-80ZM240-560h480v-200h-40v160h-80v-160h-40v80h-80v-80H320q-33 0-56.5 23.5T240-680v120Zm0 160h480v-80H240v80Zm0 0v-80 80Z",
+        IconName::Bold => "M272-200v-560h221q65 0 120 40t55 111q0 51-23 78.5T602-491q25 11 55.5 41t30.5 90q0 89-65 124.5T501-200H272Zm121-112h104q48 0 58.5-24.5T566-372q0-11-10.5-35.5T494-432H393v120Zm0-228h93q33 0 48-17t15-38q0-24-17-39t-44-15h-95v109Z",
+        IconName::Italic => "M200-200v-100h160l120-360H320v-100h400v100H580L460-300h140v100H200Z",
+        IconName::Underline => "M200-120v-80h560v80H200Zm123-223q-56-63-56-167v-330h103v336q0 56 28 91t82 35q54 0 82-35t28-91v-336h103v330q0 104-56 167t-157 63q-101 0-157-63Z",
+        IconName::TextColor => "M80 0v-160h800V0H80Zm140-280 210-560h100l210 560h-96l-50-144H368l-52 144h-96Zm176-224h168l-82-232h-4l-82 232Z",
+        IconName::Highlight => "M544-400 440-504 240-304l104 104 200-200Zm-47-161 104 104 199-199-104-104-199 199Zm-84-28 216 216-229 229q-24 24-56 24t-56-24l-2-2-26 26H60l126-126-2-2q-24-24-24-56t24-56l229-229Zm0 0 227-227q24-24 56-24t56 24l104 104q24 24 24 56t-24 56L629-373 413-589Z",
+        IconName::AlignLeft => "M120-120v-80h720v80H120Zm0-160v-80h480v80H120Zm0-160v-80h720v80H120Zm0-160v-80h480v80H120Zm0-160v-80h720v80H120Z",
+        // Derived from the Align Left bar pattern: middle bars centered,
+        // trailing bars right-aligned, justify uses full-width bars.
+        IconName::AlignCenter => "M120-120v-80h720v80H120Zm240-160v-80h480v80H240Zm0-160v-80h720v80H120Zm240-160v-80h480v80H240Zm0-160v-80h720v80H120Z",
+        IconName::AlignRight => "M120-120v-80h720v80H120Zm360-160v-80h480v80H360Zm0-160v-80h720v80H120Zm360-160v-80h480v80H360Zm0-160v-80h720v80H120Z",
+        IconName::AlignJustify => "M120-120v-80h720v80H120Zm0-160v-80h720v80H120Zm0-160v-80h720v80H120Zm0-160v-80h720v80H120Zm0-160v-80h720v80H120Z",
+        IconName::LineSpacing => "M240-160 80-320l56-56 64 62v-332l-64 62-56-56 160-160 160 160-56 56-64-62v332l64-62 56 56-160 160Zm240-40v-80h400v80H480Zm0-240v-80h400v80H480Zm0-240v-80h400v80H480Z",
+        IconName::BulletList => "M360-200v-80h480v80H360Zm0-240v-80h480v80H360Zm0-240v-80h480v80H360ZM200-160q-33 0-56.5-23.5T120-240q0-33 23.5-56.5T200-320q33 0 56.5 23.5T280-240q0 33-23.5 56.5T200-160Zm0-240q-33 0-56.5-23.5T120-480q0-33 23.5-56.5T200-560q33 0 56.5 23.5T280-480q0 33-23.5 56.5T200-400Zm-56.5-263.5Q120-687 120-720t23.5-56.5Q167-800 200-800t56.5 23.5Q280-753 280-720t-23.5 56.5Q233-640 200-640t-56.5-23.5Z",
+        IconName::NumberedList => "M120-80v-60h100v-30h-60v-60h60v-30H120v-60h120q17 0 28.5 11.5T280-280v40q0 17-11.5 28.5T240-200q17 0 28.5 11.5T280-160v40q0 17-11.5 28.5T240-80H120Zm0-280v-110q0-17 11.5-28.5T160-510h60v-30H120v-60h120q17 0 28.5 11.5T280-560v70q0 17-11.5 28.5T240-450h-60v30h100v60H120Zm60-280v-180h-60v-60h120v240h-60Zm180 440v-80h480v80H360Zm0-240v-80h480v80H360Zm0-240v-80h480v80H360Z",
+        IconName::Outdent => "M120-120v-80h720v80H120Zm320-160v-80h400v80H440Zm0-160v-80h400v80H440Zm0-160v-80h400v80H440ZM120-760v-80h720v80H120Zm160 440L120-480l160-160v320Z",
+        IconName::Indent => "M120-120v-80h720v80H120Zm320-160v-80h400v80H440Zm0-160v-80h400v80H440Zm0-160v-80h400v80H440ZM120-760v-80h720v80H120Zm0 440v-320l160 160-160 160Z",
+        IconName::ClearFormatting => "m528-546-93-93-121-121h486v120H568l-40 94ZM792-56 460-388l-80 188H249l119-280L56-792l56-56 736 736-56 56Z",
+        IconName::Link => "M440-280H280q-83 0-141.5-58.5T80-480q0-83 58.5-141.5T280-680h160v80H280q-50 0-85 35t-35 85q0 50 35 85t85 35h160v80ZM320-440v-80h320v80H320Zm200 160v-80h160q50 0 85-35t35-85q0-50-35-85t-85-35H520v-80h160q83 0 141.5 58.5T880-480q0 83-58.5 141.5T680-280H520Z",
+        IconName::Image => "M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm0-80h560v-560H200v560Zm40-80h480L570-480 450-320l-90-120-120 160Zm-40 80v-560 560Z",
+        IconName::Table => "M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm240-240H200v160h240v-160Zm80 0v160h240v-160H520Zm-80-80v-160H200v160h240Zm80 0h240v-160H520v160ZM200-680h560v-80H200v80Z",
+        IconName::More => "M240-400q-33 0-56.5-23.5T160-480q0-33 23.5-56.5T240-560q33 0 56.5 23.5T320-480q0 33-23.5 56.5T240-400Zm240 0q-33 0-56.5-23.5T400-480q0-33 23.5-56.5T480-560q33 0 56.5 23.5T560-480q0 33-23.5 56.5T480-400Zm240 0q-33 0-56.5-23.5T640-480q0-33 23.5-56.5T720-560q33 0 56.5 23.5T800-480q0 33-23.5 56.5T720-400Z",
+        // Filled down caret (Material expand_more) for dropdown triggers and
+        // colorsplit caret zones.
+        IconName::ChevronDown => "M480-345 240-585l56-56 184 184 184-184 56 56-240 240Z",
+        _ => return None,
+    };
+    Some(path)
+}
+
+fn svg_document_filled(name: IconName) -> Option<String> {
+    svg_body_filled(name).map(|path| {
+        format!(
+            "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 -960 960 960\" \
+             fill=\"#ffffff\"><path d=\"{path}\"/></svg>"
+        )
+    })
+}
+
 fn svg_document(name: IconName) -> String {
     let body = svg_body(name);
     // IconName::Settings already returns full <path>/<circle> elements; all
@@ -124,23 +170,33 @@ fn svg_document(name: IconName) -> String {
 
 const TEX_SIZE: u32 = 64;
 
-type IconCache = Mutex<HashMap<(IconName, u32), TextureHandle>>;
+type IconCache = Mutex<HashMap<(IconName, u32, bool), TextureHandle>>;
 
 fn cache() -> &'static IconCache {
     static CACHE: OnceLock<IconCache> = OnceLock::new();
     CACHE.get_or_init(|| Mutex::new(HashMap::new()))
 }
 
-fn render_icon(ctx: &Context, name: IconName, color: Color32) -> TextureId {
+fn render_icon(ctx: &Context, name: IconName, color: Color32, filled: bool) -> TextureId {
     let key_color = ((color.r() as u32) << 24)
         | ((color.g() as u32) << 16)
         | ((color.b() as u32) << 8)
         | color.a() as u32;
-    if let Some(handle) = cache().lock().unwrap().get(&(name, key_color)) {
+    if let Some(handle) = cache()
+        .lock()
+        .unwrap()
+        .get(&(name, key_color, filled))
+    {
         return handle.id();
     }
 
-    let svg = svg_document(name);
+    // Filled glyphs take precedence when requested and available; otherwise
+    // fall back to the stroke icon so non-toolbar callers still work.
+    let svg = if filled {
+        svg_document_filled(name).unwrap_or_else(|| svg_document(name))
+    } else {
+        svg_document(name)
+    };
     let tree = usvg::Tree::from_str(&svg, &usvg::Options::default()).expect("icon svg must parse");
     let size = tree.size();
     let scale = TEX_SIZE as f32 / size.width().max(size.height());
@@ -174,7 +230,7 @@ fn render_icon(ctx: &Context, name: IconName, color: Color32) -> TextureId {
     cache()
         .lock()
         .unwrap()
-        .insert((name, key_color), handle.clone());
+        .insert((name, key_color, filled), handle.clone());
     handle.id()
 }
 
@@ -182,6 +238,23 @@ fn render_icon(ctx: &Context, name: IconName, color: Color32) -> TextureId {
 /// current cursor position is NOT used; instead this paints at `rect` center.
 /// Call inside a sized ui region or pass an explicit rect via
 /// [`paint_icon_at`].
+fn paint_icon_at_inner(
+    ctx: &Context,
+    painter: &Painter,
+    name: IconName,
+    rect: egui::Rect,
+    color: Color32,
+    filled: bool,
+) {
+    let id = render_icon(ctx, name, color, filled);
+    painter.image(
+        id,
+        rect,
+        egui::Rect::from_min_max(egui::pos2(0.0, 0.0), egui::pos2(1.0, 1.0)),
+        Color32::WHITE,
+    );
+}
+
 pub fn paint_icon_at(
     ctx: &Context,
     painter: &Painter,
@@ -189,13 +262,19 @@ pub fn paint_icon_at(
     rect: egui::Rect,
     color: Color32,
 ) {
-    let id = render_icon(ctx, name, color);
-    painter.image(
-        id,
-        rect,
-        egui::Rect::from_min_max(egui::pos2(0.0, 0.0), egui::pos2(1.0, 1.0)),
-        Color32::WHITE,
-    );
+    paint_icon_at_inner(ctx, painter, name, rect, color, false);
+}
+
+/// Paint the filled Material-style glyph variant used by the web toolbar.
+/// Falls back to the stroke glyph when no filled path exists for `name`.
+pub fn paint_icon_filled(
+    ctx: &Context,
+    painter: &Painter,
+    name: IconName,
+    rect: egui::Rect,
+    color: Color32,
+) {
+    paint_icon_at_inner(ctx, painter, name, rect, color, true);
 }
 
 /// Spec-compatible helper: paint `name` at `size` points centered on `center`.
@@ -242,6 +321,38 @@ mod tests {
             let mut pixmap = tiny_skia::Pixmap::new(24, 24).unwrap();
             resvg::render(&tree, usvg::Transform::identity(), &mut pixmap.as_mut());
             assert!(pixmap.pixels().iter().any(|pixel| pixel.alpha() > 0), "{name:?}");
+        }
+    }
+
+    #[test]
+    fn toolbar_filled_glyphs_parse_and_render_visible_pixels() {
+        for name in [
+            IconName::Undo, IconName::Redo, IconName::Painter, IconName::Bold,
+            IconName::Italic, IconName::Underline, IconName::TextColor, IconName::Highlight,
+            IconName::AlignLeft, IconName::AlignCenter, IconName::AlignRight, IconName::AlignJustify,
+            IconName::LineSpacing, IconName::BulletList, IconName::NumberedList, IconName::Outdent,
+            IconName::Indent, IconName::ClearFormatting, IconName::Link, IconName::Image,
+            IconName::Table, IconName::More, IconName::ChevronDown,
+        ] {
+            let svg = svg_document_filled(name).unwrap_or_else(|| panic!("{name:?} has no filled glyph"));
+            assert!(svg.contains("viewBox=\"0 -960 960 960\""), "{name:?}");
+            assert!(svg.contains("fill=\"#ffffff\""), "{name:?}");
+            assert!(!svg.contains("stroke"), "{name:?}");
+            let tree = usvg::Tree::from_str(&svg, &usvg::Options::default()).unwrap();
+            let size = tree.size();
+            let scale = 48.0 / size.width().max(size.height());
+            let w = (size.width() * scale).round().max(1.0) as u32;
+            let h = (size.height() * scale).round().max(1.0) as u32;
+            let mut pixmap = tiny_skia::Pixmap::new(w, h).unwrap();
+            resvg::render(
+                &tree,
+                usvg::Transform::from_scale(scale, scale),
+                &mut pixmap.as_mut(),
+            );
+            assert!(
+                pixmap.pixels().iter().any(|pixel| pixel.alpha() > 0),
+                "{name:?} filled glyph rendered empty"
+            );
         }
     }
 }

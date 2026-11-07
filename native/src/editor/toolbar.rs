@@ -110,6 +110,7 @@ impl Editor {
                 self.changed(state);
             }
         }
+        separator(&mut row, colors);
         if row.available_width() >= 122.0 {
             let font = self
                 .format
@@ -168,7 +169,7 @@ impl Editor {
         if row.available_width() >= 92.0 {
             let mut size = self.format.font_size.unwrap_or(11.0);
             let mut changed = false;
-            if text_button(&mut row, colors, "-", 22.0).clicked() {
+            if text_button(&mut row, colors, "\u{2212}", 22.0).clicked() {
                 size = (size - 1.0).max(6.0);
                 changed = true;
             }
@@ -180,11 +181,28 @@ impl Editor {
                 .filter(|_| focused)
                 .unwrap_or_else(|| format!("{}", size.round() as u32));
             let (rect, _) = row.allocate_exact_size(vec2(40.0, 32.0), Sense::hover());
+            row.painter()
+                .rect_filled(rect, 6, colors.app_surface);
+            row.painter().rect_stroke(
+                rect,
+                6,
+                Stroke::new(1.0_f32, colors.app_border),
+                egui::StrokeKind::Inside,
+            );
             let response = row
                 .scope(|ui| {
-                    ui.visuals_mut().widgets.inactive.corner_radius = egui::CornerRadius::same(6);
-                    ui.visuals_mut().widgets.hovered.corner_radius = egui::CornerRadius::same(6);
-                    ui.visuals_mut().widgets.active.corner_radius = egui::CornerRadius::same(6);
+                    macro_rules! clear_frame {
+                        ($state:ident) => {{
+                            let visuals = &mut ui.visuals_mut().widgets.$state;
+                            visuals.bg_fill = Color32::TRANSPARENT;
+                            visuals.weak_bg_fill = Color32::TRANSPARENT;
+                            visuals.bg_stroke = Stroke::new(0.0_f32, Color32::TRANSPARENT);
+                            visuals.corner_radius = egui::CornerRadius::same(0);
+                        }};
+                    }
+                    clear_frame!(inactive);
+                    clear_frame!(hovered);
+                    clear_frame!(active);
                     ui.put(
                         rect,
                         egui::TextEdit::singleline(&mut draft)
@@ -232,37 +250,24 @@ impl Editor {
                 self.format_command(&json!({"type":"toggleMark","mark":mark}), state);
             }
         }
-        if row.available_width() >= 80.0 {
-            for (icon, label, is_highlight, underline) in [
-                (
-                    IconName::TextColor,
-                    "Text Color",
-                    false,
-                    Color32::from_rgb(239, 68, 68),
-                ),
-                (
-                    IconName::Highlight,
-                    "Highlight",
-                    true,
-                    Color32::from_rgb(250, 204, 21),
-                ),
+        if row.available_width() >= 104.0 {
+            let text_bar = self
+                .format
+                .color
+                .as_deref()
+                .and_then(hex_color)
+                .unwrap_or(Color32::from_rgb(0x20, 0x21, 0x24));
+            let highlight_bar = self
+                .format
+                .highlight
+                .as_deref()
+                .and_then(hex_color)
+                .unwrap_or(Color32::from_rgb(0xFA, 0xCC, 0x15));
+            for (icon, label, is_highlight, bar) in [
+                (IconName::TextColor, "Text Color", false, text_bar),
+                (IconName::Highlight, "Highlight", true, highlight_bar),
             ] {
-                let response = icon_button(&mut row, colors, icon, 38.0, false, true, label);
-                let bar = Rect::from_min_size(
-                    pos2(response.rect.left() + 8.0, response.rect.bottom() - 5.0),
-                    vec2(16.0, 3.0),
-                );
-                row.painter().rect_filled(bar, 0, underline);
-                icons::paint_icon_at(
-                    row.ctx(),
-                    row.painter(),
-                    IconName::ChevronDown,
-                    Rect::from_center_size(
-                        pos2(response.rect.right() - 5.0, response.rect.center().y),
-                        vec2(7.0, 7.0),
-                    ),
-                    colors.app_muted,
-                );
+                let response = colorsplit_button(&mut row, colors, icon, bar, label);
                 let mut picked = None;
                 popup(&row, label, &response, |ui| {
                     for (name, value) in [
@@ -290,7 +295,7 @@ impl Editor {
             }
         }
         separator(&mut row, colors);
-        if row.available_width() >= 44.0 {
+        if row.available_width() >= 34.0 {
             let alignment = self
                 .document
                 .paragraphs
@@ -303,8 +308,8 @@ impl Editor {
                 crate::document::Alignment::Justify => IconName::AlignJustify,
                 _ => IconName::AlignLeft,
             };
-            let response = icon_button(&mut row, colors, icon, 40.0, false, true, "Alignment");
-            draw_chevron(&row, colors, &response);
+            let response =
+                dropdown_icon_button(&mut row, colors, icon, false, true, "Alignment");
             let mut picked = None;
             popup(&row, "toolbar-align", &response, |ui| {
                 for (label, value) in [
@@ -322,17 +327,15 @@ impl Editor {
                 self.format_command(&json!({"type":"setAlignment","align":align}), state);
             }
         }
-        if row.available_width() >= 42.0 {
-            let response = icon_button(
+        if row.available_width() >= 32.0 {
+            let response = dropdown_icon_button(
                 &mut row,
                 colors,
                 IconName::LineSpacing,
-                40.0,
                 false,
                 true,
                 "Line Spacing",
             );
-            draw_chevron(&row, colors, &response);
             let mut picked = None;
             popup(&row, "toolbar-spacing", &response, |ui| {
                 for value in [1.0, 1.15, 1.5, 2.0] {
@@ -345,40 +348,51 @@ impl Editor {
                 self.toolbar_command("setLineSpacing", json!({"value":value}), state);
             }
         }
-        for (icon, label, command, args) in [
+        let paragraph_indent = self
+            .document
+            .paragraphs
+            .get(self.active)
+            .map(|paragraph| paragraph.indent)
+            .unwrap_or(0.0);
+        for (icon, label, command, args, enabled) in [
             (
                 IconName::BulletList,
                 "Bulleted List",
                 "toggleList",
                 json!({"kind":"bullet"}),
+                true,
             ),
             (
                 IconName::NumberedList,
                 "Numbered List",
                 "toggleList",
                 json!({"kind":"number"}),
+                true,
             ),
             (
                 IconName::Outdent,
                 "Decrease Indent",
                 "changeIndent",
                 json!({"delta":-1}),
+                paragraph_indent > 0.0,
             ),
             (
                 IconName::Indent,
                 "Increase Indent",
                 "changeIndent",
                 json!({"delta":1}),
+                true,
             ),
             (
                 IconName::ClearFormatting,
                 "Clear Formatting",
                 "clearFormatting",
                 Value::Null,
+                true,
             ),
-            (IconName::Link, "Insert Link", "insertLink", Value::Null),
-            (IconName::Image, "Insert Image", "insertImage", Value::Null),
-            (IconName::Table, "Insert Table", "insertTable", Value::Null),
+            (IconName::Link, "Insert Link", "insertLink", Value::Null, true),
+            (IconName::Image, "Insert Image", "insertImage", Value::Null, true),
+            (IconName::Table, "Insert Table", "insertTable", Value::Null, true),
         ] {
             if row.available_width() < 32.0 {
                 overflow.push((label, command, args));
@@ -387,7 +401,9 @@ impl Editor {
             if matches!(icon, IconName::Link) {
                 separator(&mut row, colors);
             }
-            if icon_button(&mut row, colors, icon, 30.0, false, true, label).clicked() {
+            if icon_button(&mut row, colors, icon, 30.0, false, enabled, label).clicked()
+                && enabled
+            {
                 if command == "clearFormatting" {
                     self.format_command(&json!({"type":command}), state);
                 } else {
@@ -454,12 +470,12 @@ impl Editor {
         let mut end = ui.new_child(
             egui::UiBuilder::new()
                 .max_rect(Rect::from_min_max(
-                    pos2(separator_x + 14.0, content.top()),
+                    pos2(separator_x + 19.0, content.top()),
                     content.max,
                 ))
                 .layout(Layout::left_to_right(Align::Center)),
         );
-        end.spacing_mut().item_spacing = vec2(10.0, 0.0);
+        end.spacing_mut().item_spacing = vec2(6.0, 0.0);
         if icon_button(
             &mut end,
             colors,
@@ -542,20 +558,130 @@ fn icon_button(
         );
     }
     let color = if !enabled {
-        colors.app_text.gamma_multiply(0.4)
+        colors.app_text.linear_multiply(0.4)
     } else if active {
         colors.app_accent_ink
     } else {
         colors.app_text
     };
-    icons::paint_icon_at(
+    icons::paint_icon_filled(
         ui.ctx(),
         ui.painter(),
         icon,
-        Rect::from_center_size(rect.center(), vec2(17.0, 17.0)),
+        Rect::from_center_size(rect.center(), vec2(18.0, 18.0)),
         color,
     );
     response.on_hover_text(tooltip)
+}
+
+/// 30px icon button with a small filled down-caret at the right edge, used by
+/// the align and line-spacing triggers in the web toolbar.
+fn dropdown_icon_button(
+    ui: &mut Ui,
+    colors: &UiColors,
+    icon: IconName,
+    active: bool,
+    enabled: bool,
+    tooltip: &str,
+) -> Response {
+    let (rect, response) = ui.allocate_exact_size(vec2(30.0, 30.0), Sense::click());
+    if active || response.hovered() && enabled {
+        ui.painter().rect_filled(
+            rect,
+            4,
+            if active {
+                colors.app_accent_soft
+            } else {
+                colors.app_hover
+            },
+        );
+    }
+    let color = if !enabled {
+        colors.app_text.linear_multiply(0.4)
+    } else if active {
+        colors.app_accent_ink
+    } else {
+        colors.app_text
+    };
+    icons::paint_icon_filled(
+        ui.ctx(),
+        ui.painter(),
+        icon,
+        Rect::from_center_size(
+            pos2(rect.left() + 11.5, rect.center().y),
+            vec2(16.0, 16.0),
+        ),
+        color,
+    );
+    paint_caret(
+        ui,
+        if enabled {
+            colors.app_muted
+        } else {
+            colors.app_text.linear_multiply(0.4)
+        },
+        pos2(rect.right() - 8.0, rect.center().y + 1.0),
+        8.0,
+        6.0,
+    );
+    response.on_hover_text(tooltip)
+}
+
+/// 50px colorsplit composite: a 30px main icon button with a 16x4 color bar
+/// near the bottom, a 2px gap, and an 18px caret zone. Both zones share one
+/// click response so either side opens the same color popup.
+fn colorsplit_button(
+    ui: &mut Ui,
+    colors: &UiColors,
+    icon: IconName,
+    bar: Color32,
+    tooltip: &str,
+) -> Response {
+    let (rect, response) = ui.allocate_exact_size(vec2(50.0, 30.0), Sense::click());
+    if response.hovered() {
+        ui.painter().rect_filled(
+            Rect::from_min_max(rect.min, pos2(rect.left() + 32.0, rect.bottom())),
+            4,
+            colors.app_hover,
+        );
+    }
+    icons::paint_icon_filled(
+        ui.ctx(),
+        ui.painter(),
+        icon,
+        Rect::from_center_size(
+            pos2(rect.left() + 15.0, rect.center().y),
+            vec2(18.0, 18.0),
+        ),
+        colors.app_text,
+    );
+    ui.painter().rect_filled(
+        Rect::from_min_size(pos2(rect.left() + 7.0, rect.bottom() - 7.0), vec2(16.0, 4.0)),
+        1,
+        bar,
+    );
+    paint_caret(
+        ui,
+        colors.app_muted,
+        pos2(rect.right() - 9.0, rect.center().y + 1.0),
+        8.0,
+        5.0,
+    );
+    response.on_hover_text(tooltip)
+}
+
+/// Parse a "#RRGGBB" / "RRGGBB" / 8-digit hex string into a Color32.
+fn hex_color(value: &str) -> Option<Color32> {
+    let hex = value.trim().trim_start_matches('#');
+    if hex.len() < 6 {
+        return None;
+    }
+    let rgb = u32::from_str_radix(&hex[hex.len() - 6..], 16).ok()?;
+    Some(Color32::from_rgb(
+        ((rgb >> 16) & 0xff) as u8,
+        ((rgb >> 8) & 0xff) as u8,
+        (rgb & 0xff) as u8,
+    ))
 }
 
 fn text_button(ui: &mut Ui, colors: &UiColors, label: &str, width: f32) -> Response {
@@ -604,16 +730,25 @@ fn text_picker(ui: &mut Ui, colors: &UiColors, label: &str, width: f32, tooltip:
 }
 
 fn draw_chevron(ui: &Ui, colors: &UiColors, response: &Response) {
-    icons::paint_icon_at(
-        ui.ctx(),
-        ui.painter(),
-        IconName::ChevronDown,
-        Rect::from_center_size(
-            pos2(response.rect.right() - 10.0, response.rect.center().y),
-            vec2(8.0, 8.0),
-        ),
+    paint_caret(
+        ui,
         colors.app_muted,
+        pos2(response.rect.right() - 12.0, response.rect.center().y + 1.0),
+        7.0,
+        5.0,
     );
+}
+
+fn paint_caret(ui: &Ui, color: Color32, center: egui::Pos2, width: f32, height: f32) {
+    ui.painter().add(egui::Shape::convex_polygon(
+        vec![
+            pos2(center.x - width / 2.0, center.y - height / 2.0),
+            pos2(center.x + width / 2.0, center.y - height / 2.0),
+            pos2(center.x, center.y + height / 2.0),
+        ],
+        color,
+        Stroke::NONE,
+    ));
 }
 
 fn separator(ui: &mut Ui, colors: &UiColors) {

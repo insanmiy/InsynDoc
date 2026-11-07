@@ -9,6 +9,11 @@ impl Editor {
         theme: Theme,
     ) {
         ui.spacing_mut().item_spacing.y = 0.0;
+        ui.painter().vline(
+            ui.max_rect().right() + 14.0,
+            ui.max_rect().y_range(),
+            Stroke::new(1.0_f32, colors.app_border),
+        );
         let (heading, _) =
             ui.allocate_exact_size(vec2(ui.available_width(), 26.0), egui::Sense::hover());
         ui.painter().text(

@@ -33,7 +33,7 @@ use crate::theme::{self, UiColors};
 
 use super::header;
 use super::{
-    colors, fmt_num, framed_text_edit, icon_button, kbd, modal_description, modal_footer,
+    colors, fmt_num, framed_text_edit, kbd, modal_description, modal_footer,
     primary_button, secondary_button, section_separator, switch, text_button, ChromeAssets,
     UiCommand, UiOutput,
 };
@@ -222,8 +222,23 @@ fn modal_header(
                 .color(c.app_text),
         );
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Min), |ui| {
-            let close = icon_button(ui, c, IconName::Close, 20.0, "Close");
-            if close.clicked() {
+            // .modal-header .icon-button { margin-right: -8px } — the 36px
+            // circle extends 8px past the content edge.
+            let (rect, _) = ui.allocate_exact_size(vec2(36.0, 36.0), Sense::hover());
+            let shifted = rect.translate(vec2(8.0, 0.0));
+            let hovered = ui.rect_contains_pointer(shifted);
+            if hovered {
+                ui.painter()
+                    .circle_filled(shifted.center(), 18.0, c.app_hover);
+            }
+            icons::paint_icon_at(
+                ui.ctx(),
+                &ui.painter(),
+                IconName::Close,
+                shifted.shrink(8.0),
+                if hovered { c.app_text } else { c.app_muted },
+            );
+            if ui.interact(shifted, ui.make_persistent_id("modal-close"), Sense::click()).clicked() {
                 close_modal(state, out);
             }
         });
@@ -275,7 +290,7 @@ fn draw_settings(
                         .size()
                         .x
                         + 20.0;
-                    let (rect, response) = ui.allocate_exact_size(vec2(w, 30.0), Sense::click());
+                    let (rect, response) = ui.allocate_exact_size(vec2(w, 27.0), Sense::click());
                     if response.clicked() { mem.scroll_section = Some(label.to_string()); }
                     if response.hovered() { ui.painter().rect_filled(rect, 6.0, c.app_hover); }
                     ui.painter().rect_stroke(
@@ -435,7 +450,7 @@ fn draw_settings(
             ui.add_space(12.0);
             ui.horizontal(|ui| {
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    ui.spacing_mut().item_spacing.x=12.0;
+                    ui.spacing_mut().item_spacing.x=0.0;
                     ui.label(
                         RichText::new(format!("Version {}", env!("CARGO_PKG_VERSION")))
                             .size(13.0)
@@ -480,11 +495,17 @@ fn draw_settings(
                     out.commands.push(UiCommand::ChooseBrowser);
                 }
             });
+            let mut actions_gap = 12.0;
             if let Some(path) = state.preferences.browser_path.clone() {
-                ui.add_space(8.0);
-                ui.label(RichText::new(path).size(12.0).color(c.app_muted));
+                ui.label(
+                    RichText::new(path)
+                        .size(13.0)
+                        .color(c.app_muted)
+                        .line_height(Some(22.1)),
+                );
+                actions_gap = 16.0;
             }
-            ui.add_space(12.0);
+            ui.add_space(actions_gap);
             ui.horizontal(|ui| {
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     let choosing = mem.choosing_browser;
@@ -511,7 +532,7 @@ fn draw_settings(
 
             // .modal-footer — Done.
             modal_footer(ui, |ui| {
-                let done = primary_button(ui, &c, None, "Done", 40.0, true);
+                let done = primary_button(ui, &c, None, "Done", 38.0, true);
                 if done.clicked() {
                     request_close(ui);
                 }
@@ -553,6 +574,7 @@ fn draw_update_status(ui: &mut egui::Ui, c: &UiColors, mem: &SettingsMem) {
                 .color(if is_error { c.app_error } else { c.app_muted })
                 .line_height(Some(22.1)),
         );
+        ui.add_space(16.0);
     }
 }
 
@@ -599,7 +621,6 @@ fn theme_options(
             );
         }
     });
-    ui.add_space(20.0);
 }
 
 fn theme_card(
@@ -617,9 +638,9 @@ fn theme_card(
 ) {
     // .theme-option — flex 1, border 2px, padding 5, radius 10.
     let preview_h = 84.0;
-    let caption_h = 37.0;
+    let caption_h = 32.0;
     let (rect, response) = ui.allocate_exact_size(
-        vec2(card_w, 5.0 + preview_h + caption_h + 5.0),
+        vec2(card_w, 7.0 + preview_h + caption_h + 7.0),
         Sense::click(),
     );
     let border_color = if selected { c.app_accent } else { c.app_border };
@@ -640,8 +661,8 @@ fn theme_card(
     }
     // .theme-preview — inner rect, radius 4.
     let preview_rect = Rect::from_min_size(
-        Pos2::new(rect.left() + 5.0, rect.top() + 5.0),
-        vec2(card_w - 10.0, preview_h),
+        Pos2::new(rect.left() + 7.0, rect.top() + 7.0),
+        vec2(card_w - 14.0, preview_h),
     );
     draw_theme_preview(ui, preview_rect, variant);
     // .theme-caption — icon + label + check.
@@ -816,18 +837,53 @@ fn setting_field_select(
             vec2(150.0, 34.0),
             egui::Layout::left_to_right(egui::Align::Center),
             |ui| {
-                ui.spacing_mut().button_padding = vec2(10.0, 8.0);
-                ui.visuals_mut().widgets.inactive.corner_radius = egui::CornerRadius::same(6);
-                egui::ComboBox::from_id_salt(label)
-                    .selected_text(current)
-                    .width(150.0)
-                    .show_ui(ui, |ui| {
+                let (rect, response) =
+                    ui.allocate_exact_size(vec2(150.0, 34.0), Sense::click());
+                ui.painter().rect_filled(rect, 6.0, c.app_surface);
+                ui.painter().rect_stroke(
+                    rect,
+                    6.0,
+                    Stroke::new(1.0_f32, c.app_border),
+                    egui::StrokeKind::Inside,
+                );
+                let clip = rect.shrink2(vec2(10.0, 0.0));
+                ui.painter()
+                    .with_clip_rect(clip)
+                    .text(
+                        Pos2::new(rect.left() + 10.0, rect.center().y),
+                        Align2::LEFT_CENTER,
+                        current,
+                        FontId::proportional(13.0),
+                        c.app_text,
+                    );
+                ui.painter().add(egui::Shape::convex_polygon(
+                    vec![
+                        Pos2::new(rect.right() - 16.0, rect.center().y - 2.5),
+                        Pos2::new(rect.right() - 10.0, rect.center().y - 2.5),
+                        Pos2::new(rect.right() - 13.0, rect.center().y + 2.5),
+                    ],
+                    c.app_muted,
+                    Stroke::NONE,
+                ));
+                let popup_id = ui.id().with(("setting-select", label));
+                if response.clicked() {
+                    ui.memory_mut(|memory| memory.toggle_popup(popup_id));
+                }
+                egui::popup_below_widget(
+                    ui,
+                    popup_id,
+                    &response,
+                    egui::PopupCloseBehavior::CloseOnClick,
+                    |ui| {
+                        ui.set_min_width(150.0);
                         for (index, option) in options.iter().enumerate() {
                             if ui.selectable_label(*option == current, *option).clicked() {
                                 on_pick(ui, index);
+                                ui.memory_mut(|memory| memory.close_popup());
                             }
                         }
-                    });
+                    },
+                );
             },
         );
     });
@@ -874,7 +930,7 @@ fn setting_field_number(
             |ui| {
                 ui.set_min_width((width - 168.0).max(60.0));
                 ui.label(RichText::new(label).size(13.0).color(c.app_text));
-                ui.add_space(1.0);
+                ui.add_space(5.0);
                 ui.label(
                     RichText::new(hint)
                         .size(12.0)
@@ -908,34 +964,37 @@ fn setting_field_number(
                         .desired_width(edit_rect.width()),
                 );
                 lost_focus = response.lost_focus();
-                for (direction, center_y) in
-                    [(1, rect.center().y - 6.0), (-1, rect.center().y + 6.0)]
-                {
-                    let center = Pos2::new(rect.right() - 13.0, center_y);
-                    let button_rect = Rect::from_center_size(center, vec2(20.0, 13.0));
-                    let response =
-                        ui.interact(button_rect, edit_id.with(direction), Sense::click());
-                    if response.clicked() {
-                        step = direction;
+                let show_arrows = ui.rect_contains_pointer(rect) || response.has_focus();
+                if show_arrows {
+                    for (direction, center_y) in
+                        [(1, rect.center().y - 6.0), (-1, rect.center().y + 6.0)]
+                    {
+                        let center = Pos2::new(rect.right() - 13.0, center_y);
+                        let button_rect = Rect::from_center_size(center, vec2(20.0, 13.0));
+                        let arrow_response =
+                            ui.interact(button_rect, edit_id.with(direction), Sense::click());
+                        if arrow_response.clicked() {
+                            step = direction;
+                        }
+                        let points = if direction > 0 {
+                            vec![
+                                center + vec2(-3.0, 2.0),
+                                center + vec2(3.0, 2.0),
+                                center + vec2(0.0, -2.0),
+                            ]
+                        } else {
+                            vec![
+                                center + vec2(-3.0, -2.0),
+                                center + vec2(3.0, -2.0),
+                                center + vec2(0.0, 2.0),
+                            ]
+                        };
+                        ui.painter().add(egui::Shape::convex_polygon(
+                            points,
+                            c.app_muted,
+                            Stroke::NONE,
+                        ));
                     }
-                    let points = if direction > 0 {
-                        vec![
-                            center + vec2(-3.0, 2.0),
-                            center + vec2(3.0, 2.0),
-                            center + vec2(0.0, -2.0),
-                        ]
-                    } else {
-                        vec![
-                            center + vec2(-3.0, -2.0),
-                            center + vec2(3.0, -2.0),
-                            center + vec2(0.0, 2.0),
-                        ]
-                    };
-                    ui.painter().add(egui::Shape::convex_polygon(
-                        points,
-                        c.app_muted,
-                        Stroke::NONE,
-                    ));
                 }
             },
         );
@@ -989,7 +1048,7 @@ fn editor_toggle(
                         .font(theme::ui_font_id_weight(13.0, 500))
                         .color(c.app_text),
                 );
-                ui.add_space(1.0);
+                ui.add_space(5.0);
                 ui.label(
                     RichText::new(description)
                         .size(12.0)
@@ -1022,6 +1081,7 @@ fn dictionary_row(
     button_label: &str,
     clear: impl FnOnce(&mut Preferences),
 ) {
+    ui.add_space(12.0);
     ui.horizontal(|ui| {
         ui.spacing_mut().item_spacing = egui::vec2(12.0, 0.0);
         ui.label(RichText::new(text).size(12.0).color(c.app_muted));
@@ -1068,7 +1128,7 @@ fn draw_go_to_page(ui: &mut egui::Ui, state: &mut AppState, c: &UiColors, out: &
     }
     let enter = ui.input(|i| i.key_pressed(egui::Key::Enter));
     modal_footer(ui, |ui| {
-        let go = primary_button(ui, c, None, "Go To Page", 40.0, true);
+        let go = primary_button(ui, c, None, "Go To Page", 38.0, true);
         if go.clicked() || (resp.lost_focus() && enter) || enter {
             let page: i64 = state.page_number_input.trim().parse().unwrap_or(0);
             if page < 1 || page > pages as i64 {
@@ -1114,7 +1174,7 @@ fn draw_shortcuts(ui: &mut egui::Ui, c: &UiColors) {
                     break;
                 }
                 let (action, keys) = SHORTCUTS[idx];
-                let (cell, _) = ui.allocate_exact_size(vec2(col_w, 44.0), Sense::hover());
+                let (cell, _) = ui.allocate_exact_size(vec2(col_w, 43.0), Sense::hover());
                 ui.painter().text(
                     cell.left_center(),
                     Align2::LEFT_CENTER,
@@ -1155,7 +1215,7 @@ fn draw_shortcuts(ui: &mut egui::Ui, c: &UiColors) {
         });
     }
     modal_footer(ui, |ui| {
-        let done = primary_button(ui, c, None, "Done", 40.0, true);
+        let done = primary_button(ui, c, None, "Done", 38.0, true);
         if done.clicked() {
             request_close(ui);
         }
@@ -1249,7 +1309,7 @@ fn draw_statistics(ui: &mut egui::Ui, state: &AppState, c: &UiColors) {
         ui.add_space(12.0);
     }
     modal_footer(ui, |ui| {
-        let done = primary_button(ui, c, None, "Done", 40.0, true);
+        let done = primary_button(ui, c, None, "Done", 38.0, true);
         if done.clicked() {
             request_close(ui);
         }
@@ -1298,7 +1358,7 @@ fn draw_update(ui: &mut egui::Ui, state: &mut AppState, c: &UiColors, out: &mut 
             return;
         }
         // Right-to-left order yields [Later][Don't Ask Again][Update Now].
-        let update_now = primary_button(ui, c, None, "Update Now", 40.0, true);
+        let update_now = primary_button(ui, c, None, "Update Now", 38.0, true);
         if update_now.clicked() {
             out.commands.push(UiCommand::InstallUpdate);
         }
@@ -1343,11 +1403,11 @@ fn draw_confirm_close(ui: &mut egui::Ui, state: &mut AppState, c: &UiColors, out
     ui.horizontal(|ui| {
         ui.spacing_mut().item_spacing = egui::vec2(7.0, 0.0);
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-            let save = primary_button(ui, c, None, "Save Changes", 40.0, true);
+            let save = primary_button(ui, c, None, "Save Changes", 38.0, true);
             if save.clicked() {
                 choose(state, out, UnsavedChoice::Save);
             }
-            let cancel = secondary_button(ui, c, None, "Cancel", 40.0, true);
+            let cancel = secondary_button(ui, c, None, "Cancel", 38.0, true);
             if cancel.clicked() {
                 choose(state, out, UnsavedChoice::Cancel);
             }

@@ -50,7 +50,7 @@ impl UiColors {
                 error_banner_bg: rgb(0xff, 0xf0, 0xe5),
                 error_banner_fg: rgb(0x8e, 0x41, 0x1b),
                 switch_track: rgb(0x73, 0x7f, 0x90),
-                modal_backdrop: Color32::from_black_alpha(102),
+                modal_backdrop: Color32::from_rgba_unmultiplied(0x0b, 0x14, 0x2f, 0xa0),
                 focus_strip_bg: rgb(0xf8, 0xfa, 0xfd),
                 busy_bg: rgb(0xdb, 0xe7, 0xff),
             },
@@ -70,7 +70,7 @@ impl UiColors {
                 error_banner_bg: rgb(0x40, 0x2b, 0x25),
                 error_banner_fg: rgb(0xff, 0xbd, 0x9e),
                 switch_track: rgb(0x75, 0x81, 0x96),
-                modal_backdrop: Color32::from_black_alpha(128),
+                modal_backdrop: Color32::from_rgba_unmultiplied(0x0b, 0x14, 0x2f, 0xa0),
                 focus_strip_bg: rgb(0x11, 0x13, 0x18),
                 busy_bg: rgb(0x28, 0x3b, 0x5c),
             },
@@ -502,11 +502,19 @@ pub fn apply_theme(ctx: &egui::Context, theme: Theme) {
     style.visuals.window_stroke = Stroke::new(1.0, c.app_border);
     style.visuals.window_corner_radius = egui::CornerRadius::same(18);
     style.visuals.menu_corner_radius = egui::CornerRadius::same(8);
-    style.visuals.popup_shadow = egui::Shadow {
-        offset: [0, 8],
-        blur: 32,
-        spread: 0,
-        color: Color32::from_black_alpha(if theme == Theme::Dark { 153 } else { 38 }),
+    style.visuals.popup_shadow = match theme {
+        Theme::Light => egui::Shadow {
+            offset: [0, 8],
+            blur: 32,
+            spread: 0,
+            color: Color32::from_rgba_unmultiplied(0x1e, 0x30, 0x51, 0x26),
+        },
+        Theme::Dark => egui::Shadow {
+            offset: [0, 12],
+            blur: 40,
+            spread: 0,
+            color: Color32::from_black_alpha(153),
+        },
     };
     ctx.set_style(style);
 }

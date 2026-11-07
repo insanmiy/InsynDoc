@@ -332,7 +332,7 @@ fn draw_download(
         .layout_no_wrap("Download".to_string(), font.clone(), fg)
         .size()
         .x;
-    let width = 14.0 + 7.0 + 16.0 + 7.0 + text_w + 7.0 + 14.0;
+    let width = 17.0 + 8.0 + 16.0 + 8.0 + text_w + 8.0 + 16.0;
     let (rect, response) = ui.allocate_exact_size(vec2(width.max(96.0), 36.0), Sense::click());
     let open = state.modal == Modal::DownloadMenu;
     let hovered = response.hovered() && !unavailable;
@@ -350,7 +350,7 @@ fn draw_download(
         (fg.b() as f32 * alpha) as u8,
         255,
     );
-    let mut x = rect.left() + 14.0;
+    let mut x = rect.left() + 17.0;
     let cy = rect.center().y;
     icons::paint_icon_at(
         ctx,
@@ -359,7 +359,7 @@ fn draw_download(
         Rect::from_center_size(Pos2::new(x + 8.0, cy), vec2(16.0, 16.0)),
         fg_dim,
     );
-    x += 16.0 + 7.0;
+    x += 16.0 + 8.0;
     ui.painter().text(
         Pos2::new(x, cy),
         Align2::LEFT_CENTER,
@@ -367,7 +367,7 @@ fn draw_download(
         font.clone(),
         fg_dim,
     );
-    x += text_w + 7.0;
+    x += text_w + 8.0;
     icons::paint_icon_at(
         ctx,
         &ui.painter(),

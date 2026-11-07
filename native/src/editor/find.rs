@@ -44,13 +44,14 @@ impl Editor {
                 let mut navigate = 0;
                 let mut query_changed = false;
                 let mut options_changed = false;
+                let mut input_focused = false;
                 ui.horizontal(|ui| {
                     let input_width = if wide {
                         ui.available_width() - 370.0
                     } else {
                         ui.available_width()
                     };
-                    Frame::new()
+                    let input_frame = Frame::new()
                         .stroke(Stroke::new(1.0_f32, colors.app_border))
                         .corner_radius(5)
                         .inner_margin(Margin::symmetric(10, 8))
@@ -94,6 +95,7 @@ impl Editor {
                                     self.find_needs_focus = false;
                                 }
                                 query_changed = edit.changed();
+                                input_focused = edit.has_focus();
                                 if (edit.has_focus() || edit.lost_focus())
                                     && ui.input(|input| input.key_pressed(egui::Key::Enter))
                                 {
@@ -107,6 +109,14 @@ impl Editor {
                                 ui.label(RichText::new(&count).size(12.0).color(colors.app_muted));
                             });
                         });
+                    if input_focused {
+                        ui.painter().rect_stroke(
+                            input_frame.response.rect,
+                            5,
+                            Stroke::new(2.0_f32, colors.app_accent),
+                            egui::StrokeKind::Inside,
+                        );
+                    }
                     if wide {
                         self.find_options(
                             ui,
@@ -141,7 +151,8 @@ impl Editor {
                 if self.replace_open {
                     ui.add_space(8.0);
                     ui.horizontal(|ui| {
-                        let width = (ui.available_width() - 214.0).max(80.0);
+                        ui.spacing_mut().item_spacing.x = 8.0;
+                        let width = (ui.available_width() - 190.0).max(80.0);
                         let replacement = ui.add_sized(
                             vec2(width, 34.0),
                             TextEdit::singleline(&mut self.replacement)
@@ -158,23 +169,86 @@ impl Editor {
                                 self.replace_selection(state);
                             }
                         }
-                        if ui
-                            .add_enabled(
-                                !matches.is_empty(),
-                                egui::Button::new("Replace").min_size(vec2(80.0, 34.0)),
-                            )
-                            .clicked()
-                        {
-                            self.replace_selection(state);
-                        }
-                        if ui
-                            .add_enabled(
-                                !matches.is_empty(),
-                                egui::Button::new("Replace All").min_size(vec2(106.0, 34.0)),
-                            )
-                            .clicked()
-                        {
-                            self.replace_all(state);
+                        let enabled = !matches.is_empty();
+                        let dark = colors.app_bg == Color32::from_rgb(0x11, 0x13, 0x18);
+                        for (label, primary, action) in [
+                            ("Replace", false, 0),
+                            ("Replace All", true, 1),
+                        ] {
+                            let font = FontId::proportional(11.0);
+                            let text_w = ui
+                                .painter()
+                                .layout_no_wrap(label.to_string(), font.clone(), colors.app_text)
+                                .size()
+                                .x;
+                            let (rect, response) = ui.allocate_exact_size(
+                                vec2(text_w + 28.0, 24.0),
+                                egui::Sense::click(),
+                            );
+                            let hovered = enabled && response.hovered();
+                            let alpha = if enabled { 1.0 } else { 0.4 };
+                            let (bg, fg, stroke) = if primary {
+                                let ink = if dark {
+                                    Color32::from_rgb(0x12, 0x24, 0x49)
+                                } else {
+                                    Color32::WHITE
+                                };
+                                (
+                                    if hovered {
+                                        colors.app_accent_hover
+                                    } else {
+                                        colors.app_accent
+                                    },
+                                    ink,
+                                    Stroke::NONE,
+                                )
+                            } else {
+                                (
+                                    if hovered {
+                                        colors.app_hover
+                                    } else {
+                                        Color32::TRANSPARENT
+                                    },
+                                    colors.app_accent_ink,
+                                    Stroke::new(1.0_f32, colors.app_border),
+                                )
+                            };
+                            ui.painter().rect_filled(rect, 6.0, bg);
+                            if stroke.width > 0.0 {
+                                ui.painter().rect_stroke(
+                                    rect,
+                                    6.0,
+                                    Stroke::new(
+                                        1.0_f32,
+                                        Color32::from_rgba_unmultiplied(
+                                            colors.app_border.r(),
+                                            colors.app_border.g(),
+                                            colors.app_border.b(),
+                                            (colors.app_border.a() as f32 * alpha) as u8,
+                                        ),
+                                    ),
+                                    egui::StrokeKind::Inside,
+                                );
+                            }
+                            ui.painter().text(
+                                rect.center(),
+                                egui::Align2::CENTER_CENTER,
+                                label,
+                                font,
+                                Color32::from_rgba_unmultiplied(
+                                    (fg.r() as f32 * alpha) as u8,
+                                    (fg.g() as f32 * alpha) as u8,
+                                    (fg.b() as f32 * alpha) as u8,
+                                    255,
+                                ),
+                            );
+                            if enabled && response.clicked() {
+                                if action == 0 {
+                                    self.replace_selection(state);
+                                } else {
+                                    self.replace_all(state);
+                                }
+                            }
                         }
                     });
                 }
@@ -208,15 +282,29 @@ impl Editor {
                 *navigate = direction;
             }
         }
-        if ui
-            .selectable_label(
-                self.replace_open,
-                RichText::new("Replace")
-                    .size(12.0)
-                    .color(colors.app_accent_ink),
-            )
-            .clicked()
-        {
+        let (rect, response) = ui.allocate_exact_size(vec2(64.0, 30.0), egui::Sense::click());
+        if response.hovered() {
+            ui.painter()
+                .rect_filled(rect, 6.0, colors.app_hover);
+        }
+        icons::paint_icon_at(
+            ui.ctx(),
+            ui.painter(),
+            IconName::ChevronDown,
+            egui::Rect::from_center_size(
+                egui::pos2(rect.left() + 8.0, rect.center().y),
+                vec2(12.0, 12.0),
+            ),
+            colors.app_accent_ink,
+        );
+        ui.painter().text(
+            egui::pos2(rect.left() + 18.0, rect.center().y),
+            egui::Align2::LEFT_CENTER,
+            "Replace",
+            FontId::proportional(12.0),
+            colors.app_accent_ink,
+        );
+        if response.clicked() {
             self.replace_open = !self.replace_open;
         }
     }
