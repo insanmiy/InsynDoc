@@ -182,6 +182,12 @@ fn not_ready(s: &AppState) -> bool {
 fn unavailable(s: &AppState) -> bool {
     s.unavailable()
 }
+fn no_undo(s: &AppState) -> bool {
+    !s.can_undo
+}
+fn no_redo(s: &AppState) -> bool {
+    !s.can_redo
+}
 
 // --- menu definitions -------------------------------------------------------
 // Order matches EditorWorkspace.tsx exactly.
@@ -201,8 +207,18 @@ const FILE_ITEMS: &[MenuEntry] = &[
 ];
 
 const EDIT_ITEMS: &[MenuEntry] = &[
-    item("Undo", Some("Ctrl+Z"), MenuAction::EditorExec(r#"{"type":"undo"}"#)),
-    item("Redo", Some("Ctrl+Y"), MenuAction::EditorExec(r#"{"type":"redo"}"#)),
+    item_disabled(
+        "Undo",
+        Some("Ctrl+Z"),
+        MenuAction::EditorExec(r#"{"type":"undo"}"#),
+        no_undo,
+    ),
+    item_disabled(
+        "Redo",
+        Some("Ctrl+Y"),
+        MenuAction::EditorExec(r#"{"type":"redo"}"#),
+        no_redo,
+    ),
     sep(),
     item(
         "Select All",

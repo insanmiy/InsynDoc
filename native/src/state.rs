@@ -173,6 +173,9 @@ pub struct AppState {
     pub confirm_request_id: Option<u64>,
     /// True when the confirm modal was triggered by the OS window close.
     pub confirm_for_window_close: bool,
+    /// Editor undo/redo availability for menu disabled states.
+    pub can_undo: bool,
+    pub can_redo: bool,
 }
 
 impl Default for AppState {
@@ -199,6 +202,8 @@ impl Default for AppState {
             quitting: false,
             confirm_request_id: None,
             confirm_for_window_close: false,
+            can_undo: false,
+            can_redo: false,
         }
     }
 }

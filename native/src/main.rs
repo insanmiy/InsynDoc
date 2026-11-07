@@ -298,6 +298,12 @@ impl App {
                 state.modal = modal;
             }
         }
+        if ctx.input_mut(|input| input.consume_key(Modifiers::CTRL | Modifiers::ALT, Key::C)) {
+            out.exec("editorExec", serde_json::json!({"type":"copyFormatting"}));
+        }
+        if ctx.input_mut(|input| input.consume_key(Modifiers::CTRL | Modifiers::ALT, Key::X)) {
+            out.command("checkSpelling");
+        }
     }
 
     fn paint(&mut self) {

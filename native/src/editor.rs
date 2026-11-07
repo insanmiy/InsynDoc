@@ -136,6 +136,8 @@ impl Editor {
             characters: statistics.characters as u64,
             characters_without_spaces: statistics.characters_without_spaces as u64,
         };
+        state.can_undo = !self.undo.is_empty();
+        state.can_redo = !self.redo.is_empty();
         if !state.surface.zoom.is_finite() || state.surface.zoom <= 0.0 {
             state.surface.zoom = 1.0;
         }
