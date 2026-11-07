@@ -135,8 +135,8 @@ impl Editor {
                         });
                     });
                 ui.painter().hline(
-                    search.response.rect.x_range(),
-                    search.response.rect.bottom() - 12.0,
+                    ui.max_rect().shrink2(vec2(2.0, 0.0)).x_range(),
+                    search.response.rect.bottom() - 10.0,
                     Stroke::new(2.0_f32, colors.app_accent),
                 );
                 let query = self.search_query.trim().to_lowercase();

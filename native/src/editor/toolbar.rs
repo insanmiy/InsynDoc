@@ -44,8 +44,8 @@ impl Editor {
             row.ctx(),
             row.painter(),
             IconName::Search,
-            Rect::from_center_size(search_rect.center(), vec2(18.0, 18.0)),
-            colors.app_text,
+            Rect::from_center_size(search_rect.center(), vec2(14.0, 14.0)),
+            colors.app_muted,
         );
         let search = search.on_hover_text("Search The Menus (Alt+/)");
         if search.clicked() {

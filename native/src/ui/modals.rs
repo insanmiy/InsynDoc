@@ -1168,7 +1168,7 @@ fn draw_go_to_page(ui: &mut egui::Ui, state: &mut AppState, c: &UiColors, out: &
 // ---------------------------------------------------------------------------
 
 fn draw_shortcuts(ui: &mut egui::Ui, c: &UiColors) {
-    ui.add_space(3.0);
+    ui.add_space(2.0);
     const SHORTCUTS: &[(&str, &str)] = &[
         ("New Document", "Ctrl+N"),
         ("Open Document", "Ctrl+O"),

@@ -150,7 +150,7 @@ impl Editor {
                     self.find_previous();
                 }
                 if self.replace_open {
-                    ui.add_space(8.0);
+                    ui.add_space(9.0);
                     ui.horizontal(|ui| {
                         ui.spacing_mut().item_spacing.x = 8.0;
                         let width = (ui.available_width() - 164.0).max(80.0);
