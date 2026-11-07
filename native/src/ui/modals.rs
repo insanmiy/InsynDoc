@@ -1221,7 +1221,7 @@ fn draw_shortcuts(ui: &mut egui::Ui, c: &UiColors) {
         });
     }
     modal_footer(ui, |ui| {
-        let done = primary_button(ui, c, None, "Done", 38.0, true);
+        let done = primary_button(ui, c, None, "Done", 28.0, true);
         if done.clicked() {
             request_close(ui);
         }
@@ -1315,7 +1315,7 @@ fn draw_statistics(ui: &mut egui::Ui, state: &AppState, c: &UiColors) {
         ui.add_space(12.0);
     }
     modal_footer(ui, |ui| {
-        let done = primary_button(ui, c, None, "Done", 38.0, true);
+        let done = primary_button(ui, c, None, "Done", 28.0, true);
         if done.clicked() {
             request_close(ui);
         }

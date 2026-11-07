@@ -43,7 +43,7 @@ impl Editor {
                 let mut input_focused = false;
                 ui.horizontal(|ui| {
                     let input_width = if wide {
-                        ui.available_width() - 370.0
+                        ui.available_width() - 378.0
                     } else {
                         ui.available_width()
                     };
@@ -148,7 +148,7 @@ impl Editor {
                     ui.add_space(8.0);
                     ui.horizontal(|ui| {
                         ui.spacing_mut().item_spacing.x = 8.0;
-                        let width = (ui.available_width() - 190.0).max(80.0);
+                        let width = (ui.available_width() - 164.0).max(80.0);
                         let replacement = ui.add_sized(
                             vec2(width, 34.0),
                             TextEdit::singleline(&mut self.replacement)

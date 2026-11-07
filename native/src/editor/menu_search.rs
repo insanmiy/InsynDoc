@@ -60,20 +60,36 @@ impl Editor {
                             .font(crate::theme::ui_font_id_weight(22.0, 600)),
                     );
                     ui.with_layout(egui::Layout::right_to_left(Align::Center), |ui| {
-                        if crate::ui::icon_button(
-                            ui,
-                            colors,
-                            crate::icons::IconName::Close,
+                        let (close_rect, close_response) = ui.allocate_exact_size(
+                            vec2(36.0, 36.0),
+                            egui::Sense::click(),
+                        );
+                        let close_rect = close_rect.translate(vec2(8.0, 0.0));
+                        ui.painter().circle_stroke(
+                            close_rect.center(),
                             18.0,
-                            "Close",
-                        )
-                        .clicked()
-                        {
+                            Stroke::new(1.0_f32, colors.app_border),
+                        );
+                        if close_response.hovered() {
+                            ui.painter().circle_filled(
+                                close_rect.center(),
+                                18.0,
+                                colors.app_hover,
+                            );
+                        }
+                        crate::icons::paint_icon_at(
+                            ui.ctx(),
+                            ui.painter(),
+                            crate::icons::IconName::Close,
+                            close_rect.shrink(9.0),
+                            colors.app_muted,
+                        );
+                        if close_response.clicked() {
                             close = true;
                         }
                     });
                 });
-                ui.add_space(16.0);
+                ui.add_space(12.0);
                 let search = Frame::new()
                     .inner_margin(Margin::symmetric(0, 12))
                     .show(ui, |ui| {
@@ -134,7 +150,7 @@ impl Editor {
                         selected = Some(command);
                     }
                 }
-                let results_height = 440.0_f32.min(ctx.screen_rect().height() * 0.55);
+                let results_height = 400.0_f32.min(ctx.screen_rect().height() * 0.55);
                 ui.allocate_ui_with_layout(
                     vec2(ui.available_width(), results_height),
                     egui::Layout::top_down(Align::LEFT),
