@@ -169,8 +169,7 @@ impl Editor {
                 .filter(|_| focused)
                 .unwrap_or_else(|| format!("{}", size.round() as u32));
             let (rect, _) = row.allocate_exact_size(vec2(40.0, 32.0), Sense::hover());
-            row.painter()
-                .rect_filled(rect, 6, colors.app_surface);
+            row.painter().rect_filled(rect, 6, colors.app_surface);
             row.painter().rect_stroke(
                 rect,
                 6,
@@ -191,13 +190,15 @@ impl Editor {
                     clear_frame!(inactive);
                     clear_frame!(hovered);
                     clear_frame!(active);
+                    ui.visuals_mut().extreme_bg_color = Color32::TRANSPARENT;
                     ui.put(
                         rect,
                         egui::TextEdit::singleline(&mut draft)
                             .id(input_id)
                             .horizontal_align(Align::Center)
                             .font(FontId::proportional(13.0))
-                            .margin(vec2(4.0, 8.0)),
+                            .margin(vec2(4.0, 8.0))
+                            .frame(false),
                     )
                 })
                 .inner;

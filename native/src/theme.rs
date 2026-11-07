@@ -50,7 +50,7 @@ impl UiColors {
                 error_banner_bg: rgb(0xff, 0xf0, 0xe5),
                 error_banner_fg: rgb(0x8e, 0x41, 0x1b),
                 switch_track: rgb(0x73, 0x7f, 0x90),
-                modal_backdrop: Color32::from_rgba_unmultiplied(0x0b, 0x14, 0x2f, 0xa0),
+                modal_backdrop: Color32::from_rgba_unmultiplied(0x0b, 0x14, 0x4e, 0xa8),
                 focus_strip_bg: rgb(0xf8, 0xfa, 0xfd),
                 busy_bg: rgb(0xdb, 0xe7, 0xff),
             },
@@ -70,7 +70,7 @@ impl UiColors {
                 error_banner_bg: rgb(0x40, 0x2b, 0x25),
                 error_banner_fg: rgb(0xff, 0xbd, 0x9e),
                 switch_track: rgb(0x75, 0x81, 0x96),
-                modal_backdrop: Color32::from_rgba_unmultiplied(0x0b, 0x14, 0x2f, 0xa0),
+                modal_backdrop: Color32::from_rgba_unmultiplied(0x0b, 0x14, 0x4e, 0xa8),
                 focus_strip_bg: rgb(0x11, 0x13, 0x18),
                 busy_bg: rgb(0x28, 0x3b, 0x5c),
             },
@@ -481,6 +481,7 @@ pub fn apply_theme(ctx: &egui::Context, theme: Theme) {
     style.visuals.faint_bg_color = c.app_hover;
     style.visuals.widgets.noninteractive.bg_fill = Color32::TRANSPARENT;
     style.visuals.widgets.noninteractive.fg_stroke = Stroke::new(1.0, c.app_muted);
+    style.visuals.widgets.noninteractive.bg_stroke = Stroke::new(1.0, c.app_border);
     style.visuals.widgets.inactive.bg_fill = c.app_surface;
     style.visuals.widgets.inactive.weak_bg_fill = c.app_surface;
     style.visuals.widgets.inactive.bg_stroke = Stroke::new(1.0_f32, c.app_border);

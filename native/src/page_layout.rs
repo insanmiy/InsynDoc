@@ -232,7 +232,7 @@ pub(crate) fn text_format(
     let background = parse_color(format.highlight.as_deref()).unwrap_or(Color32::TRANSPARENT);
     let font_size = size * 4.0 / 3.0 * if format.script.is_some() { 0.7 } else { 1.0 };
     Ok(egui::TextFormat {
-        font_id: FontId::new(font_size, family),
+        font_id: FontId::new(font_size, family.clone()),
         color,
         background,
         valign: if format.script.as_deref() == Some("subscript") {
@@ -254,7 +254,8 @@ pub(crate) fn text_format(
         line_height: (line_spacing > 0.0).then_some(if absolute_spacing {
             line_spacing * 4.0 / 3.0
         } else {
-            font_size * line_spacing
+            let font_id = FontId::new(font_size, family.clone());
+            ctx.fonts(|fonts| fonts.row_height(&font_id)) * line_spacing
         }),
         ..Default::default()
     })

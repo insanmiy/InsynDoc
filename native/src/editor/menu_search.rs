@@ -29,7 +29,12 @@ impl Editor {
                         }),
                     })
                     .corner_radius(18)
-                    .inner_margin(28),
+                    .inner_margin(Margin {
+                        left: 28,
+                        right: 28,
+                        top: 28,
+                        bottom: 26,
+                    }),
             )
             .show(ctx, |ui| {
                 ui.set_width(524.0_f32.min(ctx.screen_rect().width() - 80.0));
@@ -134,7 +139,6 @@ impl Editor {
                     search.response.rect.bottom() - 12.0,
                     Stroke::new(2.0_f32, colors.app_accent),
                 );
-                ui.add_space(32.0);
                 let query = self.search_query.trim().to_lowercase();
                 let filtered: Vec<_> = MENU_COMMANDS
                     .iter()
@@ -170,7 +174,8 @@ impl Editor {
                         selected = Some(command);
                     }
                 }
-                let results_height = 339.0_f32.min(ctx.screen_rect().height() * 0.55);
+                ui.add_space(-5.0);
+                let results_height = 377.0_f32.min(ctx.screen_rect().height() * 0.55);
                 ui.allocate_ui_with_layout(
                     vec2(ui.available_width(), results_height),
                     egui::Layout::top_down(Align::LEFT),

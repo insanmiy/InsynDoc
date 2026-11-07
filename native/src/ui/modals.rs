@@ -226,6 +226,7 @@ fn modal_header(
     title: &str,
     out: &mut UiOutput,
 ) {
+    ui.add_space(4.0);
     ui.horizontal(|ui| {
         ui.spacing_mut().item_spacing = egui::vec2(0.0, 0.0);
         ui.label(
@@ -1057,10 +1058,10 @@ fn editor_toggle(
     ui.horizontal(|ui| {
         ui.spacing_mut().item_spacing.x = 16.0;
         ui.allocate_ui_with_layout(
-            vec2((width - 50.0).max(80.0), 38.0),
+            vec2((width - 53.0).max(80.0), 38.0),
             egui::Layout::top_down(egui::Align::LEFT),
             |ui| {
-                ui.set_min_width((width - 50.0).max(80.0));
+                ui.set_min_width((width - 53.0).max(80.0));
                 ui.label(
                     RichText::new(label)
                         .font(theme::ui_font_id_weight(13.0, 500))
@@ -1164,6 +1165,7 @@ fn draw_go_to_page(ui: &mut egui::Ui, state: &mut AppState, c: &UiColors, out: &
 // ---------------------------------------------------------------------------
 
 fn draw_shortcuts(ui: &mut egui::Ui, c: &UiColors) {
+    ui.add_space(9.0);
     const SHORTCUTS: &[(&str, &str)] = &[
         ("New Document", "Ctrl+N"),
         ("Open Document", "Ctrl+O"),
@@ -1233,6 +1235,7 @@ fn draw_shortcuts(ui: &mut egui::Ui, c: &UiColors) {
             }
         });
     }
+    ui.add_space(2.0);
     modal_footer(ui, |ui| {
         let done = primary_button(ui, c, None, "Done", 38.0, true);
         if done.clicked() {

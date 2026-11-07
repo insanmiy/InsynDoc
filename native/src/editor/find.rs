@@ -13,7 +13,12 @@ impl Editor {
             .fill(colors.app_surface)
             .stroke(Stroke::new(1.0_f32, colors.app_border))
             .corner_radius(12)
-            .inner_margin(Margin::symmetric(16, 12))
+            .inner_margin(Margin {
+                left: 16,
+                right: 16,
+                top: 12,
+                bottom: 8,
+            })
             .show(ui, |ui| {
                 ui.set_min_width(ui.available_width());
                 let (heading, _) =

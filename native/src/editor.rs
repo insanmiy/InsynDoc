@@ -487,7 +487,7 @@ impl Editor {
                             area.left() + inset - self.horizontal_scroll,
                             area.top() + 8.0,
                         ),
-                        vec2(page_width, 20.0),
+                        vec2(page_width, 25.0),
                     );
                     ruler(
                         ui,
@@ -593,7 +593,7 @@ impl Editor {
                                 Some(Color32::from_rgb(32, 32, 32));
                             ui.visuals_mut().selection.bg_fill = Color32::from_rgb(180, 208, 248);
                             ui.visuals_mut().text_cursor.stroke =
-                                Stroke::new(1.5_f32, Color32::from_rgb(0x20, 0x21, 0x24));
+                                Stroke::new(1.0_f32, Color32::from_rgb(0x20, 0x21, 0x24));
                             for index in group {
                                 self.paragraph(ui, state, index, content_width, zoom);
                             }
@@ -675,7 +675,7 @@ impl Editor {
                     section.format.line_height = Some(if absolute_spacing {
                         line_spacing * 4.0 / 3.0 * zoom
                     } else {
-                        section.format.font_id.size * line_spacing
+                        ui.fonts(|fonts| fonts.row_height(&section.format.font_id)) * line_spacing
                     });
                 }
             }
@@ -1369,7 +1369,7 @@ fn ruler(
     tri(&painter, origin, bottom - 12.0, true);
     painter.rect_filled(
         egui::Rect::from_min_size(
-            egui::pos2(origin - 4.0, bottom - 6.0),
+            egui::pos2(origin - 4.0, bottom - 4.0),
             vec2(8.0, 6.0),
         ),
         0.0,
