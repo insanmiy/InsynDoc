@@ -227,6 +227,11 @@ fn modal_header(
             let (rect, _) = ui.allocate_exact_size(vec2(36.0, 36.0), Sense::hover());
             let shifted = rect.translate(vec2(8.0, 0.0));
             let hovered = ui.rect_contains_pointer(shifted);
+            ui.painter().circle_stroke(
+                shifted.center(),
+                18.0,
+                Stroke::new(1.0_f32, c.app_border),
+            );
             if hovered {
                 ui.painter()
                     .circle_filled(shifted.center(), 18.0, c.app_hover);
@@ -585,7 +590,7 @@ fn section_title(
     section: &str,
     mem: &mut SettingsMem,
 ) {
-    ui.add_space(18.0);
+    ui.add_space(14.0);
     let response = ui.label(
         RichText::new(title)
             .font(theme::ui_font_id_weight(13.0, 600))
@@ -595,7 +600,7 @@ fn section_title(
         response.scroll_to_me(Some(egui::Align::TOP));
         mem.scroll_section = None;
     }
-    ui.add_space(7.0);
+    ui.add_space(5.0);
 }
 
 /// `.theme-options` — three selectable cards with mini preview drawings.
@@ -637,7 +642,7 @@ fn theme_card(
     card_w: f32,
 ) {
     // .theme-option — flex 1, border 2px, padding 5, radius 10.
-    let preview_h = 84.0;
+    let preview_h = 100.0;
     let caption_h = 32.0;
     let (rect, response) = ui.allocate_exact_size(
         vec2(card_w, 7.0 + preview_h + caption_h + 7.0),
@@ -1034,7 +1039,7 @@ fn editor_toggle(
     description: &str,
     field: fn(&mut Preferences) -> &mut bool,
 ) {
-    ui.add_space(17.0);
+    ui.add_space(13.0);
     let width = ui.available_width();
     ui.horizontal(|ui| {
         ui.spacing_mut().item_spacing.x = 16.0;
@@ -1165,6 +1170,7 @@ fn draw_shortcuts(ui: &mut egui::Ui, c: &UiColors) {
     ];
     // .shortcut-list — 2 columns, gap 28, 11px rows, kbd right.
     let col_w = (ui.available_width() - 28.0) / 2.0;
+    ui.spacing_mut().item_spacing.y = 0.0;
     for row in 0..8 {
         ui.horizontal(|ui| {
             ui.spacing_mut().item_spacing = egui::vec2(28.0, 0.0);

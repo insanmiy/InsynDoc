@@ -89,6 +89,7 @@ fn render_comparison_images() {
                 &serde_json::json!({"query":"Find"}),
                 &mut state,
             );
+            state.surface.dirty = true;
         }
         if name == "dark-settings-actions" {
             ui::modals::set_update_status(&context, "unsupported");

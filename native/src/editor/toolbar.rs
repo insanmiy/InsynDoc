@@ -802,7 +802,7 @@ fn colorsplit_button(
         colors.app_text,
     );
     ui.painter().rect_filled(
-        Rect::from_min_size(pos2(rect.left() + 7.0, rect.bottom() - 7.0), vec2(16.0, 4.0)),
+        Rect::from_min_size(pos2(rect.left() + 7.0, rect.bottom() - 11.0), vec2(16.0, 4.0)),
         1,
         bar,
     );

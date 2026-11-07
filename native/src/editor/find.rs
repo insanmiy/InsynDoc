@@ -35,12 +35,7 @@ impl Editor {
                 ui.add_space(8.0);
                 let (matches, truncated) = self.find_matches();
                 let plus = if truncated { "+" } else { "" };
-                let active = matches
-                    .iter()
-                    .position(|(index, range)| *index == self.active && *range == self.selection);
-                let count = active
-                    .map(|index| format!("{} Of {}{}", index + 1, matches.len(), plus))
-                    .unwrap_or_else(|| format!("{}{}", matches.len(), plus));
+                let count = format!("{}{}", matches.len(), plus);
                 let wide = ui.available_width() >= 740.0;
                 let mut navigate = 0;
                 let mut query_changed = false;
@@ -55,7 +50,7 @@ impl Editor {
                     let input_frame = Frame::new()
                         .stroke(Stroke::new(1.0_f32, colors.app_border))
                         .corner_radius(5)
-                        .inner_margin(Margin::symmetric(10, 8))
+                        .inner_margin(Margin::symmetric(10, 4))
                         .show(ui, |ui| {
                             ui.set_width((input_width - 20.0).max(80.0));
                             ui.horizontal(|ui| {
@@ -437,7 +432,12 @@ impl Editor {
     }
 }
 
-fn match_ranges(text: &str, query: &str, match_case: bool, whole_words: bool) -> Vec<Range<usize>> {
+pub(super) fn match_ranges(
+    text: &str,
+    query: &str,
+    match_case: bool,
+    whole_words: bool,
+) -> Vec<Range<usize>> {
     let query_length = query.chars().count();
     if query_length == 0 {
         return Vec::new();

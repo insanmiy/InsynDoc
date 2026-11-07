@@ -659,8 +659,21 @@ impl Editor {
         let mut text = old_text.clone();
         let insertion_format = self.format.clone();
         let selected_range = self.selected_range_in(index);
+        let find_ranges = if state.surface.find_open && !self.find.is_empty() {
+            find::match_ranges(&old_text, &self.find, self.match_case, self.whole_words)
+        } else {
+            Vec::new()
+        };
         let mut layouter = |ui: &egui::Ui, text: &str, wrap: f32| {
             let mut job = layout_job(ui, text, &runs, &alignment, wrap, zoom);
+            for range in &find_ranges {
+                highlight_range_color(
+                    &mut job,
+                    text,
+                    range.clone(),
+                    Color32::from_rgb(255, 242, 173),
+                );
+            }
             if let Some(range) = &selected_range {
                 highlight_range(&mut job, text, range.clone());
             }
@@ -1336,24 +1349,19 @@ fn ruler(
             );
         }
     }
-    for (x, top) in [
-        (origin, true),
-        (origin, false),
-        (rect.right() - right_margin, false),
-    ] {
-        let marker_h = 9.0;
-        let y = if top { rect.top() } else { rect.bottom() - marker_h };
-        let points = if top {
+    // First-line indent marker: downward triangle at the top of the ruler.
+    let tri = |painter: &egui::Painter, x: f32, top: f32, up: bool| {
+        let points = if up {
             vec![
-                egui::pos2(x - 7.0, y),
-                egui::pos2(x + 7.0, y),
-                egui::pos2(x, y + marker_h),
+                egui::pos2(x - 4.0, top + 6.0),
+                egui::pos2(x + 4.0, top + 6.0),
+                egui::pos2(x, top),
             ]
         } else {
             vec![
-                egui::pos2(x - 7.0, y + marker_h),
-                egui::pos2(x + 7.0, y + marker_h),
-                egui::pos2(x, y),
+                egui::pos2(x - 4.0, top),
+                egui::pos2(x + 4.0, top),
+                egui::pos2(x, top + 6.0),
             ]
         };
         painter.add(egui::Shape::convex_polygon(
@@ -1361,15 +1369,21 @@ fn ruler(
             colors.app_accent,
             Stroke::NONE,
         ));
-    }
+    };
+    tri(&painter, origin, rect.top(), false);
+    // Left indent marker: upward triangle resting on a rectangular pedestal.
+    let bottom = rect.bottom();
+    tri(&painter, origin, bottom - 12.0, true);
     painter.rect_filled(
         egui::Rect::from_min_size(
-            egui::pos2(origin - 4.0, rect.bottom() - 1.0),
-            vec2(8.0, 3.0),
+            egui::pos2(origin - 4.0, bottom - 6.0),
+            vec2(8.0, 6.0),
         ),
         0.0,
         colors.app_accent,
     );
+    // Right indent marker: single upward triangle near the bottom.
+    tri(&painter, rect.right() - right_margin, bottom - 12.0, true);
 }
 
 fn paragraph_height(ui: &egui::Ui, paragraph: &Paragraph, width: f32, zoom: f32) -> f32 {
@@ -1427,6 +1441,15 @@ fn layout_job(
 }
 
 fn highlight_range(job: &mut egui::text::LayoutJob, text: &str, range: Range<usize>) {
+    highlight_range_color(job, text, range, Color32::from_rgb(180, 208, 248));
+}
+
+fn highlight_range_color(
+    job: &mut egui::text::LayoutJob,
+    text: &str,
+    range: Range<usize>,
+    color: Color32,
+) {
     let start = char_byte(text, range.start);
     let end = char_byte(text, range.end);
     if start >= end {
@@ -1443,7 +1466,7 @@ fn highlight_range(job: &mut egui::text::LayoutJob, text: &str, range: Range<usi
             }
             let mut format = section.format.clone();
             if segment.start >= start && segment.end <= end {
-                format.background = Color32::from_rgb(180, 208, 248);
+                format.background = color;
             }
             sections.push(egui::text::LayoutSection { leading_space, byte_range: segment, format });
             leading_space = 0.0;

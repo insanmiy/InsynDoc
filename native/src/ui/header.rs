@@ -52,7 +52,7 @@ pub fn draw(
         // .app-logo — 44x48 area, 44x44 image 5px from top.
         let (logo_rect, _) = ui.allocate_exact_size(vec2(44.0, 48.0), Sense::hover());
         let img_rect = Rect::from_min_size(
-            Pos2::new(logo_rect.left(), logo_rect.top() + 5.0),
+            Pos2::new(logo_rect.left(), logo_rect.top() + 7.0),
             vec2(44.0, 44.0),
         );
         if let Some(tex) = assets.logo {

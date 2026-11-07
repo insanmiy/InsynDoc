@@ -134,7 +134,7 @@ impl Editor {
                         selected = Some(command);
                     }
                 }
-                let results_height = 400.0_f32.min(ctx.screen_rect().height() * 0.55);
+                let results_height = 440.0_f32.min(ctx.screen_rect().height() * 0.55);
                 ui.allocate_ui_with_layout(
                     vec2(ui.available_width(), results_height),
                     egui::Layout::top_down(Align::LEFT),
@@ -148,6 +148,7 @@ impl Editor {
                             .scroll_bar_visibility(egui::scroll_area::ScrollBarVisibility::VisibleWhenNeeded)
                             .auto_shrink([false, false])
                             .show(ui, |ui| {
+                                ui.spacing_mut().item_spacing.y = 0.0;
                                 if filtered.is_empty() {
                                     ui.label(
                                         RichText::new("No Matching Tools. Try Another Search.")
