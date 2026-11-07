@@ -300,10 +300,11 @@ const BREAK_ITEMS: &[MenuEntry] = &[
 const HEADER_FOOTER_ITEMS: &[MenuEntry] = &[
     item("Edit Header", None, MenuAction::Command("editHeader")),
     item("Edit Footer", None, MenuAction::Command("editFooter")),
-    item(
+    item_disabled(
         "Return To Document",
         None,
         MenuAction::Command("exitHeaderFooter"),
+        |_| true,
     ),
 ];
 

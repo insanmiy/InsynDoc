@@ -375,6 +375,7 @@ impl Editor {
                 }
             }
             "openGoTo" => state.modal = Modal::GoToPage,
+            "exitHeaderFooter" => {}
             _ => return self.execute_tool(command, args, state),
         }
         true
