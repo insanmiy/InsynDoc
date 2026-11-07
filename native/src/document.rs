@@ -41,6 +41,8 @@ pub struct Paragraph {
     pub style: Option<String>,
     pub indent: f32,
     pub line_spacing: f32,
+    pub space_before: f32,
+    pub space_after: f32,
     pub list: Option<String>,
 }
 
@@ -804,6 +806,16 @@ fn parse_paragraph(node: roxmltree::Node<'_, '_>) -> Paragraph {
             .and_then(|value| value.parse::<f32>().ok())
             .unwrap_or(0.0)
             / 240.0;
+        if let Some(spacing) = child(properties, "spacing") {
+            paragraph.space_before = attribute(spacing, "before")
+                .and_then(|value| value.parse::<f32>().ok())
+                .unwrap_or(0.0)
+                / 20.0;
+            paragraph.space_after = attribute(spacing, "after")
+                .and_then(|value| value.parse::<f32>().ok())
+                .unwrap_or(0.0)
+                / 20.0;
+        }
         paragraph.list = child(properties, "numPr")
             .and_then(|value| child(value, "numId"))
             .and_then(|value| attribute(value, "val"))
@@ -1074,15 +1086,33 @@ fn paragraph_xml_with_numbering(paragraph: &Paragraph, source: Option<&str>, pre
             (paragraph.indent * 15.0).round() as i32
         ));
     }
-    if paragraph.line_spacing > 0.0 {
+    if paragraph.line_spacing > 0.0
+        || paragraph.space_before > 0.0
+        || paragraph.space_after > 0.0
+    {
         let extras = preserved_attributes(
             original_properties.and_then(|node| child(node, "spacing")),
-            &["line", "lineRule"],
+            &["line", "lineRule", "before", "after"],
         );
-        xml.push_str(&format!(
-            "<w:spacing w:line=\"{}\" w:lineRule=\"auto\"{extras}/>",
-            (paragraph.line_spacing * 240.0).round() as u32
-        ));
+        let line = if paragraph.line_spacing > 0.0 {
+            format!(
+                " w:line=\"{}\" w:lineRule=\"auto\"",
+                (paragraph.line_spacing * 240.0).round() as u32
+            )
+        } else {
+            String::new()
+        };
+        let before = if paragraph.space_before > 0.0 {
+            format!(" w:before=\"{}\"", (paragraph.space_before * 20.0).round() as u32)
+        } else {
+            String::new()
+        };
+        let after = if paragraph.space_after > 0.0 {
+            format!(" w:after=\"{}\"", (paragraph.space_after * 20.0).round() as u32)
+        } else {
+            String::new()
+        };
+        xml.push_str(&format!("<w:spacing{line}{before}{after}{extras}/>"));
     }
     if let Some(kind) = paragraph.list.as_ref().filter(|_| !preserve_numbering) {
         let identifier = if kind == "bullet" {

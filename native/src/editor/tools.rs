@@ -38,7 +38,7 @@ impl Editor {
         } else {
             name
         };
-        if matches!(command, "setTextColor" | "setColor" | "setHighlight" | "superscript" | "subscript" | "toggleMark" | "pasteFormatting" | "toggleList" | "toggleBulletList" | "toggleNumberedList" | "changeIndent" | "indent" | "outdent" | "setLineSpacing")
+        if matches!(command, "setTextColor" | "setColor" | "setHighlight" | "superscript" | "subscript" | "toggleMark" | "pasteFormatting" | "toggleList" | "toggleBulletList" | "toggleNumberedList" | "changeIndent" | "indent" | "outdent" | "setLineSpacing" | "spaceBefore" | "spaceAfter")
             && !self.can_format_selection(state)
         {
             return false;
@@ -184,6 +184,30 @@ impl Editor {
                 }
                 if let Some(paragraph) = self.document.paragraphs.get_mut(self.active) {
                     paragraph.line_spacing = value;
+                    self.changed(state);
+                }
+            }
+            "spaceBefore" | "spaceAfter" => {
+                let before = command == "spaceBefore";
+                let selected = self.selected_paragraph_indices();
+                self.checkpoint();
+                let toggle = |paragraph: &mut crate::document::Paragraph| {
+                    let spacing = if before {
+                        &mut paragraph.space_before
+                    } else {
+                        &mut paragraph.space_after
+                    };
+                    *spacing = if *spacing > 0.0 { 0.0 } else { 8.0 };
+                };
+                if self.document_selected || self.cross_selection.is_some() {
+                    for index in selected {
+                        toggle(&mut self.document.paragraphs[index]);
+                    }
+                    self.changed(state);
+                    return true;
+                }
+                if let Some(paragraph) = self.document.paragraphs.get_mut(self.active) {
+                    toggle(paragraph);
                     self.changed(state);
                 }
             }

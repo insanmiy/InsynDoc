@@ -81,17 +81,21 @@ impl Editor {
             let mut picked = None;
             popup(&row, "toolbar-style", &response, |ui| {
                 ui.label(egui::RichText::new("Paragraph Style").weak().small());
-                for &(label, style, size, italic, color) in PARAGRAPH_STYLES {
+                for &(label, style, size, italic, color, before, after, spacing, indent) in
+                    PARAGRAPH_STYLES
+                {
                     if ui
                         .selectable_label(style == picked_style.as_str(), label)
                         .clicked()
                     {
-                        picked = Some((style, size, italic, color));
+                        picked = Some((style, size, italic, color, before, after, spacing, indent));
                     }
                 }
             });
-            if let Some((style, size, italic, color)) = picked {
-                self.apply_paragraph_style(state, style, size, italic, color);
+            if let Some((style, size, italic, color, before, after, spacing, indent)) = picked {
+                self.apply_paragraph_style(
+                    state, style, size, italic, color, before, after, spacing, indent,
+                );
             }
         }
         separator(&mut row, colors);
@@ -320,14 +324,64 @@ impl Editor {
                 true,
                 "Line Spacing",
             );
+            let active_spacing = self
+                .document
+                .paragraphs
+                .get(self.active)
+                .map(|paragraph| {
+                    (
+                        paragraph.line_spacing,
+                        paragraph.space_before,
+                        paragraph.space_after,
+                    )
+                })
+                .unwrap_or((0.0, 0.0, 0.0));
             let mut picked = None;
+            let mut dialog = false;
+            let mut space_command = None;
             popup(&row, "toolbar-spacing", &response, |ui| {
-                for value in [1.0, 1.15, 1.5, 2.0] {
-                    if ui.button(value.to_string()).clicked() {
+                for value in [1.0, 1.08, 1.15, 1.5, 2.0, 2.5, 3.0] {
+                    let current = if active_spacing.0 > 0.0 {
+                        (active_spacing.0 - value).abs() < 0.005
+                    } else {
+                        (value - 1.08).abs() < 0.005
+                    };
+                    let label = if current {
+                        format!("{value}\u{2713}")
+                    } else {
+                        value.to_string()
+                    };
+                    if ui.button(label).clicked() {
                         picked = Some(value);
                     }
                 }
+                ui.separator();
+                if ui.button("Line Spacing Options…").clicked() {
+                    dialog = true;
+                }
+                let before_label = if active_spacing.1 > 0.0 {
+                    "Remove Space Before Paragraph"
+                } else {
+                    "Add Space Before Paragraph"
+                };
+                let after_label = if active_spacing.2 > 0.0 {
+                    "Remove Space After Paragraph"
+                } else {
+                    "Add Space After Paragraph"
+                };
+                if ui.button(before_label).clicked() {
+                    space_command = Some("spaceBefore");
+                }
+                if ui.button(after_label).clicked() {
+                    space_command = Some("spaceAfter");
+                }
             });
+            if dialog {
+                self.toolbar_command("openParagraphDialog", Value::Null, state);
+            }
+            if let Some(command) = space_command {
+                self.toolbar_command(command, Value::Null, state);
+            }
             if let Some(value) = picked {
                 self.toolbar_command("setLineSpacing", json!({"value":value}), state);
             }
@@ -505,6 +559,10 @@ impl Editor {
         size: f32,
         italic: bool,
         color: Option<&str>,
+        space_before: f32,
+        space_after: f32,
+        line_spacing: f32,
+        indent: f32,
     ) {
         self.checkpoint();
         let mut indices = self.selected_paragraph_indices();
@@ -516,6 +574,10 @@ impl Editor {
                 continue;
             };
             paragraph.style = Some(style.into());
+            paragraph.space_before = space_before;
+            paragraph.space_after = space_after;
+            paragraph.line_spacing = line_spacing;
+            paragraph.indent = indent;
             if style == "Quote" {
                 paragraph.alignment = crate::document::Alignment::Center;
             }
@@ -532,19 +594,23 @@ impl Editor {
     }
 }
 
-const PARAGRAPH_STYLES: &[(&str, &str, f32, bool, Option<&str>)] = &[
-    ("Normal", "Normal", 11.0, false, None),
-    ("Title", "Title", 28.0, false, None),
-    ("Subtitle", "Subtitle", 11.0, false, Some("5A5A5A")),
-    ("Heading 1", "Heading1", 16.0, false, Some("2F5496")),
-    ("Heading 2", "Heading2", 13.0, false, Some("2F5496")),
-    ("Heading 3", "Heading3", 12.0, false, Some("1F3763")),
-    ("Heading 4", "Heading4", 11.0, true, Some("2F5496")),
-    ("Heading 5", "Heading5", 11.0, false, Some("2F5496")),
-    ("Quote", "Quote", 11.0, true, Some("404040")),
-    ("Caption", "Caption", 9.0, true, Some("404040")),
-    ("No Spacing", "NoSpacing", 11.0, false, None),
-    ("List Paragraph", "ListParagraph", 11.0, false, None),
+const DEFAULT_LINE_SPACING: f32 = 259.0 / 240.0;
+
+// Spacing values mirror the default styles.xml: before/after in points,
+// line_spacing as a multiple where 0 inherits, indent in native units.
+const PARAGRAPH_STYLES: &[(&str, &str, f32, bool, Option<&str>, f32, f32, f32, f32)] = &[
+    ("Normal", "Normal", 11.0, false, None, 0.0, 8.0, DEFAULT_LINE_SPACING, 0.0),
+    ("Title", "Title", 28.0, false, None, 0.0, 0.0, 1.0, 0.0),
+    ("Subtitle", "Subtitle", 11.0, false, Some("5A5A5A"), 0.0, 8.0, DEFAULT_LINE_SPACING, 0.0),
+    ("Heading 1", "Heading1", 16.0, false, Some("2F5496"), 12.0, 0.0, DEFAULT_LINE_SPACING, 0.0),
+    ("Heading 2", "Heading2", 13.0, false, Some("2F5496"), 2.0, 0.0, DEFAULT_LINE_SPACING, 0.0),
+    ("Heading 3", "Heading3", 12.0, false, Some("1F3763"), 2.0, 0.0, DEFAULT_LINE_SPACING, 0.0),
+    ("Heading 4", "Heading4", 11.0, true, Some("2F5496"), 2.0, 0.0, DEFAULT_LINE_SPACING, 0.0),
+    ("Heading 5", "Heading5", 11.0, false, Some("2F5496"), 2.0, 0.0, DEFAULT_LINE_SPACING, 0.0),
+    ("Quote", "Quote", 11.0, true, Some("404040"), 8.0, 8.0, DEFAULT_LINE_SPACING, 0.0),
+    ("Caption", "Caption", 9.0, true, Some("404040"), 0.0, 0.0, DEFAULT_LINE_SPACING, 0.0),
+    ("No Spacing", "NoSpacing", 11.0, false, None, 0.0, 0.0, 1.0, 0.0),
+    ("List Paragraph", "ListParagraph", 11.0, false, None, 0.0, 8.0, DEFAULT_LINE_SPACING, 48.0),
 ];
 
 fn paragraph_style_label(style: &str) -> &str {

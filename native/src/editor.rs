@@ -613,6 +613,8 @@ impl Editor {
         let paragraph = &self.document.paragraphs[index];
         let indent = paragraph.indent.max(0.0) * zoom;
         let line_spacing = paragraph.line_spacing;
+        let space_before = paragraph.space_before;
+        let space_after = paragraph.space_after;
         let marker = match paragraph.list.as_deref() {
             Some("bullet") => Some("\u{2022}".to_string()),
             Some("number") => {
@@ -690,6 +692,7 @@ impl Editor {
                     }
                 }
             });
+        ui.add_space(space_before.max(0.0) * zoom);
         let output = ui
             .horizontal_top(|ui| {
                 ui.spacing_mut().item_spacing.x = 0.0;
@@ -712,6 +715,7 @@ impl Editor {
                     .show(ui)
             })
             .inner;
+        ui.add_space(space_after.max(0.0) * zoom);
         self.track_text_drag(ui, index, &output);
         if output.response.clicked() {
             self.document_selected = false;

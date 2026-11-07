@@ -62,9 +62,14 @@ pub fn layout_document(ctx: &egui::Context, document: &Document) -> Result<Docum
     let page_bottom = setup.height - setup.margin_bottom;
     let mut numbered_count = 0;
     for (index, paragraph) in document.paragraphs.iter().enumerate() {
-        if !paragraph.indent.is_finite() || !paragraph.line_spacing.is_finite() {
+        if !paragraph.indent.is_finite()
+            || !paragraph.line_spacing.is_finite()
+            || !paragraph.space_before.is_finite()
+            || !paragraph.space_after.is_finite()
+        {
             return Err("The Paragraph Layout Contains An Invalid Value.".into());
         }
+        page_y = (page_y + paragraph.space_before.max(0.0)).min(page_bottom);
         let marker = match paragraph.list.as_deref() {
             Some("bullet") => {
                 numbered_count = 0;
@@ -134,7 +139,7 @@ pub fn layout_document(ctx: &egui::Context, document: &Document) -> Result<Docum
                 page_y = setup.margin_top;
             }
         }
-        page_y = (page_y + 8.0).min(page_bottom);
+        page_y = (page_y + paragraph.space_after.max(0.0) + 8.0).min(page_bottom);
     }
     Ok(layout)
 }
