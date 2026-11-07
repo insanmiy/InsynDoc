@@ -283,18 +283,16 @@ impl Workspace {
                 }
             }
             "rename" => {
-                let name = args
+                let raw = args
                     .get("name")
                     .and_then(Value::as_str)
-                    .unwrap_or("")
-                    .trim();
-                if name.is_empty() {
-                    return;
-                }
-                let name = if name.to_ascii_lowercase().ends_with(".docx") {
-                    name.to_owned()
-                } else {
-                    format!("{name}.docx")
+                    .unwrap_or("");
+                let name = match validate_rename(raw) {
+                    Ok(name) => name,
+                    Err(error) => {
+                        state.surface.error = Some(error);
+                        return;
+                    }
                 };
                 if let Some(path) = &self.path {
                     match files::rename_document(path, &name) {
@@ -306,11 +304,6 @@ impl Workspace {
                         }
                         Err(error) => state.surface.error = Some(error),
                     }
-                } else if name
-                    .chars()
-                    .any(|character| character.is_control() || "<>:\"/\\|?*".contains(character))
-                {
-                    state.surface.error = Some("Choose A Valid Document Name.".into());
                 } else {
                     state.surface.name = name;
                 }
@@ -326,6 +319,42 @@ impl Workspace {
             }
         }
     }
+}
+
+fn validate_rename(title: &str) -> Result<String, String> {
+    let trimmed = title.trim();
+    if trimmed.is_empty()
+        || trimmed
+            .chars()
+            .any(|character| "<>:\"/\\|?*".contains(character) || character.is_control())
+        || trimmed.ends_with('.')
+        || trimmed.ends_with(' ')
+    {
+        return Err(
+            "Choose A Name Without Slashes, Reserved Characters, Or A Trailing Dot.".into(),
+        );
+    }
+    let name = if trimmed.to_ascii_lowercase().ends_with(".docx") {
+        trimmed.to_owned()
+    } else {
+        format!("{trimmed}.docx")
+    };
+    let stem = name.split('.').next().unwrap_or("");
+    let lower = stem.to_ascii_lowercase();
+    let reserved = ["con", "prn", "aux", "nul"].contains(&lower.as_str())
+        || (lower.len() == 4
+            && (lower.starts_with("com") || lower.starts_with("lpt"))
+            && matches!(lower.as_bytes()[3], b'1'..=b'9'));
+    if name.encode_utf16().count() > 180
+        || name.starts_with('.')
+        || name
+            .chars()
+            .any(|character| ('\u{7f}'..='\u{9f}').contains(&character))
+        || reserved
+    {
+        return Err("Choose A Shorter Name That Is Not Reserved By Windows.".into());
+    }
+    Ok(name)
 }
 
 #[cfg(test)]
@@ -356,5 +385,26 @@ mod tests {
         assert!(!state.surface.dirty);
         workspace.request_close(&mut state);
         assert!(state.quitting);
+    }
+
+    #[test]
+    fn rename_validation_matches_document_session_rules() {
+        assert_eq!(validate_rename("Report").unwrap(), "Report.docx");
+        assert_eq!(validate_rename("Report.docx").unwrap(), "Report.docx");
+        for bad in [
+            "",
+            "   ",
+            "a/b",
+            "a<b",
+            "a|b",
+            "name.",
+            ".hidden",
+            "CON",
+            "lpt3",
+            "nul.docx",
+        ] {
+            assert!(validate_rename(bad).is_err(), "{bad} should fail");
+        }
+        assert!(validate_rename("COM0").is_ok());
     }
 }
