@@ -4,14 +4,6 @@ use crate::{editor, state, theme, ui};
 #[test]
 #[ignore = "Writes Native UI Comparison Images Using A GPU Adapter"]
 fn render_comparison_images() {
-    let context = egui::Context::default();
-    context.style_mut(|style| style.animation_time = 0.0);
-    theme::install_fonts(
-        &context,
-        crate::INTER_TTF,
-        crate::INTER_MEDIUM_TTF,
-        crate::INTER_SEMIBOLD_TTF,
-    );
     let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor::default());
     let adapter =
         pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions::default()))
@@ -64,6 +56,14 @@ fn render_comparison_images() {
             state::Modal::Settings,
         ),
     ] {
+        let context = egui::Context::default();
+        context.style_mut(|style| style.animation_time = 0.0);
+        theme::install_fonts(
+            &context,
+            crate::INTER_TTF,
+            crate::INTER_MEDIUM_TTF,
+            crate::INTER_SEMIBOLD_TTF,
+        );
         theme::apply_theme(&context, resolved_theme);
         let mut state = state::AppState::default();
         state.modal = modal;
@@ -94,6 +94,16 @@ fn render_comparison_images() {
         if name == "dark-settings-actions" {
             ui::modals::set_update_status(&context, "unsupported");
         }
+        // Seed one undo entry so the toolbar Undo button renders enabled like
+        // the reference captures; the alignment is already left so the
+        // document itself is unchanged.
+        editor.execute(
+            "editorExec",
+            &serde_json::json!({"type":"setAlignment","align":"left"}),
+            &mut state,
+        );
+        state.surface.dirty = name == "dark-find";
+        state.surface.message = String::new();
         editor.sync_state(&mut state);
         let logo = crate::load_logo(&context, resolved_theme == theme::Theme::Dark);
         for frame_index in 0..20 {

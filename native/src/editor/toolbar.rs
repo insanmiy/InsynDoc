@@ -706,7 +706,7 @@ fn icon_button(
         );
     }
     let color = if !enabled {
-        colors.app_text.linear_multiply(0.4)
+        crate::ui::dim_color(colors.app_muted, 0.5)
     } else if active {
         colors.app_accent_ink
     } else {
@@ -745,7 +745,7 @@ fn dropdown_icon_button(
         );
     }
     let color = if !enabled {
-        colors.app_text.linear_multiply(0.4)
+        crate::ui::dim_color(colors.app_muted, 0.5)
     } else if active {
         colors.app_accent_ink
     } else {
