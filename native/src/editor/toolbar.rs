@@ -40,6 +40,7 @@ impl Editor {
             true,
             "Search The Menus (Alt+/)",
         );
+        row.painter().rect_filled(search.rect, 7, colors.app_surface);
         row.painter().rect_stroke(
             search.rect,
             7,

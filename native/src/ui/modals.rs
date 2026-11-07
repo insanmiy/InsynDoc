@@ -121,7 +121,7 @@ pub fn draw(ctx: &egui::Context, state: &mut AppState, assets: &ChromeAssets, ou
     let content_width = (width - 58.0).min(screen.width() - 86.0).max(240.0);
     let bottom_margin = if tall { 10 } else { 24 };
     let content_height =
-        (screen.height() - 110.0).max(200.0) + (24.0 - bottom_margin as f32);
+        (screen.height() - 103.0).max(200.0) + (24.0 - bottom_margin as f32);
     let response = egui::Modal::new(Id::new(("application-modal", title)))
         .backdrop_color(c.modal_backdrop)
         .frame(
@@ -1165,7 +1165,7 @@ fn draw_go_to_page(ui: &mut egui::Ui, state: &mut AppState, c: &UiColors, out: &
 // ---------------------------------------------------------------------------
 
 fn draw_shortcuts(ui: &mut egui::Ui, c: &UiColors) {
-    ui.add_space(9.0);
+    ui.add_space(5.0);
     const SHORTCUTS: &[(&str, &str)] = &[
         ("New Document", "Ctrl+N"),
         ("Open Document", "Ctrl+O"),
@@ -1235,7 +1235,6 @@ fn draw_shortcuts(ui: &mut egui::Ui, c: &UiColors) {
             }
         });
     }
-    ui.add_space(2.0);
     modal_footer(ui, |ui| {
         let done = primary_button(ui, c, None, "Done", 38.0, true);
         if done.clicked() {
@@ -1524,8 +1523,8 @@ mod tests {
         });
         let bounds = modal_rect.expect("Settings Modal Frame");
         assert!((bounds.width() - 580.0).abs() <= 2.0, "{bounds:?}");
-        assert!((bounds.height() - 840.0).abs() <= 2.0, "{bounds:?}");
-        assert!((bounds.top() - 30.0).abs() <= 2.0, "{bounds:?}");
+        assert!((bounds.height() - 847.0).abs() <= 2.0, "{bounds:?}");
+        assert!((bounds.top() - 27.0).abs() <= 2.0, "{bounds:?}");
         assert!(
             card_top > description_bottom + 10.0,
             "Card {card_top}, Description {description_bottom}"

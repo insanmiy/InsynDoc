@@ -593,7 +593,7 @@ impl Editor {
                                 Some(Color32::from_rgb(32, 32, 32));
                             ui.visuals_mut().selection.bg_fill = Color32::from_rgb(180, 208, 248);
                             ui.visuals_mut().text_cursor.stroke =
-                                Stroke::new(1.0_f32, Color32::from_rgb(0x20, 0x21, 0x24));
+                                Stroke::new(2.0_f32, Color32::from_rgb(0x20, 0x21, 0x24));
                             for index in group {
                                 self.paragraph(ui, state, index, content_width, zoom);
                             }
