@@ -23,6 +23,7 @@ pub(super) struct Tools {
     text: String,
     bookmark_name: String,
     bookmarks: Vec<(String, usize)>,
+    date_index: usize,
     copied_format: Option<TextFormat>,
     painter_armed: bool,
 }
@@ -47,10 +48,13 @@ impl Editor {
             "paragraphMarks" => self.tools.paragraph_marks = !self.tools.paragraph_marks,
             "bookmarks" | "openBookmarkDialog" => self.tools.dialog = Some(ToolDialog::Bookmarks),
             "insertDateTime" => {
-                self.tools.text = current_utc_date_time();
+                self.tools.date_index = 0;
                 self.tools.dialog = Some(ToolDialog::DateTime);
             }
-            "insertSymbols" => self.tools.dialog = Some(ToolDialog::Symbols),
+            "insertSymbols" => {
+                self.tools.text.clear();
+                self.tools.dialog = Some(ToolDialog::Symbols);
+            }
             "insertMath" => {
                 self.tools.text.clear();
                 self.tools.dialog = Some(ToolDialog::MathText);
@@ -308,32 +312,68 @@ impl Editor {
                         }
                     }
                     ToolDialog::Symbols => {
+                        ui.add(
+                            egui::TextEdit::singleline(&mut self.tools.text)
+                                .hint_text("Search By Name Or Character")
+                                .desired_width(390.0),
+                        );
+                        let query = self.tools.text.trim().to_lowercase();
                         egui::Grid::new("native-symbol-grid")
-                            .spacing([12.0, 12.0])
+                            .spacing([10.0, 10.0])
                             .show(ui, |ui| {
-                                for (index, symbol) in [
-                                    "©", "®", "™", "°", "±", "×", "÷", "€", "£", "¥", "§", "¶",
-                                    "α", "β", "γ", "δ", "π", "Σ", "∞", "√", "≤", "≥", "≠", "≈",
-                                ]
-                                .iter()
-                                .enumerate()
-                                {
-                                    if ui.button(*symbol).clicked() {
+                                let mut column = 0;
+                                for (symbol, name) in SYMBOLS {
+                                    if !query.is_empty()
+                                        && !format!("{symbol} {name}")
+                                            .to_lowercase()
+                                            .contains(&query)
+                                    {
+                                        continue;
+                                    }
+                                    if ui.button(*symbol).on_hover_text(*name).clicked() {
                                         self.insert_tool_text(symbol, state);
                                         close = true;
                                     }
-                                    if index % 8 == 7 {
+                                    column += 1;
+                                    if column % 6 == 0 {
                                         ui.end_row();
                                     }
                                 }
                             });
+                        if !query.is_empty()
+                            && SYMBOLS.iter().all(|(symbol, name)| {
+                                !format!("{symbol} {name}")
+                                    .to_lowercase()
+                                    .contains(&query)
+                            })
+                        {
+                            ui.label("No Matching Characters.");
+                        }
                     }
-                    ToolDialog::DateTime | ToolDialog::MathText => {
-                        ui.label(if dialog == ToolDialog::DateTime {
-                            "UTC Date And Time"
-                        } else {
-                            "Enter Mathematical Symbols As Document Text."
-                        });
+                    ToolDialog::DateTime => {
+                        ui.label("Insert A Fixed Date Or Time At Your Cursor.");
+                        let formats = local_date_formats();
+                        for (index, format) in formats.iter().enumerate() {
+                            if ui
+                                .selectable_label(
+                                    self.tools.date_index == index,
+                                    format.as_str(),
+                                )
+                                .clicked()
+                            {
+                                self.tools.date_index = index;
+                            }
+                        }
+                        if ui.button("Insert Date And Time").clicked() {
+                            let text = formats
+                                [self.tools.date_index.min(formats.len() - 1)]
+                                .clone();
+                            self.insert_tool_text(&text, state);
+                            close = true;
+                        }
+                    }
+                    ToolDialog::MathText => {
+                        ui.label("Enter Mathematical Symbols As Document Text.");
                         ui.add(
                             egui::TextEdit::singleline(&mut self.tools.text).desired_width(390.0),
                         );
@@ -424,12 +464,52 @@ fn color_argument(args: &Value) -> Option<String> {
         .map(str::to_uppercase)
 }
 
-fn current_utc_date_time() -> String {
-    let seconds = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_secs();
-    utc_date_time(seconds)
+const SYMBOLS: &[(&str, &str)] = &[
+    ("©", "Copyright"),
+    ("®", "Registered Trademark"),
+    ("™", "Trademark"),
+    ("§", "Section"),
+    ("¶", "Paragraph"),
+    ("•", "Bullet"),
+    ("…", "Ellipsis"),
+    ("–", "En Dash"),
+    ("—", "Em Dash"),
+    ("“", "Opening Double Quote"),
+    ("”", "Closing Double Quote"),
+    ("‘", "Opening Single Quote"),
+    ("’", "Closing Single Quote"),
+    ("€", "Euro"),
+    ("£", "Pound"),
+    ("¥", "Yen"),
+    ("¢", "Cent"),
+    ("±", "Plus Or Minus"),
+    ("×", "Multiplication"),
+    ("÷", "Division"),
+    ("≠", "Not Equal"),
+    ("≤", "Less Than Or Equal"),
+    ("≥", "Greater Than Or Equal"),
+    ("∞", "Infinity"),
+    ("√", "Square Root"),
+    ("π", "Pi"),
+    ("°", "Degree"),
+    ("←", "Left Arrow"),
+    ("→", "Right Arrow"),
+    ("↑", "Up Arrow"),
+    ("↓", "Down Arrow"),
+    ("✓", "Check Mark"),
+];
+
+fn local_date_formats() -> Vec<String> {
+    use chrono::Datelike;
+    let now = chrono::Local::now();
+    let (year, month, day) = (now.year(), now.month(), now.day());
+    let month_name = now.format("%B").to_string();
+    let long_date = format!("{month_name} {day}, {year}");
+    let short_date = format!("{month}/{day}/{year}");
+    let iso_date = format!("{year:04}-{month:02}-{day:02}");
+    let time = now.format("%I:%M %p").to_string();
+    let long = format!("{long_date}, {time}");
+    vec![long_date, short_date, iso_date, time, long]
 }
 
 fn utc_date_time(seconds: u64) -> String {
