@@ -172,6 +172,22 @@ impl Editor {
                 self.tools.text.clear();
                 self.tools.dialog = Some(ToolDialog::MathText);
             }
+            "insertBreak" => {
+                if args.get("kind").and_then(Value::as_str) != Some("page") {
+                    return false;
+                }
+                self.checkpoint();
+                let index = self
+                    .selected_paragraph_indices()
+                    .last()
+                    .copied()
+                    .unwrap_or(self.active)
+                    .min(self.document.paragraphs.len().saturating_sub(1));
+                if let Some(paragraph) = self.document.paragraphs.get_mut(index) {
+                    paragraph.page_break_before = true;
+                    self.changed(state);
+                }
+            }
             "openParagraphDialog" => {
                 self.tools.para_draft = None;
                 self.tools.dialog = Some(ToolDialog::Paragraph);

@@ -359,6 +359,20 @@ impl Editor {
                     self.changed(state);
                 }
             }
+            "setParagraphDirection" => {
+                self.checkpoint();
+                let bidi = args.get("direction").and_then(Value::as_str) == Some("rtl");
+                let selected = self.selected_paragraph_indices();
+                if self.document_selected || self.cross_selection.is_some() {
+                    for index in selected {
+                        self.document.paragraphs[index].bidi = bidi;
+                    }
+                    self.changed(state);
+                } else if let Some(paragraph) = self.document.paragraphs.get_mut(self.active) {
+                    paragraph.bidi = bidi;
+                    self.changed(state);
+                }
+            }
             "openGoTo" => state.modal = Modal::GoToPage,
             _ => return self.execute_tool(command, args, state),
         }
@@ -532,8 +546,9 @@ impl Editor {
         for (index, paragraph) in self.document.paragraphs.iter().enumerate() {
             let estimated = paragraph_height(ui, paragraph, content_width, zoom);
             if height > 0.0
-                && height + estimated > content_height
-                && state.surface.view == ViewMode::Pages
+                && (paragraph.page_break_before
+                    || (height + estimated > content_height
+                        && state.surface.view == ViewMode::Pages))
             {
                 groups.push(Vec::new());
                 height = 0.0;
@@ -1348,6 +1363,7 @@ fn paragraph_height(ui: &egui::Ui, paragraph: &Paragraph, width: f32, zoom: f32)
         .y
         .max(18.0 * zoom)
         + 8.0 * zoom
+        + (paragraph.space_before.max(0.0) + paragraph.space_after.max(0.0)) * 4.0 / 3.0 * zoom
 }
 
 fn layout_job(
