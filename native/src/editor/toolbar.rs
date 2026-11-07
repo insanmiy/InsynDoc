@@ -17,7 +17,7 @@ impl Editor {
             egui::StrokeKind::Inside,
         );
         let content = Rect::from_min_max(
-            pos2(shell.left() + 8.0, shell.top() + 8.0),
+            pos2(shell.left() + 11.0, shell.top() + 6.0),
             pos2(shell.right() - 8.0, shell.bottom() - 8.0),
         );
         let trailing_width = 86.0;
@@ -31,22 +31,23 @@ impl Editor {
         );
         row.spacing_mut().item_spacing = vec2(2.0, 0.0);
         let mut overflow = Vec::new();
-        let search = icon_button(
-            &mut row,
-            colors,
-            IconName::Search,
-            32.0,
-            false,
-            true,
-            "Search The Menus (Alt+/)",
-        );
-        row.painter().rect_filled(search.rect, 7, colors.app_surface);
+        let (search_rect, search) =
+            row.allocate_exact_size(vec2(32.0, 30.0), Sense::click());
+        row.painter().rect_filled(search_rect, 7, colors.app_surface);
         row.painter().rect_stroke(
-            search.rect,
+            search_rect,
             7,
             Stroke::new(1.0_f32, colors.app_border),
             egui::StrokeKind::Inside,
         );
+        icons::paint_icon_filled(
+            row.ctx(),
+            row.painter(),
+            IconName::Search,
+            Rect::from_center_size(search_rect.center(), vec2(18.0, 18.0)),
+            colors.app_text,
+        );
+        let search = search.on_hover_text("Search The Menus (Alt+/)");
         if search.clicked() {
             self.toolbar_command("searchMenus", Value::Null, state);
         }

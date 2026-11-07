@@ -104,7 +104,7 @@ impl Editor {
                         }
                     });
                 });
-                ui.add_space(12.0);
+                ui.add_space(5.0);
                 let search = Frame::new()
                     .inner_margin(Margin::symmetric(0, 12))
                     .show(ui, |ui| {
@@ -174,7 +174,7 @@ impl Editor {
                         selected = Some(command);
                     }
                 }
-                ui.add_space(-5.0);
+                ui.add_space(-1.0);
                 let results_height = 377.0_f32.min(ctx.screen_rect().height() * 0.55);
                 ui.allocate_ui_with_layout(
                     vec2(ui.available_width(), results_height),

@@ -70,7 +70,7 @@ impl Editor {
             }
             return;
         }
-        ui.add_space(33.0);
+        ui.add_space(30.0);
         let (empty, _) =
             ui.allocate_exact_size(vec2(ui.available_width(), 125.0), egui::Sense::hover());
         let start = empty.min + vec2(12.0, 0.0);
