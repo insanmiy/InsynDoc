@@ -24,6 +24,8 @@ pub(super) struct Tools {
     bookmark_name: String,
     bookmarks: Vec<(String, usize)>,
     date_index: usize,
+    page_paper: usize,
+    page_landscape: bool,
     copied_format: Option<TextFormat>,
     painter_armed: bool,
 }
@@ -43,6 +45,20 @@ impl Editor {
         match command {
             "pageSetup" => {
                 self.tools.page = self.document.page_setup.clone();
+                self.tools.page_landscape =
+                    self.tools.page.width > self.tools.page.height;
+                self.tools.page_paper = PAPER_PRESETS
+                    .iter()
+                    .position(|(_, width, height)| {
+                        let (width, height) = if self.tools.page_landscape {
+                            (*height, *width)
+                        } else {
+                            (*width, *height)
+                        };
+                        (self.tools.page.width - width).abs() < 3.0
+                            && (self.tools.page.height - height).abs() < 3.0
+                    })
+                    .unwrap_or(0);
                 self.tools.dialog = Some(ToolDialog::PageSetup);
             }
             "paragraphMarks" => self.tools.paragraph_marks = !self.tools.paragraph_marks,
@@ -213,33 +229,130 @@ impl Editor {
                 ui.spacing_mut().item_spacing.y = 12.0;
                 match dialog {
                     ToolDialog::PageSetup => {
-                        ui.label("Page Dimensions And Margins In Inches");
+                        ui.label(
+                            RichText::new("PAGE SIZE").weak().small(),
+                        );
+                        let mut picked_paper = None;
+                        ui.horizontal(|ui| {
+                            ui.label("Size");
+                            ui.with_layout(
+                                egui::Layout::right_to_left(Align::Center),
+                                |ui| {
+                                    egui::ComboBox::from_id_salt("page-size")
+                                        .selected_text(PAPER_PRESETS[self.tools.page_paper].0)
+                                        .show_ui(ui, |ui| {
+                                            for (index, (name, _, _)) in
+                                                PAPER_PRESETS.iter().enumerate()
+                                            {
+                                                if ui
+                                                    .selectable_label(
+                                                        self.tools.page_paper == index,
+                                                        *name,
+                                                    )
+                                                    .clicked()
+                                                {
+                                                    picked_paper = Some(index);
+                                                }
+                                            }
+                                        });
+                                },
+                            );
+                        });
+                        if let Some(index) = picked_paper {
+                            self.tools.page_paper = index;
+                            let (_, width, height) = PAPER_PRESETS[index];
+                            let (width, height) = if self.tools.page_landscape {
+                                (height, width)
+                            } else {
+                                (width, height)
+                            };
+                            self.tools.page.width = width;
+                            self.tools.page.height = height;
+                        }
+                        let mut picked_orientation = None;
+                        ui.horizontal(|ui| {
+                            ui.label("Orientation");
+                            ui.with_layout(
+                                egui::Layout::right_to_left(Align::Center),
+                                |ui| {
+                                    egui::ComboBox::from_id_salt("page-orientation")
+                                        .selected_text(if self.tools.page_landscape {
+                                            "Landscape"
+                                        } else {
+                                            "Portrait"
+                                        })
+                                        .show_ui(ui, |ui| {
+                                            for (landscape, name) in
+                                                [(false, "Portrait"), (true, "Landscape")]
+                                            {
+                                                if ui
+                                                    .selectable_label(
+                                                        self.tools.page_landscape == landscape,
+                                                        name,
+                                                    )
+                                                    .clicked()
+                                                {
+                                                    picked_orientation = Some(landscape);
+                                                }
+                                            }
+                                        });
+                                },
+                            );
+                        });
+                        if let Some(landscape) = picked_orientation {
+                            self.tools.page_landscape = landscape;
+                            let (_, width, height) = PAPER_PRESETS[self.tools.page_paper];
+                            let (width, height) = if landscape {
+                                (height, width)
+                            } else {
+                                (width, height)
+                            };
+                            self.tools.page.width = width;
+                            self.tools.page.height = height;
+                        }
+                        ui.add_space(4.0);
+                        ui.label(RichText::new("MARGINS").weak().small());
                         for (label, value) in [
-                            ("Page Width", &mut self.tools.page.width),
-                            ("Page Height", &mut self.tools.page.height),
-                            ("Top Margin", &mut self.tools.page.margin_top),
-                            ("Right Margin", &mut self.tools.page.margin_right),
-                            ("Bottom Margin", &mut self.tools.page.margin_bottom),
-                            ("Left Margin", &mut self.tools.page.margin_left),
+                            ("Top", &mut self.tools.page.margin_top),
+                            ("Bottom", &mut self.tools.page.margin_bottom),
+                            ("Left", &mut self.tools.page.margin_left),
+                            ("Right", &mut self.tools.page.margin_right),
                         ] {
                             ui.horizontal(|ui| {
                                 ui.label(label);
-                                ui.with_layout(egui::Layout::right_to_left(Align::Center), |ui| {
-                                    let mut inches = *value / 96.0;
-                                    if ui
-                                        .add(
-                                            egui::DragValue::new(&mut inches)
-                                                .speed(0.05)
-                                                .range(0.0..=30.0)
-                                                .max_decimals(2),
-                                        )
-                                        .changed()
-                                    {
-                                        *value = inches * 96.0;
-                                    }
-                                });
+                                ui.with_layout(
+                                    egui::Layout::right_to_left(Align::Center),
+                                    |ui| {
+                                        let mut inches = *value / 96.0;
+                                        if ui
+                                            .add(
+                                                egui::DragValue::new(&mut inches)
+                                                    .speed(0.05)
+                                                    .range(0.0..=22.0)
+                                                    .max_decimals(2),
+                                            )
+                                            .changed()
+                                        {
+                                            *value = inches * 96.0;
+                                        }
+                                        ui.label("in");
+                                    },
+                                );
                             });
                         }
+                        ui.horizontal(|ui| {
+                            ui.label("Apply To");
+                            ui.with_layout(
+                                egui::Layout::right_to_left(Align::Center),
+                                |ui| {
+                                    egui::ComboBox::from_id_salt("page-scope")
+                                        .selected_text("Whole Document")
+                                        .show_ui(ui, |ui| {
+                                            ui.selectable_label(true, "Whole Document");
+                                        });
+                                },
+                            );
+                        });
                         let page = &self.tools.page;
                         let valid = page.width >= page.margin_left + page.margin_right + 96.0
                             && page.height >= page.margin_top + page.margin_bottom + 96.0;
@@ -249,12 +362,20 @@ impl Editor {
                                     .color(ui.visuals().error_fg_color),
                             );
                         }
-                        if ui.add_enabled(valid, egui::Button::new("Apply")).clicked() {
-                            self.checkpoint();
-                            self.document.page_setup = self.tools.page.clone();
-                            self.changed(state);
-                            close = true;
-                        }
+                        ui.horizontal(|ui| {
+                            if ui.button("Cancel").clicked() {
+                                close = true;
+                            }
+                            if ui
+                                .add_enabled(valid, egui::Button::new("Apply"))
+                                .clicked()
+                            {
+                                self.checkpoint();
+                                self.document.page_setup = self.tools.page.clone();
+                                self.changed(state);
+                                close = true;
+                            }
+                        });
                     }
                     ToolDialog::Paragraph => {
                         let mut indent = self
@@ -463,6 +584,16 @@ fn color_argument(args: &Value) -> Option<String> {
         .filter(|color| color.len() == 6 && color.bytes().all(|byte| byte.is_ascii_hexdigit()))
         .map(str::to_uppercase)
 }
+
+const PAPER_PRESETS: &[(&str, f32, f32)] = &[
+    ("Letter (8.5\" × 11\")", 816.0, 1056.0),
+    ("A4 (8.27\" × 11.69\")", 793.92, 1122.24),
+    ("Legal (8.5\" × 14\")", 816.0, 1344.0),
+    ("A3 (11.69\" × 16.54\")", 1122.24, 1587.84),
+    ("A5 (5.83\" × 8.27\")", 559.68, 793.92),
+    ("B5 (6.93\" × 9.84\")", 665.28, 944.64),
+    ("Executive (7.25\" × 10.5\")", 696.0, 1008.0),
+];
 
 const SYMBOLS: &[(&str, &str)] = &[
     ("©", "Copyright"),
