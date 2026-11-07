@@ -23,6 +23,37 @@ impl Editor {
             )
             .show(ctx, |ui| {
                 ui.set_width(524.0_f32.min(ctx.screen_rect().width() - 80.0));
+                let mut nav = 0_i32;
+                let mut nav_home = false;
+                let mut nav_end = false;
+                let mut nav_enter = false;
+                let mut query_changed = false;
+                if ui.input_mut(|input| input.consume_key(egui::Modifiers::NONE, egui::Key::Escape))
+                {
+                    close = true;
+                } else {
+                    if ui.input_mut(|input| {
+                        input.consume_key(egui::Modifiers::NONE, egui::Key::ArrowDown)
+                    }) {
+                        nav = 1;
+                    } else if ui.input_mut(|input| {
+                        input.consume_key(egui::Modifiers::NONE, egui::Key::ArrowUp)
+                    }) {
+                        nav = -1;
+                    } else if ui.input_mut(|input| {
+                        input.consume_key(egui::Modifiers::NONE, egui::Key::Home)
+                    }) {
+                        nav_home = true;
+                    } else if ui.input_mut(|input| {
+                        input.consume_key(egui::Modifiers::NONE, egui::Key::End)
+                    }) {
+                        nav_end = true;
+                    } else if ui.input_mut(|input| {
+                        input.consume_key(egui::Modifiers::NONE, egui::Key::Enter)
+                    }) {
+                        nav_enter = true;
+                    }
+                }
                 ui.horizontal(|ui| {
                     ui.heading(
                         RichText::new("Search The Menus")
@@ -64,6 +95,7 @@ impl Editor {
                                     .font(FontId::proportional(14.0))
                                     .frame(false),
                             );
+                            query_changed = edit.changed();
                             if self.search_needs_focus {
                                 edit.request_focus();
                                 self.search_needs_focus = false;
@@ -78,6 +110,30 @@ impl Editor {
                 );
                 ui.add_space(12.0);
                 let query = self.search_query.trim().to_lowercase();
+                let filtered: Vec<_> = MENU_COMMANDS
+                    .iter()
+                    .filter(|(label, _, _)| label.to_lowercase().contains(&query))
+                    .collect();
+                if query_changed {
+                    self.search_selected = 0;
+                }
+                if !filtered.is_empty() {
+                    if nav_home {
+                        self.search_selected = 0;
+                    } else if nav_end {
+                        self.search_selected = filtered.len() - 1;
+                    } else if nav != 0 {
+                        self.search_selected = (self.search_selected as i32 + nav)
+                            .rem_euclid(filtered.len() as i32)
+                            as usize;
+                    }
+                    self.search_selected = self.search_selected.min(filtered.len() - 1);
+                }
+                if nav_enter {
+                    if let Some(&(_, command, _)) = filtered.get(self.search_selected) {
+                        selected = Some(command);
+                    }
+                }
                 let results_height = 400.0_f32.min(ctx.screen_rect().height() * 0.55);
                 ui.allocate_ui_with_layout(
                     vec2(ui.available_width(), results_height),
@@ -92,18 +148,34 @@ impl Editor {
                             .scroll_bar_visibility(egui::scroll_area::ScrollBarVisibility::VisibleWhenNeeded)
                             .auto_shrink([false, false])
                             .show(ui, |ui| {
-                                let mut found = false;
-                                for &(label, command, shortcut) in MENU_COMMANDS {
-                                    if !label.to_lowercase().contains(&query) {
-                                        continue;
-                                    }
-                                    found = true;
+                                if filtered.is_empty() {
+                                    ui.label(
+                                        RichText::new("No Matching Tools. Try Another Search.")
+                                            .size(13.0)
+                                            .color(colors.app_muted),
+                                    );
+                                }
+                                for (index, &(label, command, shortcut)) in
+                                    filtered.iter().enumerate()
+                                {
                                     let (rect, response) = ui.allocate_exact_size(
                                         vec2(ui.available_width(), 40.0),
                                         egui::Sense::click(),
                                     );
                                     if response.hovered() {
-                                        ui.painter().rect_filled(rect, 5.0, colors.app_accent_soft);
+                                        self.search_selected = index;
+                                    }
+                                    let selected_row = index == self.search_selected;
+                                    if selected_row || response.hovered() {
+                                        ui.painter().rect_filled(
+                                            rect,
+                                            5.0,
+                                            if selected_row {
+                                                colors.app_accent_soft
+                                            } else {
+                                                colors.app_hover
+                                            },
+                                        );
                                     }
                                     ui.painter().text(
                                         rect.left_center() + vec2(10.0, 0.0),
@@ -125,13 +197,6 @@ impl Editor {
                                     if response.clicked() {
                                         selected = Some(command);
                                     }
-                                }
-                                if !found {
-                                    ui.label(
-                                        RichText::new("No Matching Tools. Try Another Search.")
-                                            .size(13.0)
-                                            .color(colors.app_muted),
-                                    );
                                 }
                             });
                     },

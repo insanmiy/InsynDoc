@@ -314,7 +314,7 @@ const INSERT_ITEMS: &[MenuEntry] = &[
     item(
         "Go To Bookmark",
         Some("Ctrl+G"),
-        MenuAction::EditorExec(r#"{"type":"openGoTo"}"#),
+        MenuAction::EditorExec(r#"{"type":"openBookmarkDialog"}"#),
     ),
     item("Watermark", None, MenuAction::EditorExec(r#"{"type":"openWatermarkDialog"}"#)),
     // Custom items appended by EditorWorkspace.tsx.

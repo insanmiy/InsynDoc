@@ -196,8 +196,9 @@ impl Workspace {
                     .set_file_name(filename)
                     .save_file()
                 {
-                    if let Err(error) = downloads::write_download(&path, downloads::DownloadFormat::Md, markdown.as_bytes()) {
-                        state.surface.error = Some(error);
+                    match downloads::write_download(&path, downloads::DownloadFormat::Md, markdown.as_bytes()) {
+                        Ok(()) => state.surface.notice = Some(format!("Exported {}", path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default())),
+                        Err(error) => state.surface.error = Some(error),
                     }
                 }
             }
@@ -215,8 +216,9 @@ impl Workspace {
                     .set_file_name(filename)
                     .save_file()
                 {
-                    if let Err(error) = downloads::write_download(&path, downloads::DownloadFormat::Rtf, rtf.as_bytes()) {
-                        state.surface.error = Some(error);
+                    match downloads::write_download(&path, downloads::DownloadFormat::Rtf, rtf.as_bytes()) {
+                        Ok(()) => state.surface.notice = Some(format!("Exported {}", path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default())),
+                        Err(error) => state.surface.error = Some(error),
                     }
                 }
             }
@@ -234,8 +236,9 @@ impl Workspace {
                     .set_file_name(filename)
                     .save_file()
                 {
-                    if let Err(error) = downloads::write_download(&path, downloads::DownloadFormat::Pdf, &pdf) {
-                        state.surface.error = Some(error);
+                    match downloads::write_download(&path, downloads::DownloadFormat::Pdf, &pdf) {
+                        Ok(()) => state.surface.notice = Some(format!("Exported {}", path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default())),
+                        Err(error) => state.surface.error = Some(error),
                     }
                 }
             }
@@ -253,8 +256,9 @@ impl Workspace {
                     .set_file_name(filename)
                     .save_file()
                 {
-                    if let Err(error) = downloads::write_download(&path, downloads::DownloadFormat::Html, &archive) {
-                        state.surface.error = Some(error);
+                    match downloads::write_download(&path, downloads::DownloadFormat::Html, &archive) {
+                        Ok(()) => state.surface.notice = Some(format!("Exported {}", path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default())),
+                        Err(error) => state.surface.error = Some(error),
                     }
                 }
             }
@@ -272,9 +276,9 @@ impl Workspace {
                     .set_file_name(filename)
                     .save_file()
                 {
-                    if let Err(error) = files::write_text(&path, &self.editor.document.plain_text())
-                    {
-                        state.surface.error = Some(error);
+                    match files::write_text(&path, &self.editor.document.plain_text()) {
+                        Ok(()) => state.surface.notice = Some(format!("Exported {}", path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default())),
+                        Err(error) => state.surface.error = Some(error),
                     }
                 }
             }

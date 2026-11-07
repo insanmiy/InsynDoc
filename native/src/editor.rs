@@ -38,6 +38,7 @@ pub struct Editor {
     search_open: bool,
     search_query: String,
     search_needs_focus: bool,
+    search_selected: usize,
     horizontal_scroll: f32,
     viewport_width: f32,
     pub queued_commands: Vec<crate::ui::UiCommand>,
@@ -96,6 +97,7 @@ impl Default for Editor {
             search_open: false,
             search_query: String::new(),
             search_needs_focus: false,
+            search_selected: 0,
             horizontal_scroll: 0.0,
             viewport_width: 1050.0,
             queued_commands: Vec::new(),
@@ -901,9 +903,11 @@ impl Editor {
         if state.modal != Modal::None || self.search_open {
             return;
         }
-        let editing_document = self
-            .active_id
-            .is_some_and(|id| ctx.memory(|memory| memory.has_focus(id)));
+        let document_keys = !state.surface.find_open;
+        let editing_document = document_keys
+            && self
+                .active_id
+                .is_some_and(|id| ctx.memory(|memory| memory.has_focus(id)));
         if editing_document
             && ctx.input_mut(|input| input.consume_key(egui::Modifiers::CTRL, egui::Key::A))
         {
@@ -952,21 +956,23 @@ impl Editor {
         {
             self.merge_paragraph(state);
         }
-        for (key, command) in [
-            (egui::Key::B, "bold"),
-            (egui::Key::I, "italic"),
-            (egui::Key::U, "underline"),
-        ] {
-            if ctx.input_mut(|input| input.consume_key(egui::Modifiers::CTRL, key)) {
-                self.format_command(
-                    &serde_json::json!({"type":"toggleMark","mark":command}),
-                    state,
-                );
+        if document_keys {
+            for (key, command) in [
+                (egui::Key::B, "bold"),
+                (egui::Key::I, "italic"),
+                (egui::Key::U, "underline"),
+            ] {
+                if ctx.input_mut(|input| input.consume_key(egui::Modifiers::CTRL, key)) {
+                    self.format_command(
+                        &serde_json::json!({"type":"toggleMark","mark":command}),
+                        state,
+                    );
+                }
             }
-        }
-        for (key, name) in [(egui::Key::Z, "undo"), (egui::Key::Y, "redo")] {
-            if ctx.input_mut(|input| input.consume_key(egui::Modifiers::CTRL, key)) {
-                self.format_command(&serde_json::json!({"type":name}), state);
+            for (key, name) in [(egui::Key::Z, "undo"), (egui::Key::Y, "redo")] {
+                if ctx.input_mut(|input| input.consume_key(egui::Modifiers::CTRL, key)) {
+                    self.format_command(&serde_json::json!({"type":name}), state);
+                }
             }
         }
         if ctx.input_mut(|input| input.consume_key(egui::Modifiers::CTRL, egui::Key::F)) {

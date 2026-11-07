@@ -33,13 +33,14 @@ impl Editor {
                     state.surface.find_open = false;
                 }
                 ui.add_space(8.0);
-                let matches = self.find_matches();
+                let (matches, truncated) = self.find_matches();
+                let plus = if truncated { "+" } else { "" };
                 let active = matches
                     .iter()
                     .position(|(index, range)| *index == self.active && *range == self.selection);
                 let count = active
-                    .map(|index| format!("{} Of {}", index + 1, matches.len()))
-                    .unwrap_or_else(|| matches.len().to_string());
+                    .map(|index| format!("{} Of {}{}", index + 1, matches.len(), plus))
+                    .unwrap_or_else(|| format!("{}{}", matches.len(), plus));
                 let wide = ui.available_width() >= 740.0;
                 let mut navigate = 0;
                 let mut query_changed = false;
@@ -309,11 +310,12 @@ impl Editor {
         }
     }
 
-    fn find_matches(&self) -> Vec<(usize, Range<usize>)> {
+    fn find_matches(&self) -> (Vec<(usize, Range<usize>)>, bool) {
         if self.find.is_empty() {
-            return Vec::new();
+            return (Vec::new(), false);
         }
-        self.document
+        let mut matches: Vec<_> = self
+            .document
             .paragraphs
             .iter()
             .enumerate()
@@ -327,7 +329,10 @@ impl Editor {
                 .into_iter()
                 .map(move |range| (index, range))
             })
-            .collect()
+            .collect();
+        let truncated = matches.len() > 1000;
+        matches.truncate(1000);
+        (matches, truncated)
     }
 
     pub(super) fn find_next(&mut self) {
@@ -338,7 +343,7 @@ impl Editor {
     }
 
     fn navigate_match(&mut self, previous: bool) {
-        let matches = self.find_matches();
+        let (matches, _) = self.find_matches();
         if matches.is_empty() {
             return;
         }
@@ -381,6 +386,7 @@ impl Editor {
     fn replace_selection(&mut self, state: &mut AppState) {
         if !self
             .find_matches()
+            .0
             .iter()
             .any(|(index, range)| *index == self.active && *range == self.selection)
         {
@@ -408,7 +414,7 @@ impl Editor {
     }
 
     fn replace_all(&mut self, state: &mut AppState) {
-        let matches = self.find_matches();
+        let (matches, _) = self.find_matches();
         if matches.is_empty() {
             return;
         }

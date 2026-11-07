@@ -602,6 +602,10 @@ fn handle_escape(ctx: &egui::Context, state: &mut AppState, out: &mut UiOutput) 
         clear_all_submenus(ctx);
         return;
     }
+    if state.modal == Modal::None && state.surface.find_open {
+        state.surface.find_open = false;
+        return;
+    }
     match state.modal {
         Modal::None => {}
         Modal::ConfirmClose => {
