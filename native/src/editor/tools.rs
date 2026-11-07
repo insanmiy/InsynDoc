@@ -13,6 +13,7 @@ enum ToolDialog {
     DateTime,
     MathText,
     Bookmarks,
+    Link,
 }
 
 #[derive(Default)]
@@ -27,6 +28,7 @@ pub(super) struct Tools {
     page_paper: usize,
     page_landscape: bool,
     pub show_bookmarks: bool,
+    link_url: String,
     copied_format: Option<TextFormat>,
     painter_armed: bool,
     para_draft: Option<ParagraphDraft>,
@@ -171,6 +173,10 @@ impl Editor {
             "insertMath" => {
                 self.tools.text.clear();
                 self.tools.dialog = Some(ToolDialog::MathText);
+            }
+            "insertLink" => {
+                self.tools.link_url = self.link_at_cursor().unwrap_or_default();
+                self.tools.dialog = Some(ToolDialog::Link);
             }
             "insertBreak" => {
                 if args.get("kind").and_then(Value::as_str) != Some("page") {
@@ -355,6 +361,7 @@ impl Editor {
             ToolDialog::DateTime => "Date And Time",
             ToolDialog::MathText => "Insert Math Text",
             ToolDialog::Bookmarks => "Document Bookmarks",
+            ToolDialog::Link => "Insert Link",
         };
         let mut open = true;
         let mut close = false;
@@ -742,6 +749,25 @@ impl Editor {
                             close = true;
                         }
                     }
+                    ToolDialog::Link => {
+                        ui.label("Enter The Web Address For This Link.");
+                        ui.add(
+                            egui::TextEdit::singleline(&mut self.tools.link_url)
+                                .hint_text("https://example.com")
+                                .desired_width(390.0),
+                        );
+                        if ui
+                            .add_enabled(
+                                !self.tools.link_url.trim().is_empty(),
+                                egui::Button::new("Insert Link"),
+                            )
+                            .clicked()
+                        {
+                            let url = self.tools.link_url.trim().to_owned();
+                            self.apply_link(&url, state);
+                            close = true;
+                        }
+                    }
                     ToolDialog::Bookmarks => {
                         ui.label("Bookmarks For This Editing Session");
                         ui.horizontal(|ui| {
@@ -783,6 +809,55 @@ impl Editor {
         if !open || close {
             self.tools.dialog = None;
         }
+    }
+
+    fn link_at_cursor(&self) -> Option<String> {
+        let paragraph = self.document.paragraphs.get(self.active)?;
+        let mut offset = 0;
+        for run in &paragraph.runs {
+            let end = offset + run.text.chars().count();
+            if self.selection.start <= end && self.selection.start >= offset {
+                return run.format.link.clone();
+            }
+            offset = end;
+        }
+        None
+    }
+
+    fn apply_link(&mut self, url: &str, state: &mut AppState) {
+        if self.document.paragraphs.get(self.active).is_none() {
+            return;
+        }
+        self.checkpoint();
+        let index = self.active;
+        let paragraph = &mut self.document.paragraphs[index];
+        let content = paragraph.plain_text();
+        let start = self.selection.start.min(content.chars().count());
+        let end = self.selection.end.min(content.chars().count());
+        if start < end {
+            let mut runs = slice_runs(&paragraph.runs, 0..start);
+            for mut run in slice_runs(&paragraph.runs, start..end) {
+                run.format.link = Some(url.into());
+                runs.push(run);
+            }
+            runs.extend(slice_runs(&paragraph.runs, end..usize::MAX));
+            paragraph.runs = runs;
+        } else {
+            let mut runs = slice_runs(&paragraph.runs, 0..start);
+            runs.push(Run {
+                text: url.into(),
+                format: TextFormat {
+                    link: Some(url.into()),
+                    ..self.format.clone()
+                },
+            });
+            runs.extend(slice_runs(&paragraph.runs, start..usize::MAX));
+            paragraph.runs = runs;
+            let cursor = start + url.chars().count();
+            self.selection = cursor..cursor;
+            self.pending_selection = Some((index, cursor..cursor));
+        }
+        self.changed(state);
     }
 
     fn insert_tool_text(&mut self, text: &str, state: &mut AppState) {

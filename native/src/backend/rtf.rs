@@ -685,6 +685,7 @@ mod tests {
                     color: Some("FF0000".into()),
                     highlight: Some("00FF00".into()),
                     script: Some("superscript".into()),
+                    link: None,
                 },
             }],
             ..Default::default()

@@ -748,6 +748,29 @@ impl Editor {
         if output.response.clicked() {
             self.document_selected = false;
             self.cross_selection = None;
+            if ui.input(|input| input.modifiers.ctrl) {
+                let char_index = egui::text_edit::TextEditState::load(ui.ctx(), id)
+                    .and_then(|edit| edit.cursor.char_range())
+                    .map(|range| range.primary.index.min(range.secondary.index));
+                if let Some(char_index) = char_index {
+                    let mut offset = 0;
+                    for run in &runs {
+                        let count = run.text.chars().count();
+                        if char_index <= offset + count {
+                            if let Some(url) = run.format.link.clone() {
+                                if let Err(message) = crate::backend::links::open(
+                                    &url,
+                                    state.preferences.browser_path.as_deref(),
+                                ) {
+                                    state.link_error = Some(message);
+                                }
+                            }
+                            break;
+                        }
+                        offset += count;
+                    }
+                }
+            }
         }
         if self.tools.paragraph_marks {
             ui.painter().text(
@@ -1439,13 +1462,18 @@ fn text_format(ui: &egui::Ui, format: &TextFormat, zoom: f32) -> egui::TextForma
     };
     let family = ui.fonts(|fonts| fonts.families().into_iter().find(|family| matches!(family, egui::FontFamily::Name(name) if name.as_ref() == family_name))).unwrap_or(egui::FontFamily::Proportional);
     let dedicated_italic = format.italic && matches!(&family, egui::FontFamily::Name(name) if name.as_ref() == family_name);
-    let color = format
-        .color
-        .as_deref()
-        .and_then(|hex| u32::from_str_radix(hex.trim_start_matches('#'), 16).ok())
-        .map(|value| Color32::from_rgb((value >> 16) as u8, (value >> 8) as u8, value as u8))
-        .unwrap_or(Color32::from_rgb(32, 32, 32));
     let script_scale = if format.script.is_some() { 0.7 } else { 1.0 };
+    let linked = format.link.is_some();
+    let color = if linked && format.color.is_none() {
+        Color32::from_rgb(5, 99, 193)
+    } else {
+        format
+            .color
+            .as_deref()
+            .and_then(|hex| u32::from_str_radix(hex.trim_start_matches('#'), 16).ok())
+            .map(|value| Color32::from_rgb((value >> 16) as u8, (value >> 8) as u8, value as u8))
+            .unwrap_or(Color32::from_rgb(32, 32, 32))
+    };
     let background = format
         .highlight
         .as_deref()
@@ -1465,7 +1493,7 @@ fn text_format(ui: &egui::Ui, format: &TextFormat, zoom: f32) -> egui::TextForma
             Align::TOP
         },
         italics: format.italic && !dedicated_italic,
-        underline: if format.underline {
+        underline: if format.underline || linked {
             Stroke::new(1.0, color)
         } else {
             Stroke::NONE

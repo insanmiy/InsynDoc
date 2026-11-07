@@ -283,6 +283,7 @@ impl App {
             (Modifiers::CTRL, Key::S, "save"),
             (Modifiers::CTRL | Modifiers::SHIFT, Key::I, "findReplace"),
             (Modifiers::CTRL, Key::F, "find"),
+            (Modifiers::CTRL, Key::K, "insertLink"),
         ];
         for (modifiers, key, command) in shortcuts {
             if ctx.input_mut(|input| input.consume_key(modifiers, key)) {

@@ -332,6 +332,7 @@ mod tests {
                         color: Some("FF0000".into()),
                         highlight: Some("FFFF00".into()),
                         script: Some("superscript".into()),
+                        link: None,
                     },
                 }],
                 ..Default::default()

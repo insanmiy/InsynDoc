@@ -4,6 +4,8 @@ use std::io::{Cursor, Read, Write};
 use std::path::Path;
 
 const WORD_NAMESPACE: &str = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
+const RELATIONSHIPS_NAMESPACE: &str =
+    "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
 const MAX_PACKAGE_BYTES: u64 = 128 * 1024 * 1024;
 
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -17,6 +19,7 @@ pub struct TextFormat {
     pub color: Option<String>,
     pub highlight: Option<String>,
     pub script: Option<String>,
+    pub link: Option<String>,
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -223,12 +226,13 @@ impl Document {
             .unwrap_or(open_end);
         let self_closing = xml[body_range.start..open_end].ends_with("/>");
         let numbering = parse_numbering(&package);
+        let hyperlinks = parse_hyperlinks(&package);
         let mut paragraphs = Vec::new();
         let mut body = Vec::new();
         for node in body_node.children().filter(|node| node.is_element()) {
             let raw = xml[node.range()].to_string();
             if node.has_tag_name((WORD_NAMESPACE, "p")) {
-                let mut paragraph = parse_paragraph(node);
+                let mut paragraph = parse_paragraph(node, &hyperlinks);
                 if paragraph.list.is_none() {
                     paragraph.list = paragraph_list(node, &numbering);
                 }
@@ -376,6 +380,7 @@ impl Document {
         if self.page_setup != self.original_page_setup {
             document_xml = update_page_setup(&document_xml, &self.page_setup)?;
         }
+        document_xml = ensure_relationships_namespace(&document_xml)?;
 
         roxmltree::Document::parse(&document_xml).map_err(|error| {
             DocumentError(format!(
@@ -506,6 +511,35 @@ impl Document {
 
     fn package_with_numbering(&self) -> Result<Vec<(String, Vec<u8>)>, DocumentError> {
         let mut package = self.package.clone();
+        let mut urls: Vec<String> = self
+            .paragraphs
+            .iter()
+            .flat_map(|paragraph| paragraph.runs.iter())
+            .filter_map(|run| run.format.link.clone())
+            .collect();
+        urls.sort();
+        urls.dedup();
+        if !urls.is_empty() {
+            let rel_part = "word/_rels/document.xml.rels";
+            let mut relationships = package
+                .iter()
+                .find(|(name, _)| name == rel_part)
+                .map(|(_, bytes)| String::from_utf8_lossy(bytes).into_owned())
+                .unwrap_or_else(|| "<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\"></Relationships>".into());
+            for url in urls {
+                let rid = link_rid(&url);
+                if !relationships.contains(&format!("Id=\"{rid}\"")) {
+                    relationships = append_xml_children(
+                        &relationships,
+                        &format!(
+                            "<Relationship Id=\"{rid}\" Type=\"{RELATIONSHIPS_NAMESPACE}/hyperlink\" Target=\"{}\" TargetMode=\"External\"/>",
+                            escape_xml(&url)
+                        ),
+                    )?;
+                }
+            }
+            upsert_part(&mut package, rel_part, relationships.into_bytes());
+        }
         let mut index = 0;
         let mut needs_numbering = false;
         for element in &self.body {
@@ -668,6 +702,54 @@ fn ensure_word_namespace(xml: &str) -> Result<String, DocumentError> {
         opening_end
     };
     result.insert_str(insertion, &format!(" xmlns:w=\"{WORD_NAMESPACE}\""));
+    Ok(result)
+}
+
+fn ensure_relationships_namespace(xml: &str) -> Result<String, DocumentError> {
+    let needs = match roxmltree::Document::parse(xml) {
+        Ok(parsed) => {
+            parsed.root_element().lookup_namespace_uri(Some("r"))
+                != Some(RELATIONSHIPS_NAMESPACE)
+                && !xml.contains("xmlns:r=")
+        }
+        Err(_) => !xml.contains("xmlns:r="),
+    };
+    if !needs {
+        return Ok(xml.to_owned());
+    }
+    let mut position = 0;
+    let bytes = xml.as_bytes();
+    loop {
+        while position < bytes.len() && bytes[position].is_ascii_whitespace() {
+            position += 1;
+        }
+        if xml[position..].starts_with("<?") {
+            position += xml[position..].find("?>").map(|end| end + 2).unwrap_or(0);
+            continue;
+        }
+        if xml[position..].starts_with("<!--") {
+            position += xml[position..].find("-->").map(|end| end + 3).unwrap_or(0);
+            continue;
+        }
+        break;
+    }
+    if bytes.get(position) != Some(&b'<') {
+        return Ok(xml.to_owned());
+    }
+    let opening_end = xml[position..]
+        .find('>')
+        .map(|end| position + end)
+        .ok_or_else(|| DocumentError("The XML Root Is Invalid.".into()))?;
+    let insertion = if bytes[opening_end - 1] == b'/' {
+        opening_end - 1
+    } else {
+        opening_end
+    };
+    let mut result = xml.to_owned();
+    result.insert_str(
+        insertion,
+        &format!(" xmlns:r=\"{RELATIONSHIPS_NAMESPACE}\""),
+    );
     Ok(result)
 }
 
@@ -836,7 +918,49 @@ fn paragraph_list(node: roxmltree::Node<'_, '_>, numbering: &HashMap<(String, St
     numbering.get(&(id, level)).cloned()
 }
 
-fn parse_paragraph(node: roxmltree::Node<'_, '_>) -> Paragraph {
+fn parse_hyperlinks(package: &[(String, Vec<u8>)]) -> HashMap<String, String> {
+    let mut links = HashMap::new();
+    let Some((_, bytes)) = package
+        .iter()
+        .find(|(name, _)| name == "word/_rels/document.xml.rels")
+    else {
+        return links;
+    };
+    let Ok(xml) = std::str::from_utf8(bytes) else {
+        return links;
+    };
+    let Ok(parsed) = roxmltree::Document::parse(xml) else {
+        return links;
+    };
+    for node in parsed
+        .root_element()
+        .children()
+        .filter(|node| node.tag_name().name() == "Relationship")
+    {
+        let kind = node.attribute("Type").unwrap_or_default();
+        if !kind.ends_with("/hyperlink") {
+            continue;
+        }
+        if let (Some(id), Some(target)) = (node.attribute("Id"), node.attribute("Target")) {
+            links.insert(id.to_string(), target.to_string());
+        }
+    }
+    links
+}
+
+fn link_rid(url: &str) -> String {
+    let mut hash: u64 = 0xcbf29ce484222325;
+    for byte in url.as_bytes() {
+        hash ^= u64::from(*byte);
+        hash = hash.wrapping_mul(0x100000001b3);
+    }
+    format!("rIdLink{hash:016x}")
+}
+
+fn parse_paragraph(
+    node: roxmltree::Node<'_, '_>,
+    hyperlinks: &HashMap<String, String>,
+) -> Paragraph {
     let mut paragraph = Paragraph::default();
     if let Some(properties) = child(node, "pPr") {
         paragraph.style = child(properties, "pStyle").and_then(|value| attribute(value, "val"));
@@ -973,7 +1097,23 @@ fn parse_paragraph(node: roxmltree::Node<'_, '_>) -> Paragraph {
                 _ => {}
             }
         }
-        paragraph.runs.push(Run { text, format });
+        let link = run_node
+            .ancestors()
+            .find(|ancestor| ancestor.has_tag_name((WORD_NAMESPACE, "hyperlink")))
+            .and_then(|hyperlink| {
+                hyperlink
+                    .attributes()
+                    .find(|attribute| {
+                        attribute.name() == "id"
+                            && attribute.namespace() == Some(RELATIONSHIPS_NAMESPACE)
+                    })
+                    .and_then(|attribute| hyperlinks.get(attribute.value()))
+                    .cloned()
+            });
+        paragraph.runs.push(Run {
+            text,
+            format: TextFormat { link, ..format },
+        });
     }
     paragraph
 }
@@ -1116,17 +1256,10 @@ fn can_rewrite_paragraph(xml: &str) -> bool {
     }) {
         return false;
     }
-    paragraph
-        .children()
-        .filter(|node| node.is_element())
-        .all(|node| {
-            if node.has_tag_name((WORD_NAMESPACE, "pPr")) {
-                return true;
-            }
-            if !node.has_tag_name((WORD_NAMESPACE, "r")) {
-                return false;
-            }
-            node.children()
+    let valid_run = |node: roxmltree::Node<'_, '_>| {
+        node.has_tag_name((WORD_NAMESPACE, "r"))
+            && node
+                .children()
                 .filter(|node| node.is_element())
                 .all(|content| {
                     content.tag_name().namespace() == Some(WORD_NAMESPACE)
@@ -1136,6 +1269,19 @@ fn can_rewrite_paragraph(xml: &str) -> bool {
                                 .attribute((WORD_NAMESPACE, "type"))
                                 .is_none_or(|kind| kind == "textWrapping"))
                 })
+    };
+    paragraph
+        .children()
+        .filter(|node| node.is_element())
+        .all(|node| {
+            if node.has_tag_name((WORD_NAMESPACE, "pPr")) {
+                return true;
+            }
+            if valid_run(node) {
+                return true;
+            }
+            node.has_tag_name((WORD_NAMESPACE, "hyperlink"))
+                && node.children().filter(|node| node.is_element()).all(valid_run)
         })
 }
 
@@ -1309,7 +1455,21 @@ fn paragraph_xml_with_numbering(paragraph: &Paragraph, source: Option<&str>, pre
                 .collect()
         })
         .unwrap_or_default();
+    let mut open_link: Option<&str> = None;
     for (index, run) in paragraph.runs.iter().enumerate() {
+        let link = run.format.link.as_deref();
+        if link != open_link {
+            if open_link.is_some() {
+                xml.push_str("</w:hyperlink>");
+            }
+            if let Some(url) = link {
+                xml.push_str(&format!(
+                    "<w:hyperlink r:id=\"{}\" w:history=\"1\">",
+                    link_rid(url)
+                ));
+            }
+            open_link = link;
+        }
         xml.push_str("<w:r><w:rPr>");
         if let Some(properties) = original_runs
             .get(index)
@@ -1389,6 +1549,9 @@ fn paragraph_xml_with_numbering(paragraph: &Paragraph, source: Option<&str>, pre
             }
         }
         xml.push_str("</w:r>");
+    }
+    if open_link.is_some() {
+        xml.push_str("</w:hyperlink>");
     }
     xml.push_str("</w:p>");
     xml
@@ -1622,6 +1785,7 @@ mod tests {
                 .descendants()
                 .find(|node| node.has_tag_name((WORD_NAMESPACE, "p")))
                 .unwrap(),
+            &HashMap::new(),
         );
         paragraph.line_spacing = 1.5;
         paragraph.indent = 0.0;
@@ -1732,11 +1896,79 @@ mod tests {
                 .descendants()
                 .find(|node| node.has_tag_name((WORD_NAMESPACE, "p")))
                 .unwrap(),
+            &HashMap::new(),
         );
         paragraph.runs[0].text = "Edited".into();
         let saved = paragraph_xml_with_source(&paragraph, Some(original));
         assert!(saved.contains("<w:spacing w:after=\"240\"/>"));
         assert!(saved.contains("<w:shd w:val=\"clear\" w:fill=\"FFFF00\"/>"));
         assert!(saved.contains("Edited"));
+    }
+
+    #[test]
+    fn hyperlinks_round_trip_through_docx() {
+        let xml = format!(
+            "<w:document xmlns:w=\"{WORD_NAMESPACE}\" xmlns:r=\"{RELATIONSHIPS_NAMESPACE}\"><w:body><w:p><w:hyperlink r:id=\"rId5\" w:history=\"1\"><w:r><w:t>Example</w:t></w:r></w:hyperlink></w:p></w:body></w:document>"
+        );
+        let rels = "<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\"><Relationship Id=\"rId5\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink\" Target=\"https://example.com\" TargetMode=\"External\"/></Relationships>";
+        let mut writer = zip::ZipWriter::new(Cursor::new(Vec::new()));
+        for (name, data) in [
+            ("word/document.xml", xml.as_bytes()),
+            ("word/_rels/document.xml.rels", rels.as_bytes()),
+        ] {
+            writer
+                .start_file(name, zip::write::SimpleFileOptions::default())
+                .unwrap();
+            writer.write_all(data).unwrap();
+        }
+        let mut document =
+            Document::from_bytes(&writer.finish().unwrap().into_inner()).unwrap();
+        assert_eq!(
+            document.paragraphs[0].runs[0].format.link.as_deref(),
+            Some("https://example.com")
+        );
+        document.paragraphs[0].runs[0].text = "Edited".into();
+        let bytes = document.to_bytes().unwrap();
+        let saved = package_xml(&bytes);
+        assert!(saved.contains("<w:hyperlink"));
+        assert!(saved.contains("Edited"));
+        let mut archive = zip::ZipArchive::new(Cursor::new(&bytes)).unwrap();
+        let mut rels_out = String::new();
+        archive
+            .by_name("word/_rels/document.xml.rels")
+            .unwrap()
+            .read_to_string(&mut rels_out)
+            .unwrap();
+        assert!(rels_out.contains("https://example.com"));
+        let reopened = Document::from_bytes(&bytes).unwrap();
+        assert_eq!(
+            reopened.paragraphs[0].runs[0].format.link.as_deref(),
+            Some("https://example.com")
+        );
+    }
+
+    #[test]
+    fn new_document_links_write_relationships_and_namespace() {
+        let mut document = Document::default();
+        document.paragraphs[0].runs = vec![Run {
+            text: "Linked".into(),
+            format: TextFormat {
+                link: Some("https://example.com".into()),
+                ..Default::default()
+            },
+        }];
+        let bytes = document.to_bytes().unwrap();
+        let xml = package_xml(&bytes);
+        assert!(xml.contains("xmlns:r="));
+        assert!(xml.contains("<w:hyperlink"));
+        let mut archive = zip::ZipArchive::new(Cursor::new(&bytes)).unwrap();
+        let mut rels = String::new();
+        archive
+            .by_name("word/_rels/document.xml.rels")
+            .unwrap()
+            .read_to_string(&mut rels)
+            .unwrap();
+        assert!(rels.contains("TargetMode=\"External\""));
+        assert!(rels.contains("https://example.com"));
     }
 }
