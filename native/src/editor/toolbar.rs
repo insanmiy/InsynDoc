@@ -256,26 +256,66 @@ impl Editor {
                 (IconName::Highlight, "Highlight", true, highlight_bar),
             ] {
                 let response = colorsplit_button(&mut row, colors, icon, bar, label);
+                let selected = if is_highlight {
+                    self.format.highlight.as_deref()
+                } else {
+                    self.format.color.as_deref()
+                };
                 let mut picked = None;
                 popup(&row, label, &response, |ui| {
-                    for (name, value) in [
-                        ("Black", "202124"),
-                        ("Red", "EF4444"),
-                        ("Blue", "2563EB"),
-                        ("Green", "15803D"),
-                        ("Yellow", "FACC15"),
-                        ("None", "none"),
-                    ] {
-                        if ui.button(name).clicked() {
-                            picked = Some(value.to_string());
+                    ui.set_min_width(224.0);
+                    let clear_label = if is_highlight { "No Color" } else { "Automatic" };
+                    let clear_value = if is_highlight { "none" } else { "auto" };
+                    if ui.button(clear_label).clicked() {
+                        picked = Some(clear_value.to_string());
+                    }
+                    if is_highlight {
+                        ui.label(egui::RichText::new("Highlight Colors").weak().small());
+                        if let Some(value) = color_grid(ui, HIGHLIGHT_COLORS, 5, selected) {
+                            picked = Some(value);
                         }
+                    } else {
+                        ui.label(egui::RichText::new("Theme Colors").weak().small());
+                        if let Some(value) = color_grid(ui, THEME_COLORS, 10, selected) {
+                            picked = Some(value);
+                        }
+                        ui.label(egui::RichText::new("Standard Colors").weak().small());
+                        if let Some(value) = color_grid(ui, STANDARD_COLORS, 10, selected) {
+                            picked = Some(value);
+                        }
+                        ui.label(egui::RichText::new("Custom Color").weak().small());
+                        let hex_id = ui.id().with("custom-hex");
+                        ui.horizontal(|ui| {
+                            ui.label("#");
+                            let mut hex = ui
+                                .data(|data| data.get_temp::<String>(hex_id))
+                                .unwrap_or_default();
+                            let _ = ui.add(
+                                egui::TextEdit::singleline(&mut hex)
+                                    .desired_width(96.0)
+                                    .hint_text("RRGGBB"),
+                            );
+                            ui.data_mut(|data| data.insert_temp(hex_id, hex.clone()));
+                            if ui.button("Apply").clicked() {
+                                let trimmed = hex.trim().trim_start_matches('#');
+                                if trimmed.len() == 6
+                                    && trimmed.bytes().all(|byte| byte.is_ascii_hexdigit())
+                                {
+                                    picked = Some(trimmed.to_uppercase());
+                                }
+                            }
+                        });
                     }
                 });
                 if let Some(value) = picked {
                     if is_highlight {
                         self.toolbar_command("setHighlight", json!({"color":value}), state);
                     } else if self.can_format_selection(state) {
-                        let color = if value == "none" { None } else { Some(value) };
+                        let color = if value == "auto" {
+                            None
+                        } else {
+                            Some(value)
+                        };
                         self.format.color = color.clone();
                         self.apply_transform(state, |format| format.color = color.clone());
                     }
@@ -867,6 +907,58 @@ fn separator(ui: &mut Ui, colors: &UiColors) {
         rect.y_range(),
         Stroke::new(1.0_f32, colors.app_border),
     );
+}
+
+const THEME_COLORS: &[&str] = &[
+    "FFFFFF", "000000", "E7E6E6", "44546A", "4472C4", "ED7D31", "A5A5A5", "FFC000", "5B9BD5",
+    "70AD47", "F2F2F2", "808080", "D0CFCF", "DADDE1", "DAE3F3", "FBE5D6", "EDEDED", "FFF2CC",
+    "DEEBF7", "E2EFDA", "D9D9D9", "595959", "ADADAD", "B4BBC3", "B4C7E7", "F8CBAD", "DBDBDB",
+    "FFE699", "BDD7EE", "C6DEB5", "BFBFBF", "404040", "747373", "8F98A6", "8FAADC", "F4B183",
+    "C9C9C9", "FFD966", "9DC3E6", "A9CE91", "A6A6A6", "262626", "3A3A3A", "333F50", "335693",
+    "B25E25", "7C7C7C", "BF9000", "4474A0", "548235", "808080", "0D0D0D", "171717", "222A35",
+    "223962", "773F19", "535353", "806000", "2E4E6B", "385724",
+];
+
+const STANDARD_COLORS: &[&str] = &[
+    "C00000", "FF0000", "FFC000", "FFFF00", "92D050", "00B050", "00B0F0", "0070C0", "002060",
+    "7030A0",
+];
+
+const HIGHLIGHT_COLORS: &[&str] = &[
+    "FFFF00", "00FF00", "00FFFF", "FF00FF", "0000FF", "FF0000", "000080", "008080", "008000",
+    "800080", "800000", "808000", "808080", "C0C0C0", "000000",
+];
+
+fn color_grid(ui: &mut Ui, hexes: &[&str], columns: usize, selected: Option<&str>) -> Option<String> {
+    let mut picked = None;
+    for chunk in hexes.chunks(columns) {
+        ui.horizontal(|ui| {
+            ui.spacing_mut().item_spacing = vec2(3.0, 3.0);
+            for hex in chunk {
+                let (rect, response) = ui.allocate_exact_size(vec2(18.0, 18.0), Sense::click());
+                let fill = hex_color(hex).unwrap_or(Color32::WHITE);
+                ui.painter().rect_filled(rect, 2, fill);
+                ui.painter().rect_stroke(
+                    rect,
+                    2,
+                    Stroke::new(1.0_f32, Color32::from_gray(140)),
+                    egui::StrokeKind::Inside,
+                );
+                if selected == Some(*hex) {
+                    ui.painter().rect_stroke(
+                        rect.expand(1.5),
+                        3,
+                        Stroke::new(2.0_f32, Color32::from_rgb(0x1a, 0x73, 0xe8)),
+                        egui::StrokeKind::Outside,
+                    );
+                }
+                if response.clicked() {
+                    picked = Some((*hex).to_string());
+                }
+            }
+        });
+    }
+    picked
 }
 
 fn popup(ui: &Ui, key: &str, response: &Response, content: impl FnOnce(&mut Ui)) {
