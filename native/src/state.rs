@@ -176,6 +176,9 @@ pub struct AppState {
     /// Editor undo/redo availability for menu disabled states.
     pub can_undo: bool,
     pub can_redo: bool,
+    /// View toggle states for menu checkmarks.
+    pub show_bookmarks: bool,
+    pub show_paragraph_breaks: bool,
 }
 
 impl Default for AppState {
@@ -204,6 +207,8 @@ impl Default for AppState {
             confirm_for_window_close: false,
             can_undo: false,
             can_redo: false,
+            show_bookmarks: false,
+            show_paragraph_breaks: false,
         }
     }
 }

@@ -22,10 +22,11 @@ pub(super) struct Tools {
     page: PageSetup,
     text: String,
     bookmark_name: String,
-    bookmarks: Vec<(String, usize)>,
+    pub bookmarks: Vec<(String, usize)>,
     date_index: usize,
     page_paper: usize,
     page_landscape: bool,
+    pub show_bookmarks: bool,
     copied_format: Option<TextFormat>,
     painter_armed: bool,
 }
@@ -62,6 +63,7 @@ impl Editor {
                 self.tools.dialog = Some(ToolDialog::PageSetup);
             }
             "paragraphMarks" => self.tools.paragraph_marks = !self.tools.paragraph_marks,
+            "showBookmarks" => self.tools.show_bookmarks = !self.tools.show_bookmarks,
             "bookmarks" | "openBookmarkDialog" => self.tools.dialog = Some(ToolDialog::Bookmarks),
             "insertDateTime" => {
                 self.tools.date_index = 0;

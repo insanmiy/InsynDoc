@@ -188,6 +188,12 @@ fn no_undo(s: &AppState) -> bool {
 fn no_redo(s: &AppState) -> bool {
     !s.can_redo
 }
+fn bookmarks_on(s: &AppState) -> bool {
+    s.show_bookmarks
+}
+fn paragraph_breaks_on(s: &AppState) -> bool {
+    s.show_paragraph_breaks
+}
 
 // --- menu definitions -------------------------------------------------------
 // Order matches EditorWorkspace.tsx exactly.
@@ -249,12 +255,18 @@ const VIEW_ITEMS: &[MenuEntry] = &[
     sep(),
     item_active("Document Outline", None, MenuAction::ToggleOutline, outline_on),
     item_active("Show Ruler", None, MenuAction::ToggleRuler, ruler_on),
-    item(
-        "Paragraph Marks",
+    item_active(
+        "Show Paragraph Breaks",
         None,
         MenuAction::Command("paragraphMarks"),
+        paragraph_breaks_on,
     ),
-    item("Bookmarks", None, MenuAction::Command("bookmarks")),
+    item_active(
+        "Show Bookmarks",
+        None,
+        MenuAction::Command("showBookmarks"),
+        bookmarks_on,
+    ),
     item_active(
         "Focus Mode",
         Some("Ctrl+Shift+F"),
@@ -364,14 +376,14 @@ const FORMAT_ITEMS: &[MenuEntry] = &[
     item("Strikethrough", None, MenuAction::EditorExec(r#"{"type":"toggleMark","mark":"strike"}"#)),
     sep(),
     item("Align Left", None, MenuAction::EditorExec(r#"{"type":"setAlignment","align":"left"}"#)),
-    item("Align Center", None, MenuAction::EditorExec(r#"{"type":"setAlignment","align":"center"}"#)),
+    item("Center", None, MenuAction::EditorExec(r#"{"type":"setAlignment","align":"center"}"#)),
     item("Align Right", None, MenuAction::EditorExec(r#"{"type":"setAlignment","align":"right"}"#)),
     item("Justify", None, MenuAction::EditorExec(r#"{"type":"setAlignment","align":"justify"}"#)),
     sep(),
-    item("Left-To-Right", None, MenuAction::EditorExec(r#"{"type":"setParagraphDirection","direction":"ltr"}"#)),
-    item("Right-To-Left", None, MenuAction::EditorExec(r#"{"type":"setParagraphDirection","direction":"rtl"}"#)),
+    item("Left-To-Right Text", None, MenuAction::EditorExec(r#"{"type":"setParagraphDirection","direction":"ltr"}"#)),
+    item("Right-To-Left Text", None, MenuAction::EditorExec(r#"{"type":"setParagraphDirection","direction":"rtl"}"#)),
     sep(),
-    item("Paragraph", None, MenuAction::EditorExec(r#"{"type":"openParagraphDialog"}"#)),
+    item("Line Spacing Options…", None, MenuAction::EditorExec(r#"{"type":"openParagraphDialog"}"#)),
     sep(),
     item("Format Painter", Some("Ctrl+Alt+C"), MenuAction::EditorExec(r#"{"type":"copyFormatting"}"#)),
     item("Clear Formatting", None, MenuAction::EditorExec(r#"{"type":"clearFormatting"}"#)),

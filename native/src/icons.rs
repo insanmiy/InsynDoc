@@ -56,6 +56,7 @@ pub enum IconName {
     Image,
     Table,
     More,
+    Bookmark,
 }
 
 fn svg_body(name: IconName) -> &'static str {
@@ -100,6 +101,7 @@ fn svg_body(name: IconName) -> &'static str {
         IconName::Image => "M3 3h18v18H3z M3 17l6-6 4 4 3-3 5 5 M8 7h.01",
         IconName::Table => "M3 3h18v18H3z M3 9h18 M3 15h18 M9 3v18 M15 3v18",
         IconName::More => "M5 12h.01 M12 12h.01 M19 12h.01",
+        IconName::Bookmark => "M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z",
         IconName::Settings => {
             return "<path d=\"m9.5 3-.6 2.1-1.8 1-2.1-.5-2.5 4.3L4 11.5v2L2.5 15 5 19.3l2.1-.5 1.8 1 .6 2.2h5l.6-2.2 1.8-1 2.1.5 2.5-4.3-1.5-1.5v-2l1.5-1.6L19 5.6l-2.1.5-1.8-1L14.5 3z\"/><circle cx=\"12\" cy=\"12.5\" r=\"3.2\"/>"
         }
@@ -138,6 +140,7 @@ fn svg_body_filled(name: IconName) -> Option<&'static str> {
         // Filled down caret (Material expand_more) for dropdown triggers and
         // colorsplit caret zones.
         IconName::ChevronDown => "M480-345 240-585l56-56 184 184 184-184 56 56-240 240Z",
+        IconName::Bookmark => "M200-120v-640q0-33 23.5-56.5T280-840h400q33 0 56.5 23.5T760-760v640L480-240 200-120Z",
         _ => return None,
     };
     Some(path)

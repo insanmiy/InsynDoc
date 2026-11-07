@@ -138,6 +138,8 @@ impl Editor {
         };
         state.can_undo = !self.undo.is_empty();
         state.can_redo = !self.redo.is_empty();
+        state.show_bookmarks = self.tools.show_bookmarks;
+        state.show_paragraph_breaks = self.tools.paragraph_marks;
         if !state.surface.zoom.is_finite() || state.surface.zoom <= 0.0 {
             state.surface.zoom = 1.0;
         }
@@ -722,6 +724,24 @@ impl Editor {
                 "\u{00b6}",
                 FontId::proportional(12.0 * zoom),
                 Color32::GRAY,
+            );
+        }
+        if self.tools.show_bookmarks
+            && self
+                .tools
+                .bookmarks
+                .iter()
+                .any(|(_, marked)| *marked == index)
+        {
+            crate::icons::paint_icon_filled(
+                ui.ctx(),
+                ui.painter(),
+                crate::icons::IconName::Bookmark,
+                egui::Rect::from_center_size(
+                    output.response.rect.left_top() + vec2(-11.0, 9.0 * zoom),
+                    vec2(13.0, 13.0),
+                ),
+                Color32::from_rgb(0x1e, 0x88, 0xe5),
             );
         }
         if self.scroll_paragraph == Some(index) {
