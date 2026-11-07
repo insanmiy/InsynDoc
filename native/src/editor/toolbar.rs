@@ -75,39 +75,23 @@ impl Editor {
                 .get(self.active)
                 .and_then(|paragraph| paragraph.style.clone())
                 .unwrap_or_else(|| "Normal".into());
-            let label = match style.as_str() {
-                "Heading1" => "Heading 1",
-                "Heading2" => "Heading 2",
-                "Heading3" => "Heading 3",
-                _ => style.as_str(),
-            };
+            let label = paragraph_style_label(&style);
+            let picked_style = style.clone();
             let response = text_picker(&mut row, colors, label, 128.0, "Paragraph Style");
             let mut picked = None;
             popup(&row, "toolbar-style", &response, |ui| {
-                for (label, style, size) in [
-                    ("Normal", "Normal", 11.0),
-                    ("Title", "Title", 28.0),
-                    ("Heading 1", "Heading1", 20.0),
-                    ("Heading 2", "Heading2", 16.0),
-                    ("Heading 3", "Heading3", 14.0),
-                ] {
-                    if ui.selectable_label(false, label).clicked() {
-                        picked = Some((style, size));
+                ui.label(egui::RichText::new("Paragraph Style").weak().small());
+                for &(label, style, size, italic, color) in PARAGRAPH_STYLES {
+                    if ui
+                        .selectable_label(style == picked_style.as_str(), label)
+                        .clicked()
+                    {
+                        picked = Some((style, size, italic, color));
                     }
                 }
             });
-            if let Some((style, size)) = picked {
-                self.checkpoint();
-                if let Some(paragraph) = self.document.paragraphs.get_mut(self.active) {
-                    paragraph.style = Some(style.into());
-                    for run in &mut paragraph.runs {
-                        run.format.font_size = Some(size);
-                        run.format.bold = style.starts_with("Heading");
-                    }
-                }
-                self.format.font_size = Some(size);
-                self.format.bold = style.starts_with("Heading");
-                self.changed(state);
+            if let Some((style, size, italic, color)) = picked {
+                self.apply_paragraph_style(state, style, size, italic, color);
             }
         }
         separator(&mut row, colors);
@@ -513,6 +497,62 @@ impl Editor {
             ));
         }
     }
+
+    fn apply_paragraph_style(
+        &mut self,
+        state: &mut AppState,
+        style: &str,
+        size: f32,
+        italic: bool,
+        color: Option<&str>,
+    ) {
+        self.checkpoint();
+        let mut indices = self.selected_paragraph_indices();
+        if indices.is_empty() {
+            indices.push(self.active.min(self.document.paragraphs.len().saturating_sub(1)));
+        }
+        for index in indices {
+            let Some(paragraph) = self.document.paragraphs.get_mut(index) else {
+                continue;
+            };
+            paragraph.style = Some(style.into());
+            if style == "Quote" {
+                paragraph.alignment = crate::document::Alignment::Center;
+            }
+            for run in &mut paragraph.runs {
+                run.format.font_size = Some(size);
+                run.format.italic = italic;
+                run.format.color = color.map(str::to_owned);
+            }
+        }
+        self.format.font_size = Some(size);
+        self.format.italic = italic;
+        self.format.color = color.map(str::to_owned);
+        self.changed(state);
+    }
+}
+
+const PARAGRAPH_STYLES: &[(&str, &str, f32, bool, Option<&str>)] = &[
+    ("Normal", "Normal", 11.0, false, None),
+    ("Title", "Title", 28.0, false, None),
+    ("Subtitle", "Subtitle", 11.0, false, Some("5A5A5A")),
+    ("Heading 1", "Heading1", 16.0, false, Some("2F5496")),
+    ("Heading 2", "Heading2", 13.0, false, Some("2F5496")),
+    ("Heading 3", "Heading3", 12.0, false, Some("1F3763")),
+    ("Heading 4", "Heading4", 11.0, true, Some("2F5496")),
+    ("Heading 5", "Heading5", 11.0, false, Some("2F5496")),
+    ("Quote", "Quote", 11.0, true, Some("404040")),
+    ("Caption", "Caption", 9.0, true, Some("404040")),
+    ("No Spacing", "NoSpacing", 11.0, false, None),
+    ("List Paragraph", "ListParagraph", 11.0, false, None),
+];
+
+fn paragraph_style_label(style: &str) -> &str {
+    PARAGRAPH_STYLES
+        .iter()
+        .find(|(_, id, ..)| *id == style)
+        .map(|(label, ..)| *label)
+        .unwrap_or(style)
 }
 
 fn matching_document_fonts(search: &str) -> impl Iterator<Item = &'static str> + '_ {
