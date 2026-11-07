@@ -32,7 +32,7 @@ pub struct ResolvedFont {
     pub data: Arc<egui::FontData>,
 }
 
-pub fn layout_document(ui: &egui::Ui, document: &Document) -> Result<DocumentLayout, String> {
+pub fn layout_document(ctx: &egui::Context, document: &Document) -> Result<DocumentLayout, String> {
     let setup = &document.page_setup;
     let geometry = [
         setup.width,
@@ -85,8 +85,8 @@ pub fn layout_document(ui: &egui::Ui, document: &Document) -> Result<DocumentLay
         if text_width <= 0.0 {
             return Err("The Paragraph Indent Leaves No Space For Text.".into());
         }
-        let galley = paragraph_galley(ui, paragraph, text_width)?;
-        let glyph_fonts = resolve_glyph_fonts(ui, &galley);
+        let galley = paragraph_galley(ctx, paragraph, text_width)?;
+        let glyph_fonts = resolve_glyph_fonts(ctx, &galley);
         let text_left = setup.margin_left + indent + marker_width;
         let text_anchor = match paragraph.alignment {
             Alignment::Center => text_left + text_width * 0.5,
@@ -139,8 +139,11 @@ pub fn layout_document(ui: &egui::Ui, document: &Document) -> Result<DocumentLay
     Ok(layout)
 }
 
-fn resolve_glyph_fonts(ui: &egui::Ui, galley: &Galley) -> Arc<Vec<Vec<Option<ResolvedFont>>>> {
-    ui.fonts(|fonts| {
+pub(crate) fn resolve_glyph_fonts(
+    ctx: &egui::Context,
+    galley: &Galley,
+) -> Arc<Vec<Vec<Option<ResolvedFont>>>> {
+    ctx.fonts(|fonts| {
         let mut locked = fonts.lock();
         let font_data = locked.fonts.definitions().font_data.clone();
         let rows = galley.rows.iter().map(|row| {
@@ -157,7 +160,7 @@ fn resolve_glyph_fonts(ui: &egui::Ui, galley: &Galley) -> Arc<Vec<Vec<Option<Res
 }
 
 fn paragraph_galley(
-    ui: &egui::Ui,
+    ctx: &egui::Context,
     paragraph: &Paragraph,
     width: f32,
 ) -> Result<Arc<Galley>, String> {
@@ -173,7 +176,7 @@ fn paragraph_galley(
         job.append(
             &run.text,
             0.0,
-            text_format(ui, &run.format, paragraph.line_spacing)?,
+            text_format(ctx, &run.format, paragraph.line_spacing)?,
         );
     }
     if job.text.is_empty() {
@@ -183,13 +186,13 @@ fn paragraph_galley(
             .map(|run| &run.format)
             .cloned()
             .unwrap_or_default();
-        job.append("", 0.0, text_format(ui, &format, paragraph.line_spacing)?);
+        job.append("", 0.0, text_format(ctx, &format, paragraph.line_spacing)?);
     }
-    Ok(ui.fonts(|fonts| fonts.layout_job(job)))
+    Ok(ctx.fonts(|fonts| fonts.layout_job(job)))
 }
 
-fn text_format(
-    ui: &egui::Ui,
+pub(crate) fn text_format(
+    ctx: &egui::Context,
     format: &TextFormat,
     line_spacing: f32,
 ) -> Result<egui::TextFormat, String> {
@@ -204,7 +207,7 @@ fn text_format(
         (false, true) => format!("{name} Italic"),
         _ => name.to_string(),
     };
-    let family = ui
+    let family = ctx
         .fonts(|fonts| {
             fonts.families().into_iter().find(
                 |family| matches!(family, FontFamily::Name(name) if name.as_ref() == family_name),
@@ -260,7 +263,7 @@ mod tests {
         let mut layout = None;
         let _ = context.run(egui::RawInput::default(), |context| {
             egui::CentralPanel::default().show(context, |ui| {
-                layout = Some(layout_document(ui, document).unwrap());
+                layout = Some(layout_document(ui.ctx(), document).unwrap());
             });
         });
         check(layout.unwrap());
@@ -363,7 +366,7 @@ mod tests {
         let mut error = None;
         let _ = context.run(egui::RawInput::default(), |context| {
             egui::CentralPanel::default().show(context, |ui| {
-                error = layout_document(ui, &document).err();
+                error = layout_document(ui.ctx(), &document).err();
             });
         });
         assert!(error.unwrap().contains("No Space"));
@@ -423,7 +426,7 @@ mod tests {
         let mut error = None;
         let _ = context.run(egui::RawInput::default(), |context| {
             egui::CentralPanel::default().show(context, |ui| {
-                error = layout_document(ui, &document).err();
+                error = layout_document(ui.ctx(), &document).err();
             });
         });
         assert!(error.unwrap().contains("Taller"));

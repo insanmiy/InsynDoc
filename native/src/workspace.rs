@@ -220,6 +220,25 @@ impl Workspace {
                     }
                 }
             }
+            "download" if args.get("format").and_then(Value::as_str) == Some("pdf") => {
+                let pdf = match crate::backend::pdf::export(ctx, &self.editor.document) {
+                    Ok(pdf) => pdf,
+                    Err(error) => {
+                        state.surface.error = Some(error);
+                        return;
+                    }
+                };
+                let filename = format!("{}.pdf", state.surface.name.trim_end_matches(".docx"));
+                if let Some(path) = rfd::FileDialog::new()
+                    .add_filter("PDF Document", &["pdf"])
+                    .set_file_name(filename)
+                    .save_file()
+                {
+                    if let Err(error) = downloads::write_download(&path, downloads::DownloadFormat::Pdf, &pdf) {
+                        state.surface.error = Some(error);
+                    }
+                }
+            }
             "download" if args.get("format").and_then(Value::as_str) == Some("html") => {
                 let archive = match crate::backend::html::export(&self.editor.document, &state.surface.name) {
                     Ok(archive) => archive,
