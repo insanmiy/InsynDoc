@@ -242,6 +242,46 @@ impl Workspace {
                     }
                 }
             }
+            "download" if args.get("format").and_then(Value::as_str) == Some("odt") => {
+                let odt = match crate::backend::odt::export(&self.editor.document, &state.surface.name) {
+                    Ok(odt) => odt,
+                    Err(error) => {
+                        state.surface.error = Some(error);
+                        return;
+                    }
+                };
+                let filename = format!("{}.odt", state.surface.name.trim_end_matches(".docx"));
+                if let Some(path) = rfd::FileDialog::new()
+                    .add_filter("OpenDocument Text", &["odt"])
+                    .set_file_name(filename)
+                    .save_file()
+                {
+                    match downloads::write_download(&path, downloads::DownloadFormat::Odt, &odt) {
+                        Ok(()) => state.surface.notice = Some(format!("Exported {}", path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default())),
+                        Err(error) => state.surface.error = Some(error),
+                    }
+                }
+            }
+            "download" if args.get("format").and_then(Value::as_str) == Some("epub") => {
+                let epub = match crate::backend::epub::export(&self.editor.document, &state.surface.name) {
+                    Ok(epub) => epub,
+                    Err(error) => {
+                        state.surface.error = Some(error);
+                        return;
+                    }
+                };
+                let filename = format!("{}.epub", state.surface.name.trim_end_matches(".docx"));
+                if let Some(path) = rfd::FileDialog::new()
+                    .add_filter("EPUB Publication", &["epub"])
+                    .set_file_name(filename)
+                    .save_file()
+                {
+                    match downloads::write_download(&path, downloads::DownloadFormat::Epub, &epub) {
+                        Ok(()) => state.surface.notice = Some(format!("Exported {}", path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default())),
+                        Err(error) => state.surface.error = Some(error),
+                    }
+                }
+            }
             "download" if args.get("format").and_then(Value::as_str) == Some("html") => {
                 let archive = match crate::backend::html::export(&self.editor.document, &state.surface.name) {
                     Ok(archive) => archive,

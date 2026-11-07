@@ -81,7 +81,7 @@ pub fn export(document: &Document, title: &str) -> Result<Vec<u8>, String> {
         .map_err(|error| format!("Could Not Finish The Web Page Archive. {error}"))
 }
 
-fn escape_html(text: &str) -> String {
+pub(super) fn escape_html(text: &str) -> String {
     let mut result = String::new();
     for character in text.chars() {
         match character {
@@ -96,7 +96,7 @@ fn escape_html(text: &str) -> String {
     result
 }
 
-fn inline(run: &Run) -> String {
+pub(super) fn inline(run: &Run) -> String {
     let mut text = escape_html(&run.text)
         .replace('\n', "<br>")
         .replace('\t', "&#9;");
