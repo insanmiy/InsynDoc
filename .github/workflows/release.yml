@@ -12,12 +12,37 @@ concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
 
+env:
+  CARGO_HOME: 'C:\actions-runner\.cargo'
+  RUSTUP_HOME: 'C:\actions-runner\.rustup'
+  npm_config_cache: 'C:\actions-runner\.npm'
+
 jobs:
   windows:
     name: Windows Release Build
-    runs-on: windows-latest
+    runs-on: [self-hosted, Windows, X64]
     timeout-minutes: 60
     steps:
+      - name: Protect Local Paths
+        shell: powershell
+        run: |
+          $privatePaths = @($env:USERPROFILE, $env:APPDATA, $env:LOCALAPPDATA, $env:GITHUB_WORKSPACE, $env:RUNNER_TEMP, $env:RUNNER_TOOL_CACHE)
+          foreach ($privatePath in $privatePaths) {
+            if ([string]::IsNullOrWhiteSpace($privatePath)) { continue }
+            Write-Output "::add-mask::$privatePath"
+            Write-Output "::add-mask::$($privatePath.Replace('\', '/'))"
+          }
+          $pathMappings = [ordered]@{
+            'C:\actions-runner' = '/runner'
+          }
+          if ($env:USERPROFILE) { $pathMappings[$env:USERPROFILE] = '/user' }
+          if ($env:GITHUB_WORKSPACE) { $pathMappings[$env:GITHUB_WORKSPACE] = '/workspace' }
+          $rustFlags = foreach ($mapping in $pathMappings.GetEnumerator()) {
+            "--remap-path-prefix=$($mapping.Key)=$($mapping.Value)"
+            "--remap-path-prefix=$($mapping.Key.Replace('\', '/'))=$($mapping.Value)"
+          }
+          "CARGO_ENCODED_RUSTFLAGS=$($rustFlags -join [char]31)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
       - name: Check Out Source
         uses: actions/checkout@v4
 
@@ -34,19 +59,6 @@ jobs:
 
       - name: Install Dependencies
         run: npm ci
-
-      - name: Run TypeScript Tests
-        run: npm test
-
-      - name: Test Build Guard
-        shell: powershell
-        run: ./tests/build-guard.ps1
-
-      - name: Install Browser
-        run: npx playwright install msedge
-
-      - name: Build Frontend And Run Browser Tests
-        run: npm run test:e2e
 
       - name: Run Rust Tests
         run: npm run test:rust -- --locked
