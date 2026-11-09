@@ -2,6 +2,7 @@ import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExt
 import { createPortal } from 'react-dom';
 import { DocxEditor, useDocxEditor, useDocumentOutline, useDocumentSearch, useHeaderFooterState } from '@docx-editor.dev/react';
 import { createT, en, type TranslationKey } from '@docx-editor.dev/i18n';
+import { tableChromeIconPaths } from '@docx-editor.dev/core/editor';
 import type { Editor } from '@docx-editor.dev/core/contracts/editor';
 import { createEditorAdapter, localFonts } from './editor-adapter';
 import { clearRecentDocuments, countDocumentText, exportPlainText, recentDocuments, type RecentDocument, type TextStatistics } from './bridge';
@@ -351,52 +352,52 @@ function WorkspaceContent(props: WorkspaceProps) {
   const menus = <div className={`docx-editor docs-menu ${props.theme === 'dark' ? 'dark' : ''}`}>
     <DocxEditor.Menu preset={false} t={translate} reportIssue={false}>
       <DocxEditor.Menu.File preset={false}>
-        <MenuAction onSelect={() => void session.newDocument()} shortcut="Ctrl+N">New</MenuAction>
-        <MenuAction onSelect={() => void session.open()} shortcut="Ctrl+O">Open</MenuAction>
-        <DocxEditor.Menu.Submenu label="Open Recent">
+        <MenuAction icon={<Icon name="newDocument" size={18}/>} onSelect={() => void session.newDocument()} shortcut="Ctrl+N">New</MenuAction>
+        <MenuAction icon={<Icon name="folder" size={18}/>} onSelect={() => void session.open()} shortcut="Ctrl+O">Open</MenuAction>
+        <DocxEditor.Menu.Submenu label="Open Recent" paths={tableChromeIconPaths('file_upload')}>
           {recentError && <DocxEditor.Menu.Row disabled>{recentError}</DocxEditor.Menu.Row>}
           {recent.length === 0 && !recentError && <DocxEditor.Menu.Row disabled>No Recent Documents</DocxEditor.Menu.Row>}
-          {recent.map((file) => <MenuAction key={file.token} disabled={!file.available} title={!file.available ? 'This File Was Moved Or Is Unavailable.' : undefined}
+          {recent.map((file) => <MenuAction icon={<Icon name="document" size={18}/>} key={file.token} disabled={!file.available} title={!file.available ? 'This File Was Moved Or Is Unavailable.' : undefined}
             onSelect={() => void session.openRecent(file.token)}><span className="recent-document"><strong>{file.name}</strong><small>{file.path}</small></span></MenuAction>)}
-          {recent.length > 0 && <><DocxEditor.Menu.Separator/><MenuAction onSelect={() => {
+          {recent.length > 0 && <><DocxEditor.Menu.Separator/><MenuAction icon={<Icon name="trash" size={18}/>} onSelect={() => {
             void clearRecentDocuments().then(() => { setRecent([]); setRecentError(null); }).catch(() => setRecentError('Recent Files Could Not Be Cleared.'));
           }}>Clear Recent Files</MenuAction></>}
         </DocxEditor.Menu.Submenu>
         <DocxEditor.Menu.Separator/>
-        <MenuAction onSelect={() => void session.save()} shortcut="Ctrl+S">Save</MenuAction>
-        <MenuAction onSelect={() => void session.exportCopy()} shortcut="Ctrl+Shift+S">Export DOCX</MenuAction>
-        <MenuAction disabled={exporting} onSelect={() => void exportText()}>Export Plain Text</MenuAction>
+        <MenuAction icon={<Icon name="save" size={18}/>} onSelect={() => void session.save()} shortcut="Ctrl+S">Save</MenuAction>
+        <MenuAction icon={<Icon name="download" size={18}/>} onSelect={() => void session.exportCopy()} shortcut="Ctrl+Shift+S">Export DOCX</MenuAction>
+        <MenuAction icon={<Icon name="document" size={18}/>} disabled={exporting} onSelect={() => void exportText()}>Export Plain Text</MenuAction>
         <DocxEditor.Menu.Separator/><DocxEditor.Menu.PageSetup/>
       </DocxEditor.Menu.File>
       <DocxEditor.Menu.Menu id="edit" label="Edit" preset={false}>
         <DocxEditor.Menu.Item slotId="history.undo"/><DocxEditor.Menu.Item slotId="history.redo"/>
-        <DocxEditor.Menu.Separator/><MenuAction onSelect={() => editor?.exec({ type: 'selectAll' })} shortcut="Ctrl+A">Select All</MenuAction>
-        <MenuAction onSelect={() => props.onFind()} shortcut="Ctrl+F">Find</MenuAction>
-        <MenuAction onSelect={() => props.onFind(true)} shortcut="Ctrl+Shift+I">Find And Replace</MenuAction>
+        <DocxEditor.Menu.Separator/><MenuAction icon={<Icon name="selectAll" size={18}/>} onSelect={() => editor?.exec({ type: 'selectAll' })} shortcut="Ctrl+A">Select All</MenuAction>
+        <MenuAction icon={<Icon name="search" size={18}/>} onSelect={() => props.onFind()} shortcut="Ctrl+F">Find</MenuAction>
+        <MenuAction icon={<Icon name="replace" size={18}/>} onSelect={() => props.onFind(true)} shortcut="Ctrl+Shift+I">Find And Replace</MenuAction>
       </DocxEditor.Menu.Menu>
       <DocxEditor.Menu.Menu id="view" label="View" preset={false}>
-        <MenuAction active={state.view === 'pages'} onSelect={() => session.setView('pages')}>Separate Pages</MenuAction>
-        <MenuAction active={state.view === 'continuous'} onSelect={() => session.setView('continuous')}>Continuous</MenuAction>
+        <MenuAction icon={<Icon name="pages" size={18}/>} active={state.view === 'pages'} onSelect={() => session.setView('pages')}>Separate Pages</MenuAction>
+        <MenuAction icon={<Icon name="page" size={18}/>} active={state.view === 'continuous'} onSelect={() => session.setView('continuous')}>Continuous</MenuAction>
         <DocxEditor.Menu.Separator/>
-        <MenuAction active={outlineVisible} onSelect={toggleOutline}>Document Outline</MenuAction>
-        <MenuAction active={preferences.showRuler} onSelect={() => onPreferences({ ...preferences, showRuler: !preferences.showRuler })}>Show Ruler</MenuAction>
+        <MenuAction icon={<Icon name="outline" size={18}/>} active={outlineVisible} onSelect={toggleOutline}>Document Outline</MenuAction>
+        <MenuAction icon={<Icon name="ruler" size={18}/>} active={preferences.showRuler} onSelect={() => onPreferences({ ...preferences, showRuler: !preferences.showRuler })}>Show Ruler</MenuAction>
         <DocxEditor.Menu.Item slotId="review.paragraphMarks"/>
         <DocxEditor.Menu.Item slotId="review.bookmarks"/>
-        <MenuAction active={props.focusMode} onSelect={props.onFocusMode} shortcut="Ctrl+Shift+F">Focus Mode</MenuAction>
-        <DocxEditor.Menu.Separator/><MenuAction onSelect={props.onGoToPage} shortcut="Ctrl+G">Go To Page</MenuAction>
+        <MenuAction icon={<Icon name="focus" size={18}/>} active={props.focusMode} onSelect={props.onFocusMode} shortcut="Ctrl+Shift+F">Focus Mode</MenuAction>
+        <DocxEditor.Menu.Separator/><MenuAction icon={<Icon name="goToPage" size={18}/>} onSelect={props.onGoToPage} shortcut="Ctrl+G">Go To Page</MenuAction>
       </DocxEditor.Menu.Menu>
       <DocxEditor.Menu.Insert>
         <DocxEditor.Menu.Separator/>
-        <MenuAction onSelect={() => setWritingTool('date')}>Date And Time</MenuAction>
-        <MenuAction onSelect={() => setWritingTool('symbols')}>Special Characters</MenuAction>
-        <MenuAction onSelect={() => setWritingTool('math')}>Math Equation</MenuAction>
-        <MenuAction onSelect={() => setWritingTool('table')}>Custom Table</MenuAction>
-        <DocxEditor.Menu.Submenu label="Headers And Footers">
-          <MenuAction onSelect={() => editFurniture('header')}>Edit Header</MenuAction>
-          <MenuAction onSelect={() => editFurniture('footer')}>Edit Footer</MenuAction>
-          <MenuAction disabled={!furniture?.editing} onSelect={() => editor?.exec({ type: 'exitHeaderFooter' })}>Return To Document</MenuAction>
+        <MenuAction icon={<Icon name="calendar" size={18}/>} onSelect={() => setWritingTool('date')}>Date And Time</MenuAction>
+        <MenuAction icon={<Icon name="symbols" size={18}/>} onSelect={() => setWritingTool('symbols')}>Special Characters</MenuAction>
+        <MenuAction icon={<Icon name="math" size={18}/>} onSelect={() => setWritingTool('math')}>Math Equation</MenuAction>
+        <MenuAction icon={<Icon name="table" size={18}/>} onSelect={() => setWritingTool('table')}>Custom Table</MenuAction>
+        <DocxEditor.Menu.Submenu label="Headers And Footers" paths={tableChromeIconPaths('vertical_align_top')}>
+          <MenuAction icon={<Icon name="header" size={18}/>} onSelect={() => editFurniture('header')}>Edit Header</MenuAction>
+          <MenuAction icon={<Icon name="footer" size={18}/>} onSelect={() => editFurniture('footer')}>Edit Footer</MenuAction>
+          <MenuAction icon={<Icon name="document" size={18}/>} disabled={!furniture?.editing} onSelect={() => editor?.exec({ type: 'exitHeaderFooter' })}>Return To Document</MenuAction>
         </DocxEditor.Menu.Submenu>
-        <DocxEditor.Menu.Submenu label="Page Number Fields">
+        <DocxEditor.Menu.Submenu label="Page Number Fields" paths={tableChromeIconPaths('format_list_numbered')}>
           <DocxEditor.Menu.Item slotId="insert.pageNumber"/>
           <DocxEditor.Menu.Item slotId="insert.totalPages"/>
           <DocxEditor.Menu.Item slotId="insert.pageXofY"/>
@@ -404,21 +405,21 @@ function WorkspaceContent(props: WorkspaceProps) {
       </DocxEditor.Menu.Insert>
       <DocxEditor.Menu.Format>
         <DocxEditor.Menu.Separator/>
-        <DocxEditor.Menu.Submenu label="Text Position">
+        <DocxEditor.Menu.Submenu label="Text Position" paths={tableChromeIconPaths('superscript')}>
           <DocxEditor.Menu.Item slotId="script.super"/>
           <DocxEditor.Menu.Item slotId="script.sub"/>
         </DocxEditor.Menu.Submenu>
       </DocxEditor.Menu.Format>
       <DocxEditor.Menu.Menu id="tools" label="Tools" preset={false}>
-        <MenuAction onSelect={() => setSpellingRequest((value) => value + 1)} shortcut="Ctrl+Alt+X" disabled={!preferences.checkSpelling}>Check Spelling</MenuAction>
-        <MenuAction onSelect={props.onWordCount}>Word Count</MenuAction>
-        <MenuAction onSelect={props.onShortcuts} shortcut="Ctrl+/">Keyboard Shortcuts</MenuAction>
-        <MenuAction onSelect={() => props.onFind(true)} shortcut="Ctrl+Shift+I">Find And Replace</MenuAction>
-        <DocxEditor.Menu.Separator/><MenuAction onSelect={props.onSettings} shortcut="Ctrl+,">Settings</MenuAction>
+        <MenuAction icon={<Icon name="spelling" size={18}/>} onSelect={() => setSpellingRequest((value) => value + 1)} shortcut="Ctrl+Alt+X" disabled={!preferences.checkSpelling}>Check Spelling</MenuAction>
+        <MenuAction icon={<Icon name="wordCount" size={18}/>} onSelect={props.onWordCount}>Word Count</MenuAction>
+        <MenuAction icon={<Icon name="keyboard" size={18}/>} onSelect={props.onShortcuts} shortcut="Ctrl+/">Keyboard Shortcuts</MenuAction>
+        <MenuAction icon={<Icon name="replace" size={18}/>} onSelect={() => props.onFind(true)} shortcut="Ctrl+Shift+I">Find And Replace</MenuAction>
+        <DocxEditor.Menu.Separator/><MenuAction icon={<Icon name="settings" size={18}/>} onSelect={props.onSettings} shortcut="Ctrl+,">Settings</MenuAction>
       </DocxEditor.Menu.Menu>
       <DocxEditor.Menu.Menu id="help" label="Help" preset={false}>
-        <MenuAction onSelect={() => { openToolFinder(); }} shortcut="Alt+/">Search The Menus</MenuAction>
-        <MenuAction onSelect={props.onShortcuts} shortcut="Ctrl+/">Keyboard Shortcuts</MenuAction>
+        <MenuAction icon={<Icon name="search" size={18}/>} onSelect={() => { openToolFinder(); }} shortcut="Alt+/">Search The Menus</MenuAction>
+        <MenuAction icon={<Icon name="keyboard" size={18}/>} onSelect={props.onShortcuts} shortcut="Ctrl+/">Keyboard Shortcuts</MenuAction>
       </DocxEditor.Menu.Menu>
     </DocxEditor.Menu>
   </div>;
