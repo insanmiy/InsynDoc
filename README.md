@@ -82,8 +82,6 @@ The Installer Is Written Under `src-tauri/target/release/bundle/nsis/`. You Can 
 | `npm run dev:web` | Start The Frontend Development Server. |
 | `npm run build` | Typecheck And Build The Frontend. |
 | `npm run typecheck` | Run The TypeScript Type Checker. |
-| `npm test` | Run The Vitest Unit Tests. |
-| `npm run test:e2e` | Build The Frontend And Run Playwright End-To-End Tests. |
 | `npm run test:rust` | Run The Rust Tests. |
 | `npm run dist` | Build The Windows NSIS Installer. |
 
