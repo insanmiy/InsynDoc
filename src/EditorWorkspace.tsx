@@ -19,9 +19,32 @@ import { createBlankDocument } from './blank-document';
 import { paragraphTextOf } from '@docx-editor.dev/core/store';
 import '@docx-editor.dev/core/styles/editor.css';
 
+const editorShortcuts = new Map<string, string>([
+  ['history.undo', 'Ctrl+Z'],
+  ['history.redo', 'Ctrl+Y'],
+  ['text.bold', 'Ctrl+B'],
+  ['text.italic', 'Ctrl+I'],
+  ['text.underline', 'Ctrl+U'],
+  ['alignment.left', 'Ctrl+L'],
+  ['alignment.center', 'Ctrl+E'],
+  ['alignment.right', 'Ctrl+R'],
+  ['alignment.justify', 'Ctrl+J'],
+  ['direction.ltr', 'Ctrl+Left Shift'],
+  ['direction.rtl', 'Ctrl+Right Shift'],
+  ['format.painter', 'Ctrl+Alt+C'],
+  ['script.super', 'Ctrl+Shift+='],
+  ['script.sub', 'Ctrl+='],
+  ['insert.footnote', 'Ctrl+Alt+F'],
+  ['insert.endnote', 'Ctrl+Alt+D'],
+  ['insert.pageBreak', 'Ctrl+Enter'],
+  ['review.paragraphMarks', 'Ctrl+Shift+8']
+]);
+
 const english = createT(en);
-const translate = (key: string, params?: Record<string, string | number>): string =>
-  english(key as TranslationKey, params).replace(/\b\p{L}/gu, (letter) => letter.toLocaleUpperCase('en-US'));
+const translate = (key: string, params?: Record<string, string | number>): string => {
+  if (key.startsWith('shortcut.')) return editorShortcuts.get(key.slice('shortcut.'.length)) ?? key;
+  return english(key as TranslationKey, params).replace(/\b\p{L}/gu, (letter) => letter.toLocaleUpperCase('en-US'));
+};
 
 function MenuAction(props: ComponentProps<typeof DocxEditor.Menu.Row>) {
   return <DocxEditor.Menu.Row {...props} onSelect={() => {
@@ -194,16 +217,16 @@ function WorkspaceContent(props: WorkspaceProps) {
     { label: 'Italic', shortcut: 'Ctrl+I', run: () => runFormattingCommand({ type: 'toggleMark', mark: 'italic' }) },
     { label: 'Underline', shortcut: 'Ctrl+U', run: () => runFormattingCommand({ type: 'toggleMark', mark: 'underline' }) },
     { label: 'Strikethrough', shortcut: '', run: () => runFormattingCommand({ type: 'toggleMark', mark: 'strike' }) },
-    { label: 'Superscript', shortcut: '', run: () => runFormattingCommand({ type: 'toggleMark', mark: 'superscript' }) },
-    { label: 'Subscript', shortcut: '', run: () => runFormattingCommand({ type: 'toggleMark', mark: 'subscript' }) },
-    { label: 'Align Left', shortcut: '', run: () => runFormattingCommand({ type: 'setAlignment', align: 'left' }) },
-    { label: 'Align Center', shortcut: '', run: () => runFormattingCommand({ type: 'setAlignment', align: 'center' }) },
-    { label: 'Align Right', shortcut: '', run: () => runFormattingCommand({ type: 'setAlignment', align: 'right' }) },
-    { label: 'Justify', shortcut: '', run: () => runFormattingCommand({ type: 'setAlignment', align: 'justify' }) },
+    { label: 'Superscript', shortcut: editorShortcuts.get('script.super') ?? '', run: () => runFormattingCommand({ type: 'toggleMark', mark: 'superscript' }) },
+    { label: 'Subscript', shortcut: editorShortcuts.get('script.sub') ?? '', run: () => runFormattingCommand({ type: 'toggleMark', mark: 'subscript' }) },
+    { label: 'Align Left', shortcut: editorShortcuts.get('alignment.left') ?? '', run: () => runFormattingCommand({ type: 'setAlignment', align: 'left' }) },
+    { label: 'Align Center', shortcut: editorShortcuts.get('alignment.center') ?? '', run: () => runFormattingCommand({ type: 'setAlignment', align: 'center' }) },
+    { label: 'Align Right', shortcut: editorShortcuts.get('alignment.right') ?? '', run: () => runFormattingCommand({ type: 'setAlignment', align: 'right' }) },
+    { label: 'Justify', shortcut: editorShortcuts.get('alignment.justify') ?? '', run: () => runFormattingCommand({ type: 'setAlignment', align: 'justify' }) },
     { label: 'Bulleted List', shortcut: '', run: () => runFormattingCommand({ type: 'toggleList', kind: 'bullet' }) },
     { label: 'Numbered List', shortcut: '', run: () => runFormattingCommand({ type: 'toggleList', kind: 'ordered' }) },
-    { label: 'Increase Indent', shortcut: '', run: () => runFormattingCommand({ type: 'adjustIndent', direction: 'increase' }) },
-    { label: 'Decrease Indent', shortcut: '', run: () => runFormattingCommand({ type: 'adjustIndent', direction: 'decrease' }) },
+    { label: 'Increase Indent', shortcut: 'Ctrl+M', run: () => runFormattingCommand({ type: 'adjustIndent', direction: 'increase' }) },
+    { label: 'Decrease Indent', shortcut: 'Ctrl+Shift+M', run: () => runFormattingCommand({ type: 'adjustIndent', direction: 'decrease' }) },
     { label: 'Clear Formatting', shortcut: '', run: () => runFormattingCommand({ type: 'clearFormatting' }) },
     { label: 'Word Count', shortcut: '', run: props.onWordCount },
     { label: 'Insert Date And Time', shortcut: '', run: () => setWritingTool('date') },
@@ -370,7 +393,7 @@ function WorkspaceContent(props: WorkspaceProps) {
         <DocxEditor.Menu.Separator/><DocxEditor.Menu.PageSetup/>
       </DocxEditor.Menu.File>
       <DocxEditor.Menu.Menu id="edit" label="Edit" preset={false}>
-        <DocxEditor.Menu.Item slotId="history.undo"/><DocxEditor.Menu.Item slotId="history.redo"/>
+        <DocxEditor.Menu.Item slotId="history.undo" labelKey="formattingBar.undo" shortcutKey="shortcut.history.undo"/><DocxEditor.Menu.Item slotId="history.redo" labelKey="formattingBar.redo" shortcutKey="shortcut.history.redo"/>
         <DocxEditor.Menu.Separator/><MenuAction icon={<Icon name="selectAll" size={18}/>} onSelect={() => editor?.exec({ type: 'selectAll' })} shortcut="Ctrl+A">Select All</MenuAction>
         <MenuAction icon={<Icon name="search" size={18}/>} onSelect={() => props.onFind()} shortcut="Ctrl+F">Find</MenuAction>
         <MenuAction icon={<Icon name="replace" size={18}/>} onSelect={() => props.onFind(true)} shortcut="Ctrl+Shift+I">Find And Replace</MenuAction>
@@ -381,12 +404,15 @@ function WorkspaceContent(props: WorkspaceProps) {
         <DocxEditor.Menu.Separator/>
         <MenuAction icon={<Icon name="outline" size={18}/>} active={outlineVisible} onSelect={toggleOutline}>Document Outline</MenuAction>
         <MenuAction icon={<Icon name="ruler" size={18}/>} active={preferences.showRuler} onSelect={() => onPreferences({ ...preferences, showRuler: !preferences.showRuler })}>Show Ruler</MenuAction>
-        <DocxEditor.Menu.Item slotId="review.paragraphMarks"/>
+        <DocxEditor.Menu.Item slotId="review.paragraphMarks" shortcutKey="shortcut.review.paragraphMarks"/>
         <DocxEditor.Menu.Item slotId="review.bookmarks"/>
         <MenuAction icon={<Icon name="focus" size={18}/>} active={props.focusMode} onSelect={props.onFocusMode} shortcut="Ctrl+Shift+F">Focus Mode</MenuAction>
         <DocxEditor.Menu.Separator/><MenuAction icon={<Icon name="goToPage" size={18}/>} onSelect={props.onGoToPage} shortcut="Ctrl+G">Go To Page</MenuAction>
       </DocxEditor.Menu.Menu>
       <DocxEditor.Menu.Insert>
+        <DocxEditor.Menu.Item slotId="insert.footnote" shortcutKey="shortcut.insert.footnote"/>
+        <DocxEditor.Menu.Item slotId="insert.endnote" shortcutKey="shortcut.insert.endnote"/>
+        <DocxEditor.Menu.Item slotId="insert.pageBreak" shortcutKey="shortcut.insert.pageBreak"/>
         <DocxEditor.Menu.Separator/>
         <MenuAction icon={<Icon name="calendar" size={18}/>} onSelect={() => setWritingTool('date')}>Date And Time</MenuAction>
         <MenuAction icon={<Icon name="symbols" size={18}/>} onSelect={() => setWritingTool('symbols')}>Special Characters</MenuAction>
@@ -404,10 +430,20 @@ function WorkspaceContent(props: WorkspaceProps) {
         </DocxEditor.Menu.Submenu>
       </DocxEditor.Menu.Insert>
       <DocxEditor.Menu.Format>
+        <DocxEditor.Menu.Item slotId="text.bold" labelKey="formattingBar.bold" shortcutKey="shortcut.text.bold"/>
+        <DocxEditor.Menu.Item slotId="text.italic" labelKey="formattingBar.italic" shortcutKey="shortcut.text.italic"/>
+        <DocxEditor.Menu.Item slotId="text.underline" labelKey="formattingBar.underline" shortcutKey="shortcut.text.underline"/>
+        <DocxEditor.Menu.Item slotId="alignment.left" shortcutKey="shortcut.alignment.left"/>
+        <DocxEditor.Menu.Item slotId="alignment.center" shortcutKey="shortcut.alignment.center"/>
+        <DocxEditor.Menu.Item slotId="alignment.right" shortcutKey="shortcut.alignment.right"/>
+        <DocxEditor.Menu.Item slotId="alignment.justify" shortcutKey="shortcut.alignment.justify"/>
+        <DocxEditor.Menu.Item slotId="direction.ltr" shortcutKey="shortcut.direction.ltr"/>
+        <DocxEditor.Menu.Item slotId="direction.rtl" shortcutKey="shortcut.direction.rtl"/>
+        <DocxEditor.Menu.Item slotId="format.painter" labelKey="formattingBar.formatPainter" shortcutKey="shortcut.format.painter"/>
         <DocxEditor.Menu.Separator/>
         <DocxEditor.Menu.Submenu label="Text Position" paths={tableChromeIconPaths('superscript')}>
-          <DocxEditor.Menu.Item slotId="script.super"/>
-          <DocxEditor.Menu.Item slotId="script.sub"/>
+          <DocxEditor.Menu.Item slotId="script.super" labelKey="formattingBar.superscript" shortcutKey="shortcut.script.super"/>
+          <DocxEditor.Menu.Item slotId="script.sub" labelKey="formattingBar.subscript" shortcutKey="shortcut.script.sub"/>
         </DocxEditor.Menu.Submenu>
       </DocxEditor.Menu.Format>
       <DocxEditor.Menu.Menu id="tools" label="Tools" preset={false}>
