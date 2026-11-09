@@ -94,14 +94,16 @@ export function Settings({ open, onClose, preferences, onChange, appVersion, onC
         <span><strong id="update-notifications-label">Notify Me About Updates</strong><small id="update-notifications-description">Show A Prompt When A New Version Is Available.</small></span>
         <input type="checkbox" role="switch" aria-labelledby="update-notifications-label" aria-describedby="update-notifications-description" checked={preferences.updateNotifications} onChange={(event) => onChange({ ...preferences, updateNotifications: event.target.checked })}/>
       </label>
-      <div className="browser-actions">
+      <div className="update-check">
+        <div className="update-check-details">
+          <span className="update-version">Version {appVersion}</span>
+          {updateStatus === 'current' && <p className="modal-description" role="status">You're Up To Date.</p>}
+          {updateStatus === 'available' && <p className="modal-description" role="status">A Newer Version Is Available. Finish Installing From The Update Prompt.</p>}
+          {updateStatus === 'error' && <p className="form-error" role="alert">Could Not Check For Updates. Check Your Connection And Try Again.</p>}
+          {updateStatus === 'unsupported' && <p className="modal-description" role="status">Update Checks Work In The Installed App.</p>}
+        </div>
         <button className="secondary-button" disabled={updateStatus === 'checking'} onClick={() => void checkUpdates()}>{updateStatus === 'checking' ? 'Checking...' : 'Check For Updates'}</button>
-        <span className="modal-description">Version {appVersion}</span>
       </div>
-      {updateStatus === 'current' && <p className="modal-description" role="status">You're Up To Date.</p>}
-      {updateStatus === 'available' && <p className="modal-description" role="status">A Newer Version Is Available. Finish Installing From The Update Prompt.</p>}
-      {updateStatus === 'error' && <p className="form-error" role="alert">Could Not Check For Updates. Check Your Connection And Try Again.</p>}
-      {updateStatus === 'unsupported' && <p className="modal-description" role="status">Update Checks Work In The Installed App.</p>}
     </section>
     <section className="settings-section" aria-labelledby="links-heading">
       <h3 id="links-heading">Hyperlinks</h3><p>Open Links With Your System Default Or A Browser You Choose.</p>
