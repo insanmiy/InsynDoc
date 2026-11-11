@@ -70,10 +70,71 @@ function installEmptyListExit(editor: DocxEditorInstance): () => void {
   return () => host.removeEventListener('keydown', onKeyDown, true);
 }
 
-export function installAutoformat(editor: DocxEditorInstance): () => void {
+export interface AutoformatOptions {
+  smartPunctuation?: boolean;
+  snippets?: readonly { trigger: string; text: string }[];
+}
+
+export interface SnippetExpansion {
+  trigger: string;
+  text: string;
+}
+
+type Surface = NonNullable<DocxEditorInstance['surface']>;
+type CaretScope = ReturnType<Surface['storyScope']>;
+type CaretPart = NonNullable<ReturnType<Surface['session']['partFor']>>;
+
+interface CaretContext {
+  scope: CaretScope;
+  part: CaretPart;
+  paragraphId: string;
+  offset: number;
+  before: string;
+}
+
+function caretContext(surface: Surface, maxOffset: number, minOffset = 1): CaretContext | null {
+  const pending = surface.state().selection;
+  if (pending.anchor.paragraphId !== pending.head.paragraphId || pending.anchor.offset !== pending.head.offset || pending.head.offset > maxOffset) return null;
+  surface.flushPendingInput();
+  const selection = surface.state().selection;
+  if (selection.anchor.paragraphId !== selection.head.paragraphId || selection.anchor.offset !== selection.head.offset
+    || selection.head.offset < minOffset || selection.head.offset > maxOffset) return null;
+  const scope = surface.storyScope();
+  const part = surface.session.partFor(scope);
+  if (!part || surface.isListParagraph()) return null;
+  const paragraphId = selection.head.paragraphId;
+  const before = paragraphTextOf(part, paragraphId);
+  if (before === null) return null;
+  return { scope, part, paragraphId, offset: selection.head.offset, before };
+}
+
+function smartPunctuationReplacement(prefix: string, typed: string): string | null {
+  if (typed === '-') {
+    return prefix.endsWith('-') ? '—' : null;
+  }
+  if (typed !== '"' && typed !== "'") return null;
+  const previous = prefix.charAt(prefix.length - 1);
+  const opening = previous === '' || /[\s([{<"'‘“«—–-]/.test(previous);
+  if (typed === '"') return opening ? '“' : '”';
+  return opening ? '‘' : '’';
+}
+
+function matchSnippet(prefix: string, snippets: readonly SnippetExpansion[]): SnippetExpansion | null {
+  let best: SnippetExpansion | null = null;
+  for (const snippet of snippets) {
+    if (!prefix.endsWith(snippet.trigger)) continue;
+    const before = prefix.length - snippet.trigger.length;
+    if (before > 0 && !/\s/.test(prefix.charAt(before - 1))) continue;
+    if (!best || snippet.trigger.length > best.trigger.length) best = snippet;
+  }
+  return best;
+}
+
+export function installAutoformat(editor: DocxEditorInstance, options: AutoformatOptions = {}): () => void {
   const surface = editor.surface;
   if (!surface) return () => undefined;
   const host = surface.hostElement();
+  const snippets = options.snippets ?? [];
   const uninstallHeadingContinuation = installHeadingContinuation(editor);
   let disposed = false;
   let reversibleConversion: { paragraphId: string; scope: string; revision: number } | null = null;
@@ -94,26 +155,80 @@ export function installAutoformat(editor: DocxEditorInstance): () => void {
     editor.exec({ type: 'undo' });
   };
   const pendingConversions = new Set<() => void>();
+
+  const scheduleReplacement = (event: InputEvent, target: HTMLElement, context: CaretContext, start: number, end: number, text: string, expected: string): void => {
+    const { paragraphId, offset, scope } = context;
+    const cleanup = (): void => {
+      target.removeEventListener('beforeinput', finish);
+      pendingConversions.delete(cleanup);
+    };
+    const finish = (received: Event): void => {
+      cleanup();
+      if (received !== event) return;
+      if (disposed || editor.surface !== surface || JSON.stringify(surface.storyScope()) !== JSON.stringify(scope)) return;
+      surface.flushPendingInput();
+      const current = surface.state().selection;
+      if (current.anchor.paragraphId !== paragraphId || current.head.paragraphId !== paragraphId
+        || current.anchor.offset !== offset + 1 || current.head.offset !== offset + 1 || surface.isListParagraph()) return;
+      const currentPart = surface.session.partFor(scope);
+      if (!currentPart || paragraphTextOf(currentPart, paragraphId) !== expected) return;
+      const after = { paragraphId, start: start + text.length, end: start + text.length };
+      let converted = false;
+      const rejection = surface.commitReviewOps((historyToken) => {
+        const result = surface.session.applyTreeOps([
+          { op: 'deleteText', paragraphId, start, end },
+          { op: 'insertText', paragraphId, offset: start, text }
+        ], { paragraphId, start: end, end }, after, scope, { historyToken });
+        converted = result.committed;
+        return result;
+      }, 'package-scoped');
+      if (!rejection && converted) {
+        surface.setSelection({ anchor: { paragraphId, offset: start + text.length }, head: { paragraphId, offset: start + text.length } });
+        reversibleConversion = { paragraphId, scope: JSON.stringify(scope), revision: surface.session.packageRevision() };
+      }
+    };
+    pendingConversions.add(cleanup);
+    target.addEventListener('beforeinput', finish, { once: true });
+  };
+
   const beforeInput = (event: InputEvent): void => {
     clearReversibleConversion();
-    if (event.inputType !== 'insertText' || event.data !== ' ' || event.isComposing || event.defaultPrevented) return;
+    if (event.inputType !== 'insertText' || !event.data || event.isComposing || event.defaultPrevented) return;
+    const data = event.data;
     const target = event.target;
     if (!(target instanceof HTMLElement)) return;
     if (event.target instanceof Element && event.target.closest('input, textarea, select')) return;
     if (surface.editingMode() !== 'edit' || surface.collaborationSession() || !editor.snapshot().editable) return;
-    const pending = surface.state().selection;
-    if (pending.anchor.paragraphId !== pending.head.paragraphId || pending.anchor.offset !== pending.head.offset || pending.head.offset > 6) return;
-    surface.flushPendingInput();
-    const selection = surface.state().selection;
-    if (selection.anchor.paragraphId !== selection.head.paragraphId || selection.anchor.offset !== selection.head.offset || selection.head.offset < 1 || selection.head.offset > 6) return;
-    const scope = surface.storyScope();
-    const part = surface.session.partFor(scope);
-    if (!part || surface.isListParagraph()) return;
-    const paragraphId = selection.head.paragraphId;
-    const before = paragraphTextOf(part, paragraphId);
-    if (before === null) return;
-    const offset = selection.head.offset;
-    const rule = matchAutoformat(before.slice(0, offset));
+    const isSpace = data === ' ';
+    const isPunctuation = options.smartPunctuation === true && data.length === 1 && (data === '-' || data === '"' || data === "'");
+    if (!isSpace && !isPunctuation) return;
+    const context = caretContext(surface, 4096, isSpace ? 1 : 0);
+    if (!context) return;
+    const { before, offset, paragraphId, scope } = context;
+    const committed = before.slice(0, offset) + data + before.slice(offset);
+    const prefix = before.slice(0, offset);
+
+    if (isSpace && snippets.length) {
+      const snippet = matchSnippet(prefix, snippets);
+      if (snippet) {
+        const start = offset - snippet.trigger.length;
+        scheduleReplacement(event, target, context, start, offset, snippet.text, committed);
+        return;
+      }
+    }
+
+    if (isPunctuation) {
+      const replacement = smartPunctuationReplacement(prefix, data);
+      if (!replacement) return;
+      const start = data === '-' ? offset - 1 : offset;
+      const end = offset + 1;
+      if (start < 0) return;
+      scheduleReplacement(event, target, context, start, end, replacement, committed);
+      return;
+    }
+
+    if (offset > 6) return;
+    const rule = matchAutoformat(prefix);
     if (!rule) return;
     const headingStyle = rule.kind === 'heading' ? editor.getDocumentStyles().find((style) => style.type === 'paragraph'
       && (style.styleId.toLowerCase() === `heading${rule.level}` || style.name.toLowerCase() === `heading ${rule.level}`)) : undefined;

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { chooseLinkBrowser } from './bridge';
 import { Modal } from './Modal';
 import { Icon, type IconName } from './Icon';
-import type { Preferences, Theme } from './preferences';
+import { parseSnippetExpansions, type Preferences, type SnippetExpansion, type Theme } from './preferences';
 import type { UpdateCheckResult } from './updater';
 
 const themes: { value: Theme; label: string; icon: IconName }[] = [
@@ -20,6 +20,25 @@ export function Settings({ open, onClose, preferences, onChange, appVersion, onC
   const [browserError, setBrowserError] = useState<string | null>(null);
   const [choosingBrowser, setChoosingBrowser] = useState(false);
   const [updateStatus, setUpdateStatus] = useState<UpdateStatus>('idle');
+  const [snippetTrigger, setSnippetTrigger] = useState('');
+  const [snippetText, setSnippetText] = useState('');
+  const [snippetError, setSnippetError] = useState<string | null>(null);
+
+  function addSnippet(): void {
+    const expansions = parseSnippetExpansions([...preferences.snippetExpansions, { trigger: snippetTrigger, text: snippetText }]);
+    if (expansions.length === preferences.snippetExpansions.length) {
+      setSnippetError('Use A Short Trigger Without Spaces And Replacement Text Up To 2,000 Characters.');
+      return;
+    }
+    onChange({ ...preferences, snippetExpansions: expansions });
+    setSnippetTrigger('');
+    setSnippetText('');
+    setSnippetError(null);
+  }
+
+  function removeSnippet(trigger: string): void {
+    onChange({ ...preferences, snippetExpansions: preferences.snippetExpansions.filter((snippet) => snippet.trigger !== trigger) });
+  }
 
   async function checkUpdates(): Promise<void> {
     setUpdateStatus('checking');
@@ -71,6 +90,18 @@ export function Settings({ open, onClose, preferences, onChange, appVersion, onC
         const goal = Number(event.target.value);
         if (Number.isInteger(goal) && goal >= 0 && goal <= 100000) onChange({ ...preferences, wordGoal: goal });
       }}/></label>
+      <h4 className="settings-subheading">Text Expansions</h4>
+      <p>Type A Trigger Followed By A Space To Insert Replacement Text. For Example, ;sig.</p>
+      {preferences.snippetExpansions.map((snippet: SnippetExpansion) => <div className="snippet-row" key={snippet.trigger}>
+        <code>{snippet.trigger}</code><span>{snippet.text}</span>
+        <button className="icon-button" aria-label={`Remove ${snippet.trigger}`} onClick={() => removeSnippet(snippet.trigger)}><Icon name="close" size={15}/></button>
+      </div>)}
+      <div className="snippet-form">
+        <input aria-label="Snippet Trigger" placeholder="Trigger, Like ;sig" value={snippetTrigger} onChange={(event) => { setSnippetTrigger(event.target.value); setSnippetError(null); }}/>
+        <input aria-label="Snippet Text" placeholder="Replacement Text" value={snippetText} onChange={(event) => { setSnippetText(event.target.value); setSnippetError(null); }} onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); addSnippet(); } }}/>
+        <button className="secondary-button" disabled={!snippetTrigger.trim() || !snippetText.trim()} onClick={addSnippet}>Add</button>
+      </div>
+      {snippetError && <p className="form-error" role="alert">{snippetError}</p>}
     </section>
     <section className="settings-section" aria-labelledby="editor-heading">
       <h3 id="editor-heading">Editor Preferences</h3>
@@ -79,7 +110,11 @@ export function Settings({ open, onClose, preferences, onChange, appVersion, onC
         ['checkSpelling', 'Check Spelling', 'Check English (US) Spelling And Sentence Context On This Device.'],
         ['showRuler', 'Show Ruler', 'Adjust Page Margins And Indents.'],
         ['showOutline', 'Show Document Outline', 'Navigate Between Your Headings.'],
-        ['showWordCount', 'Show Word Count', 'Keep Document Statistics In The Status Bar.']
+        ['showWordCount', 'Show Word Count', 'Keep Document Statistics In The Status Bar.'],
+        ['smartPunctuation', 'Smart Punctuation', 'Convert Straight Quotes To Curly Quotes And Double Dashes To Em Dashes While Typing.'],
+        ['sanitizeMetadataOnExport', 'Remove Hidden Metadata On Export', 'Strip Author, Company, Timestamps, And Revision Details From Downloaded Or Exported Copies.'],
+        ['autoRecovery', 'Auto Recovery Snapshots', 'Save Local Snapshots Every Two Minutes While The Document Has Unsaved Changes.'],
+        ['localFonts', 'Local Font Discovery', 'Use Fonts Installed On This Device So Documents Render With Their Intended Typefaces Offline.']
       ] as const).map(([key, label, description]) => <label className="setting-row" key={key}>
         <span><strong id={`${key}-label`}>{label}</strong><small id={`${key}-description`}>{description}</small></span>
         <input type="checkbox" role="switch" aria-labelledby={`${key}-label`} aria-describedby={`${key}-description`} checked={preferences[key]} onChange={(event) => onChange({ ...preferences, [key]: event.target.checked })}/>

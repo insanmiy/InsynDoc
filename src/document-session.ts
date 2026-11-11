@@ -1,5 +1,8 @@
-import type { DesktopBridge, DocumentFile } from './bridge';
+import type { DesktopBridge, DocumentFile, SnapshotInfo, SnapshotStatus, TemplateInfo } from './bridge';
+import { documentSnapshotStatus, listDocumentSnapshots, listDocumentTemplates, readDocumentSnapshot, readDocumentTemplate, saveDocumentTemplate, writeDocumentSnapshot } from './bridge';
 import type { ExportFormat } from './document-export';
+import { importDocument } from './document-import';
+import { sanitizeDocxMetadata } from './document-sanitize';
 
 export type UnsavedChoice = 'save' | 'discard' | 'cancel';
 export type ViewMode = 'pages' | 'continuous';
@@ -24,6 +27,10 @@ export interface SessionState {
   notice: string | null;
 }
 
+export interface SessionHooks {
+  sanitizeMetadata?: () => boolean;
+}
+
 export class DocumentSession {
   private state: SessionState = {
     name: 'Untitled.docx', token: null, dirty: false, busy: false,
@@ -36,7 +43,8 @@ export class DocumentSession {
 
   constructor(
     private readonly bridge: DesktopBridge,
-    private readonly confirmUnsaved: () => Promise<UnsavedChoice>
+    private readonly confirmUnsaved: () => Promise<UnsavedChoice>,
+    private readonly hooks: SessionHooks = {}
   ) {}
 
   subscribe = (listener: () => void): (() => void) => {
@@ -80,6 +88,11 @@ export class DocumentSession {
     }
     this.update({ name, dirty: true });
   });
+
+  private async saveBytes(): Promise<Uint8Array> {
+    const bytes = await this.adapter!.save();
+    return this.hooks.sanitizeMetadata?.() ? sanitizeDocxMetadata(bytes) : bytes;
+  }
 
   private async saveCurrent(saveAs: boolean): Promise<boolean> {
     if (!this.adapter) return false;
@@ -142,20 +155,35 @@ export class DocumentSession {
   });
 
   private async loadFile(file: DocumentFile): Promise<void> {
-    const bytes = new Uint8Array(file.bytes);
+    let bytes: Uint8Array = new Uint8Array(file.bytes);
+    let name = file.name;
+    let token = file.token || null;
+    if (file.importFormat) {
+      const imported = await importDocument(file.name, bytes, file.importFormat);
+      bytes = imported.bytes;
+      name = imported.name;
+      token = null;
+    }
     await this.adapter!.validate(bytes);
     await this.adapter!.load(bytes);
     this.revision = 0;
-    this.update({ name: file.name, token: file.token, dirty: false });
-    await this.bridge.remember?.(file.token).catch(() => undefined);
+    this.update({ name, token, dirty: false });
+    if (token) await this.bridge.remember?.(token).catch(() => undefined);
   }
+
+  openTemplate = (name: string, bytes: Uint8Array): Promise<void> => this.run('Opening Template', async () => {
+    if (!await this.canReplace()) return;
+    await this.adapter!.load(bytes);
+    this.revision = 0;
+    this.update({ name, token: null, dirty: false });
+  });
 
   save = (): Promise<void> => this.run('Saving Document', async () => {
     await this.saveCurrent(false);
   });
 
   exportCopy = (): Promise<void> => this.run('Exporting DOCX', async () => {
-    const bytes = await this.adapter!.save();
+    const bytes = await this.saveBytes();
     const result = await this.bridge.save(bytes, this.state.token, true, this.state.name);
     if (result) this.update({ notice: `Exported ${result.name}` });
   });
@@ -169,7 +197,7 @@ export class DocumentSession {
       finally { cleanup(); }
     } else {
       if (!this.bridge.download) throw new Error('Document Downloads Are Unavailable.');
-      let bytes = await this.adapter!.save();
+      let bytes = await this.saveBytes();
       if (format !== 'docx') {
         const { exportDocument } = await import('./document-export');
         bytes = (await exportDocument(bytes, format, this.state.name)).bytes;
@@ -177,6 +205,38 @@ export class DocumentSession {
       filename = await this.bridge.download(bytes, format, this.state.name);
     }
     if (filename) this.update({ notice: `Downloaded ${filename}` });
+  });
+
+  captureSnapshot = async (): Promise<void> => {
+    if (!this.adapter || this.state.busy) return;
+    try {
+      const bytes = await this.adapter.save();
+      await writeDocumentSnapshot(bytes, this.state.token, this.state.name);
+    } catch {
+      return;
+    }
+  };
+
+  listSnapshots = (): Promise<SnapshotInfo[]> => listDocumentSnapshots(this.state.token, this.state.name);
+
+  snapshotStatus = (): Promise<SnapshotStatus | null> => documentSnapshotStatus(this.state.token, this.state.name);
+
+  restoreSnapshot = (id: string): Promise<void> => this.run('Restoring Snapshot', async () => {
+    const bytes = await readDocumentSnapshot(this.state.token, this.state.name, id);
+    await this.adapter!.validate(bytes);
+    await this.adapter!.load(bytes);
+    this.revision += 1;
+    this.update({ dirty: true });
+  });
+
+  listTemplates = (): Promise<TemplateInfo[]> => listDocumentTemplates();
+
+  readTemplate = (id: string): Promise<Uint8Array> => readDocumentTemplate(id);
+
+  saveAsTemplate = (name: string): Promise<void> => this.run('Saving Template', async () => {
+    const bytes = await this.adapter!.save();
+    const template = await saveDocumentTemplate(bytes, name);
+    this.update({ notice: `Saved Template ${template.name}` });
   });
 
   close = async (): Promise<void> => {

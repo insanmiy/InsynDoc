@@ -9,6 +9,24 @@ export interface SavedFile {
 
 export interface DocumentFile extends SavedFile {
   bytes: number[] | Uint8Array;
+  importFormat?: string;
+}
+
+export interface SnapshotInfo {
+  id: string;
+  createdAt: number;
+}
+
+export interface SnapshotStatus {
+  latestId: string | null;
+  latestCreatedAt: number | null;
+  fileModifiedAt: number | null;
+}
+
+export interface TemplateInfo {
+  id: string;
+  name: string;
+  createdAt: number;
 }
 
 export interface DesktopBridge {
@@ -42,7 +60,9 @@ function documentPacket(buffer: ArrayBuffer): DocumentFile | null {
   if (metadata === null && bytes.length === 0) return null;
   if (typeof metadata !== 'object' || metadata === null || !('token' in metadata) || typeof metadata.token !== 'string'
     || !('name' in metadata) || typeof metadata.name !== 'string') throw new Error('Invalid Document Metadata.');
-  return { token: metadata.token, name: metadata.name, bytes };
+  const file: DocumentFile = { token: metadata.token, name: metadata.name, bytes };
+  if ('importFormat' in metadata && typeof metadata.importFormat === 'string') file.importFormat = metadata.importFormat;
+  return file;
 }
 
 function savePacket(bytes: Uint8Array, token: string | null, saveAs: boolean, name?: string): Uint8Array {
@@ -68,6 +88,59 @@ export async function clearRecentDocuments(): Promise<void> {
 export async function exportPlainText(text: string, token: string | null): Promise<string | null> {
   if (!isTauri()) throw new Error('Open The Desktop App To Export Plain Text.');
   return invoke<string | null>('export_plain_text', { text, token });
+}
+
+function snapshotPacket(bytes: Uint8Array, token: string | null, name: string): Uint8Array {
+  if (bytes.length > 100 * 1024 * 1024) throw new Error('The Snapshot Exceeds The 100 MB Limit.');
+  const metadata = new TextEncoder().encode(JSON.stringify({ token, name }));
+  if (metadata.length > MAX_METADATA_BYTES) throw new Error('Snapshot Metadata Is Too Large.');
+  const packet = new Uint8Array(4 + metadata.length + bytes.length);
+  new DataView(packet.buffer).setUint32(0, metadata.length, true);
+  packet.set(metadata, 4);
+  packet.set(bytes, 4 + metadata.length);
+  return packet;
+}
+
+export async function writeDocumentSnapshot(bytes: Uint8Array, token: string | null, name: string): Promise<void> {
+  if (!isTauri()) return;
+  await invoke('write_document_snapshot', snapshotPacket(bytes, token, name));
+}
+
+export async function listDocumentSnapshots(token: string | null, name: string): Promise<SnapshotInfo[]> {
+  if (!isTauri()) return [];
+  return invoke<SnapshotInfo[]>('list_document_snapshots', { token, name });
+}
+
+export async function readDocumentSnapshot(token: string | null, name: string, id: string): Promise<Uint8Array> {
+  if (!isTauri()) throw new Error('Open The Desktop App To Restore Snapshots.');
+  const buffer = await invoke<ArrayBuffer>('read_document_snapshot', { token, name, id });
+  return new Uint8Array(buffer);
+}
+
+export async function documentSnapshotStatus(token: string | null, name: string): Promise<SnapshotStatus | null> {
+  if (!isTauri()) return null;
+  return invoke<SnapshotStatus>('document_snapshot_status', { token, name });
+}
+
+export async function listDocumentTemplates(): Promise<TemplateInfo[]> {
+  if (!isTauri()) return [];
+  return invoke<TemplateInfo[]>('list_document_templates');
+}
+
+export async function readDocumentTemplate(id: string): Promise<Uint8Array> {
+  if (!isTauri()) throw new Error('Open The Desktop App To Use Templates.');
+  const buffer = await invoke<ArrayBuffer>('read_document_template', { id });
+  return new Uint8Array(buffer);
+}
+
+export async function saveDocumentTemplate(bytes: Uint8Array, name: string): Promise<TemplateInfo> {
+  if (!isTauri()) throw new Error('Open The Desktop App To Save Templates.');
+  return invoke<TemplateInfo>('save_document_template', snapshotPacket(bytes, null, name));
+}
+
+export async function deleteDocumentTemplate(id: string): Promise<void> {
+  if (!isTauri()) return;
+  await invoke('delete_document_template', { id });
 }
 
 export interface TextStatistics {

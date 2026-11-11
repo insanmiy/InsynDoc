@@ -15,6 +15,7 @@ import { ParagraphStylePicker } from './ParagraphStylePicker';
 import { replaceDocumentMatches } from './document-replacement';
 import { Spelling } from './Spelling';
 import { installAutoformat } from './autoformat';
+import { TemplateGallery, VersionHistory } from './DocumentPanels';
 import { createBlankDocument } from './blank-document';
 import { paragraphTextOf } from '@docx-editor.dev/core/store';
 import '@docx-editor.dev/core/styles/editor.css';
@@ -123,8 +124,28 @@ function WorkspaceContent(props: WorkspaceProps) {
   const { preferences, onPreferences, session } = props;
   useLayoutEffect(() => {
     if (!editor || !state.ready || state.busy) return;
-    return installAutoformat(editor);
-  }, [editor, state.ready, state.busy, state.token]);
+    return installAutoformat(editor, { smartPunctuation: preferences.smartPunctuation, snippets: preferences.snippetExpansions });
+  }, [editor, state.ready, state.busy, state.token, preferences.smartPunctuation, preferences.snippetExpansions]);
+
+  useEffect(() => {
+    if (!preferences.autoRecovery || !state.ready) return;
+    const timer = setInterval(() => {
+      const snapshot = session.getSnapshot();
+      if (snapshot.dirty && !snapshot.busy) void session.captureSnapshot();
+    }, 120_000);
+    return () => clearInterval(timer);
+  }, [preferences.autoRecovery, state.ready, session]);
+
+  useEffect(() => {
+    if (!state.ready || state.busy) return;
+    let disposed = false;
+    void session.snapshotStatus().then((status) => {
+      if (disposed || !status?.latestCreatedAt) return;
+      if (status.fileModifiedAt !== null && status.latestCreatedAt <= status.fileModifiedAt) return;
+      setNotice('A Newer Autosaved Version Exists For This Document. Open Version History To Restore It.');
+    }).catch(() => undefined);
+    return () => { disposed = true; };
+  }, [session, state.ready, state.busy, state.token, state.name]);
   const [narrowWindow, setNarrowWindow] = useState(() => matchMedia('(max-width: 1024px)').matches);
   const [outlineDrawerOpen, setOutlineDrawerOpen] = useState(false);
   const outlineVisible = preferences.showOutline && (!narrowWindow || outlineDrawerOpen);
@@ -168,6 +189,8 @@ function WorkspaceContent(props: WorkspaceProps) {
   const [menuSearchOpen, setMenuSearchOpen] = useState(false);
   const [menuQuery, setMenuQuery] = useState('');
   const [writingTool, setWritingTool] = useState<WritingTool | null>(null);
+  const [templatesOpen, setTemplatesOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const toolSelection = useRef<{
     surface: NonNullable<NonNullable<ReturnType<typeof useDocxEditor>>['surface']>;
     selection: ReturnType<NonNullable<NonNullable<ReturnType<typeof useDocxEditor>>['surface']>['state']>['selection'];
@@ -390,6 +413,9 @@ function WorkspaceContent(props: WorkspaceProps) {
         <MenuAction icon={<Icon name="save" size={18}/>} onSelect={() => void session.save()} shortcut="Ctrl+S">Save</MenuAction>
         <MenuAction icon={<Icon name="download" size={18}/>} onSelect={() => void session.exportCopy()} shortcut="Ctrl+Shift+S">Export DOCX</MenuAction>
         <MenuAction icon={<Icon name="document" size={18}/>} disabled={exporting} onSelect={() => void exportText()}>Export Plain Text</MenuAction>
+        <DocxEditor.Menu.Separator/>
+        <MenuAction icon={<Icon name="document" size={18}/>} onSelect={() => setTemplatesOpen(true)}>Templates</MenuAction>
+        <MenuAction icon={<Icon name="pages" size={18}/>} onSelect={() => setHistoryOpen(true)}>Version History</MenuAction>
         <DocxEditor.Menu.Separator/><DocxEditor.Menu.PageSetup/>
       </DocxEditor.Menu.File>
       <DocxEditor.Menu.Menu id="edit" label="Edit" preset={false}>
@@ -500,6 +526,8 @@ function WorkspaceContent(props: WorkspaceProps) {
     </Modal>
     <Spelling preferences={preferences} onPreferences={onPreferences} request={spellingRequest} documentKey={`${state.token}:${state.busy}`}/>
     <WritingTools tool={writingTool} onClose={() => setWritingTool(null)}/>
+    {templatesOpen && <TemplateGallery session={session} onClose={() => setTemplatesOpen(false)}/>}
+    {historyOpen && <VersionHistory session={session} onClose={() => setHistoryOpen(false)}/>}
     {furniture?.editing && <div className="header-footer-strip"><span>Editing {furniture.editing === 'header' ? 'Header' : 'Footer'}</span><span>Insert Page Numbers From The Insert Menu.</span><button onClick={() => editor?.exec({ type: 'exitHeaderFooter' })}>Return To Document</button></div>}
     {props.findOpen && <FindPanel replaceMode={props.replaceMode} request={props.findRequest} onClose={props.onCloseFind}/>}
     <div className="workspace-body">

@@ -28,12 +28,14 @@ function WorkspaceSkeleton() {
 export function App() {
   const confirmRef = useRef<((choice: UnsavedChoice) => void) | null>(null);
   const [confirmation, setConfirmation] = useState(false);
+  const [preferences, setPreferences] = useState(readPreferences);
+  const preferencesRef = useRef(preferences);
+  preferencesRef.current = preferences;
   const [session] = useState(() => new DocumentSession(desktop, () => new Promise((resolve) => {
     confirmRef.current = resolve;
     setConfirmation(true);
-  })));
+  }), { sanitizeMetadata: () => preferencesRef.current.sanitizeMetadataOnExport }));
   const state = useSyncExternalStore(session.subscribe, session.getSnapshot);
-  const [preferences, setPreferences] = useState(readPreferences);
   const [systemDark, setSystemDark] = useState(() => matchMedia('(prefers-color-scheme: dark)').matches);
   const theme = preferences.theme === 'system' ? (systemDark ? 'dark' : 'light') : preferences.theme;
   const browserPathRef = useRef(preferences.browserPath);

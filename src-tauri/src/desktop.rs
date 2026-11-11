@@ -1,4 +1,4 @@
-use crate::{downloads, files, links, pdf, recent, sessions::FileSessions, startup::StartupDocument};
+use crate::{downloads, files, fonts, links, pdf, recent, sessions::FileSessions, snapshots, startup::StartupDocument, templates};
 use serde::{Deserialize, Serialize};
 use std::io::Write;
 use std::path::Path;
@@ -93,7 +93,7 @@ async fn open_recent_document(token: String, sessions: State<'_, FileSessions>) 
     let read_path = path.clone();
     let bytes = tauri::async_runtime::spawn_blocking(move || files::read_document(&read_path)).await.map_err(|error| error.to_string())??;
     let token = sessions.register(path)?;
-    document_response(Some(SavedFile { token, name }), &bytes)
+    document_response(Some(SavedFile { token, name, import_format: None }), &bytes)
 }
 
 #[tauri::command]
@@ -145,6 +145,8 @@ async fn download_pdf(window: tauri::WebviewWindow, name: String) -> Result<Opti
 struct SavedFile {
     token: String,
     name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    import_format: Option<String>,
 }
 
 const MAX_METADATA_BYTES: usize = 64 * 1024;
@@ -186,24 +188,42 @@ fn save_request(body: &InvokeBody) -> Result<(SaveMetadata, Vec<u8>), String> {
 async fn open_startup_document(startup: State<'_, StartupDocument>, sessions: State<'_, FileSessions>) -> Result<Response, String> {
     let Some(path) = startup.take()? else { return document_response(None, &[]) };
     let read_path = path.clone();
-    let bytes = tauri::async_runtime::spawn_blocking(move || files::read_document(&read_path))
+    let check_path = path.clone();
+    let (bytes, name, import_format, registered) = tauri::async_runtime::spawn_blocking(move || {
+        if check_path.extension().is_some_and(|extension| extension.eq_ignore_ascii_case("docx")) {
+            files::read_document(&read_path).map(|bytes| (bytes, files::document_name(&check_path), None, true))
+        } else {
+            files::read_import(&read_path).map(|(bytes, format)| (bytes, files::document_name(&check_path), Some(format), false))
+        }
+    })
         .await.map_err(|error| format!("Could Not Open The Startup Document. {error}"))??;
-    let name = files::document_name(&path);
-    let token = sessions.register(path)?;
-    document_response(Some(SavedFile { token, name }), &bytes)
+    let token = if registered { sessions.register(path)? } else { String::new() };
+    document_response(Some(SavedFile { token, name, import_format }), &bytes)
 }
 
 #[tauri::command]
 async fn open_document(sessions: State<'_, FileSessions>) -> Result<Response, String> {
     let selection = tauri::async_runtime::spawn_blocking(|| {
-        let path = rfd::FileDialog::new().set_title("Open Document").add_filter("Word Document", &["docx"]).pick_file();
-        path.map(|path| files::read_document(&path).map(|bytes| (path, bytes))).transpose()
+        let path = rfd::FileDialog::new().set_title("Open Document")
+            .add_filter("Word Document", &["docx"])
+            .add_filter("Markdown", &["md", "markdown"])
+            .add_filter("HTML Document", &["html", "htm"])
+            .add_filter("Plain Text", &["txt"])
+            .add_filter("OpenDocument Text", &["odt"])
+            .pick_file();
+        path.map(|path| {
+            if path.extension().is_some_and(|extension| extension.eq_ignore_ascii_case("docx")) {
+                files::read_document(&path).map(|bytes| (path, bytes, None))
+            } else {
+                files::read_import(&path).map(|(bytes, format)| (path, bytes, Some(format)))
+            }
+        }).transpose()
     }).await.map_err(|error| format!("Could Not Open The File Dialog. {error}"))??;
 
-    let Some((path, bytes)) = selection else { return document_response(None, &[]) };
+    let Some((path, bytes, import_format)) = selection else { return document_response(None, &[]) };
     let name = files::document_name(&path);
-    let token = sessions.register(path)?;
-    document_response(Some(SavedFile { token, name }), &bytes)
+    let token = if import_format.is_some() { String::new() } else { sessions.register(path)? };
+    document_response(Some(SavedFile { token, name, import_format }), &bytes)
 }
 
 #[tauri::command]
@@ -240,7 +260,7 @@ async fn save_document(app: tauri::AppHandle, request: Request<'_>, sessions: St
         sessions.activate(&token)?;
         token
     };
-    Ok(Some(SavedFile { token, name }))
+    Ok(Some(SavedFile { token, name, import_format: None }))
 }
 
 #[tauri::command]
@@ -255,7 +275,7 @@ async fn rename_document(app: tauri::AppHandle, token: String, name: String) -> 
         app.state::<FileSessions>().rename(&token, renamed.clone())?;
         replace_recent_path(&directory, &path, &renamed)?;
         app.state::<FileSessions>().sync_recent(&recent::list(&directory)?)?;
-        Ok(SavedFile { token, name: files::document_name(&renamed) })
+        Ok(SavedFile { token, name: files::document_name(&renamed), import_format: None })
     }).await.map_err(|error| error.to_string())?
 }
 
@@ -273,6 +293,130 @@ fn replace_recent_path(directory: &Path, previous: &Path, renamed: &Path) -> Res
     Ok(())
 }
 
+fn raw_document_request(body: &InvokeBody) -> Result<(serde_json::Value, Vec<u8>), String> {
+    let InvokeBody::Raw(packet) = body else { return Err("Use A Binary Document Transfer.".into()) };
+    let prefix: [u8; 4] = packet.get(..4).ok_or("Invalid Document Transfer.")?.try_into().map_err(|_| "Invalid Document Transfer.")?;
+    let length = u32::from_le_bytes(prefix) as usize;
+    if length > MAX_METADATA_BYTES || length > packet.len() - 4 {
+        return Err("Invalid Document Metadata.".into());
+    }
+    let bytes = &packet[4 + length..];
+    if bytes.len() > files::MAX_DOCUMENT_BYTES { return Err("The Document Exceeds The 25 MB Limit.".into()); }
+    let metadata: serde_json::Value = serde_json::from_slice(&packet[4..4 + length]).map_err(|error| format!("Invalid Document Metadata. {error}"))?;
+    Ok((metadata, bytes.to_vec()))
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct SnapshotMetadata {
+    token: Option<String>,
+    name: String,
+}
+
+#[tauri::command]
+async fn write_document_snapshot(app: tauri::AppHandle, request: Request<'_>, sessions: State<'_, FileSessions>) -> Result<(), String> {
+    let (metadata, bytes) = raw_document_request(request.body())?;
+    let metadata: SnapshotMetadata = serde_json::from_value(metadata).map_err(|error| format!("Invalid Document Metadata. {error}"))?;
+    let token = metadata.token.filter(|value| !value.is_empty());
+    let key = snapshots::snapshot_key(sessions.inner(), token.as_deref(), &metadata.name)?;
+    let directory = app.path().app_data_dir().map_err(|error| error.to_string())?;
+    tauri::async_runtime::spawn_blocking(move || {
+        snapshots::write(&directory, &key, &bytes)?;
+        Ok(())
+    }).await.map_err(|error| format!("Could Not Save The Snapshot. {error}"))?
+}
+
+#[tauri::command]
+async fn list_document_snapshots(app: tauri::AppHandle, token: Option<String>, name: String, sessions: State<'_, FileSessions>) -> Result<Vec<snapshots::SnapshotInfo>, String> {
+    let directory = app.path().app_data_dir().map_err(|error| error.to_string())?;
+    let token = token.filter(|value| !value.is_empty());
+    let key = snapshots::snapshot_key(sessions.inner(), token.as_deref(), &name)?;
+    tauri::async_runtime::spawn_blocking(move || snapshots::list(&directory, &key))
+        .await.map_err(|error| error.to_string())?
+}
+
+#[tauri::command]
+async fn read_document_snapshot(app: tauri::AppHandle, token: Option<String>, name: String, id: String, sessions: State<'_, FileSessions>) -> Result<Response, String> {
+    let directory = app.path().app_data_dir().map_err(|error| error.to_string())?;
+    let token = token.filter(|value| !value.is_empty());
+    let key = snapshots::snapshot_key(sessions.inner(), token.as_deref(), &name)?;
+    let bytes = tauri::async_runtime::spawn_blocking(move || snapshots::read(&directory, &key, &id))
+        .await.map_err(|error| error.to_string())??;
+    Ok(Response::new(bytes))
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct SnapshotStatus {
+    latest_id: Option<String>,
+    latest_created_at: Option<u64>,
+    file_modified_at: Option<u64>,
+}
+
+#[tauri::command]
+async fn document_snapshot_status(app: tauri::AppHandle, token: Option<String>, name: String, sessions: State<'_, FileSessions>) -> Result<SnapshotStatus, String> {
+    let directory = app.path().app_data_dir().map_err(|error| error.to_string())?;
+    let token = token.filter(|value| !value.is_empty());
+    let file_path = token.as_deref().and_then(|value| sessions.resolve(value).ok());
+    let key = snapshots::snapshot_key(sessions.inner(), token.as_deref(), &name)?;
+    tauri::async_runtime::spawn_blocking(move || {
+        let latest = snapshots::latest(&directory, &key)?;
+        let file_modified_at = file_path
+            .and_then(|path| std::fs::metadata(path).and_then(|metadata| metadata.modified()).ok())
+            .and_then(|time| time.duration_since(std::time::UNIX_EPOCH).ok())
+            .map(|duration| duration.as_millis() as u64);
+        Ok(SnapshotStatus {
+            latest_id: latest.as_ref().map(|entry| entry.id.clone()),
+            latest_created_at: latest.map(|entry| entry.created_at),
+            file_modified_at,
+        })
+    }).await.map_err(|error| error.to_string())?
+}
+
+#[tauri::command]
+async fn save_document_template(app: tauri::AppHandle, request: Request<'_>) -> Result<templates::TemplateInfo, String> {
+    let (metadata, bytes) = raw_document_request(request.body())?;
+    let name = metadata.get("name").and_then(|value| value.as_str()).ok_or("Template Metadata Requires A Name.")?.to_string();
+    let directory = app.path().app_data_dir().map_err(|error| error.to_string())?.join("Templates");
+    tauri::async_runtime::spawn_blocking(move || templates::save(&directory, &name, &bytes))
+        .await.map_err(|error| format!("Could Not Save The Template. {error}"))?
+}
+
+#[tauri::command]
+async fn list_document_templates(app: tauri::AppHandle) -> Result<Vec<templates::TemplateInfo>, String> {
+    let directory = app.path().app_data_dir().map_err(|error| error.to_string())?.join("Templates");
+    tauri::async_runtime::spawn_blocking(move || templates::list(&directory))
+        .await.map_err(|error| error.to_string())?
+}
+
+#[tauri::command]
+async fn read_document_template(app: tauri::AppHandle, id: String) -> Result<Response, String> {
+    let directory = app.path().app_data_dir().map_err(|error| error.to_string())?.join("Templates");
+    let bytes = tauri::async_runtime::spawn_blocking(move || templates::read(&directory, &id))
+        .await.map_err(|error| error.to_string())??;
+    Ok(Response::new(bytes))
+}
+
+#[tauri::command]
+async fn delete_document_template(app: tauri::AppHandle, id: String) -> Result<(), String> {
+    let directory = app.path().app_data_dir().map_err(|error| error.to_string())?.join("Templates");
+    tauri::async_runtime::spawn_blocking(move || templates::delete(&directory, &id))
+        .await.map_err(|error| error.to_string())?
+}
+
+#[tauri::command]
+async fn installed_fonts() -> Result<Vec<fonts::InstalledFont>, String> {
+    tauri::async_runtime::spawn_blocking(fonts::installed_fonts)
+        .await.map_err(|error| format!("Could Not List Installed Fonts. {error}"))?
+}
+
+#[tauri::command]
+async fn read_font_file(path: String) -> Result<Response, String> {
+    let bytes = tauri::async_runtime::spawn_blocking(move || fonts::read_font_file(std::path::Path::new(&path)))
+        .await.map_err(|error| format!("Could Not Read The Font File. {error}"))??;
+    Ok(Response::new(bytes))
+}
+
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_updater::Builder::new().build())
@@ -280,7 +424,7 @@ pub fn run() {
         .manage(FileSessions::default())
         .manage(StartupDocument::from_args(std::env::args_os()))
         .manage(RecentAccess::default())
-        .invoke_handler(tauri::generate_handler![open_external_link, choose_link_browser, open_startup_document, open_document, save_document, rename_document, document_statistics, recent_documents, remember_document, clear_recent_documents, open_recent_document, export_plain_text, download_document, download_pdf])
+        .invoke_handler(tauri::generate_handler![open_external_link, choose_link_browser, open_startup_document, open_document, save_document, rename_document, document_statistics, recent_documents, remember_document, clear_recent_documents, open_recent_document, export_plain_text, download_document, download_pdf, write_document_snapshot, list_document_snapshots, read_document_snapshot, document_snapshot_status, save_document_template, list_document_templates, read_document_template, delete_document_template, installed_fonts, read_font_file])
         .run(tauri::generate_context!())
         .expect("Could Not Start InsynDoc");
 }
@@ -325,7 +469,7 @@ mod tests {
     #[test]
     fn document_responses_use_raw_bytes_including_cancellation() {
         let bytes = vec![255; files::MAX_DOCUMENT_BYTES];
-        let response = document_response(Some(SavedFile { token: "7".into(), name: "Résumé.docx".into() }), &bytes).unwrap();
+        let response = document_response(Some(SavedFile { token: "7".into(), name: "Résumé.docx".into(), import_format: None }), &bytes).unwrap();
         let InvokeResponseBody::Raw(raw) = response.body().unwrap() else { panic!("Expected Binary Response") };
         let length = u32::from_le_bytes(raw[..4].try_into().unwrap()) as usize;
         let metadata: serde_json::Value = serde_json::from_slice(&raw[4..4 + length]).unwrap();

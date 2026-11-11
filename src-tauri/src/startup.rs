@@ -14,8 +14,12 @@ impl StartupDocument {
                 return Err("Open One DOCX File Per Window.".into());
             }
             let path = PathBuf::from(argument);
-            if !path.extension().is_some_and(|extension| extension.eq_ignore_ascii_case("docx")) {
-                return Err("Choose A File With The DOCX Extension.".into());
+            let supported = path.extension().is_some_and(|extension| {
+                extension.eq_ignore_ascii_case("docx")
+                    || crate::files::IMPORT_EXTENSIONS.iter().any(|import| extension.eq_ignore_ascii_case(import))
+            });
+            if !supported {
+                return Err("Choose A DOCX, Markdown, HTML, Text, Or ODT File.".into());
             }
             Ok(path)
         });
@@ -50,7 +54,7 @@ mod tests {
     #[test]
     fn rejects_non_docx_and_multiple_document_arguments_once() {
         for arguments in [
-            vec!["insyndoc.exe", "Document.txt"],
+            vec!["insyndoc.exe", "Document.pdf"],
             vec!["insyndoc.exe", "One.docx", "Two.docx"],
             vec!["insyndoc.exe", "--unexpected"]
         ] {

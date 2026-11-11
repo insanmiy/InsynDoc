@@ -5,6 +5,9 @@ mod recent;
 mod links;
 mod startup;
 mod downloads;
+mod snapshots;
+mod templates;
+mod fonts;
 
 #[cfg(not(test))]
 mod desktop;

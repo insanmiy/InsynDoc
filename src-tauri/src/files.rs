@@ -32,6 +32,30 @@ pub fn read_document(path: &Path) -> Result<Vec<u8>, String> {
     Ok(bytes)
 }
 
+pub const IMPORT_EXTENSIONS: &[&str] = &["md", "markdown", "html", "htm", "txt", "odt"];
+
+pub fn import_extension(path: &Path) -> Option<String> {
+    path.extension().and_then(|value| value.to_str())
+        .filter(|value| IMPORT_EXTENSIONS.iter().any(|extension| value.eq_ignore_ascii_case(extension)))
+        .map(|value| value.to_ascii_lowercase())
+}
+
+pub fn read_import(path: &Path) -> Result<(Vec<u8>, String), String> {
+    let Some(extension) = import_extension(path) else {
+        return Err("Choose A Markdown, HTML, Text, Or ODT File.".into());
+    };
+    let file = File::open(path)
+        .map_err(|error| format!("Could Not Open The Document. Check File Access. {error}"))?;
+    let mut bytes = Vec::new();
+    file.take((MAX_DOCUMENT_BYTES + 1) as u64)
+        .read_to_end(&mut bytes)
+        .map_err(|error| format!("Could Not Read The Document. {error}"))?;
+    if bytes.len() > MAX_DOCUMENT_BYTES {
+        return Err("The Document Exceeds The 25 MB Limit.".into());
+    }
+    Ok((bytes, extension))
+}
+
 pub fn write_document(path: &Path, bytes: &[u8]) -> Result<(), String> {
     validate_docx(bytes)?;
     write_bytes(path, bytes)

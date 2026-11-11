@@ -1,8 +1,8 @@
 import { blankDocumentBytes } from '@docx-editor.dev/core/editor';
-import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
+import { strFromU8, strToU8, unzipSync, zipSync, type Zippable } from 'fflate';
 import { headingFontSize } from './paragraph-styles';
 
-export function createBlankDocument(): Uint8Array {
+export function blankDocumentParts(): Zippable {
   const parts = unzipSync(blankDocumentBytes());
   const styles = strFromU8(parts['word/styles.xml']).replace(/<w:style\b[^>]*w:styleId="(Heading[1-9])"[^>]*>[\s\S]*?<\/w:style>/g, (style: string, styleId: string) => {
     const size = headingFontSize(styleId);
@@ -13,5 +13,9 @@ export function createBlankDocument(): Uint8Array {
     });
   });
   parts['word/styles.xml'] = strToU8(styles);
-  return zipSync(parts);
+  return parts;
+}
+
+export function createBlankDocument(): Uint8Array {
+  return zipSync(blankDocumentParts());
 }
