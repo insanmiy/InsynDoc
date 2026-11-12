@@ -417,6 +417,22 @@ async fn read_font_file(path: String) -> Result<Response, String> {
     Ok(Response::new(bytes))
 }
 
+#[tauri::command]
+fn caps_lock_on() -> bool {
+    #[cfg(target_os = "windows")]
+    {
+        #[link(name = "user32")]
+        extern "system" {
+            fn GetKeyState(virtual_key: i32) -> i16;
+        }
+        unsafe { (GetKeyState(0x14) & 1) != 0 }
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        false
+    }
+}
+
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_updater::Builder::new().build())
@@ -424,7 +440,11 @@ pub fn run() {
         .manage(FileSessions::default())
         .manage(StartupDocument::from_args(std::env::args_os()))
         .manage(RecentAccess::default())
-        .invoke_handler(tauri::generate_handler![open_external_link, choose_link_browser, open_startup_document, open_document, save_document, rename_document, document_statistics, recent_documents, remember_document, clear_recent_documents, open_recent_document, export_plain_text, download_document, download_pdf, write_document_snapshot, list_document_snapshots, read_document_snapshot, document_snapshot_status, save_document_template, list_document_templates, read_document_template, delete_document_template, installed_fonts, read_font_file])
+        .setup(|_app| {
+            let _ = tauri::async_runtime::spawn_blocking(fonts::installed_fonts);
+            Ok(())
+        })
+        .invoke_handler(tauri::generate_handler![open_external_link, choose_link_browser, open_startup_document, open_document, save_document, rename_document, document_statistics, recent_documents, remember_document, clear_recent_documents, open_recent_document, export_plain_text, download_document, download_pdf, write_document_snapshot, list_document_snapshots, read_document_snapshot, document_snapshot_status, save_document_template, list_document_templates, read_document_template, delete_document_template, installed_fonts, read_font_file, caps_lock_on])
         .run(tauri::generate_context!())
         .expect("Could Not Start InsynDoc");
 }

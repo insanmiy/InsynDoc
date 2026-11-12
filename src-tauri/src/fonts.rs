@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::sync::{Mutex, OnceLock};
 
 use serde::Serialize;
 
@@ -16,10 +16,7 @@ pub struct InstalledFont {
     pub path: String,
 }
 
-const REGISTRY_KEYS: &[&str] = &[
-    r"HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts",
-    r"HKCU\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts",
-];
+const REGISTRY_FONT_PATH: &str = r"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts";
 
 const FONT_EXTENSIONS: &[&str] = &["ttf", "otf", "ttc"];
 
@@ -61,6 +58,22 @@ fn style_token(token: &str) -> Option<(Option<u16>, bool)> {
     }
 }
 
+const EXCLUDED_FAMILIES: &[&str] = &[
+    "bookshelf symbol 7",
+    "hololens mdl2 assets",
+    "marlett",
+    "ms outlook",
+    "ms reference specialty",
+    "mt extra",
+    "segoe fluent icons",
+    "segoe mdl2 assets",
+    "symbol",
+    "webdings",
+    "wingdings",
+    "wingdings 2",
+    "wingdings 3",
+];
+
 fn parse_font_entry(raw_name: &str, _raw_path: &str) -> Option<(String, u16, bool)> {
     let name = raw_name.split('(').next()?.trim();
     if name.is_empty() { return None; }
@@ -76,41 +89,68 @@ fn parse_font_entry(raw_name: &str, _raw_path: &str) -> Option<(String, u16, boo
     }
     if family_end == 0 { return None; }
     let family = tokens[..family_end].join(" ");
-    if family.is_empty() { return None; }
+    if family.is_empty() || EXCLUDED_FAMILIES.contains(&family.to_lowercase().as_str()) { return None; }
     Some((family, weight.clamp(100, 900), italic))
 }
 
+#[cfg(target_os = "windows")]
 fn query_registry_fonts() -> Vec<(String, String)> {
+    use windows_registry::{CURRENT_USER, LOCAL_MACHINE, Type};
+
     let mut entries = Vec::new();
-    for key in REGISTRY_KEYS {
-        let output = Command::new("reg")
-            .args(["query", key])
-            .output();
-        let Ok(output) = output else { continue; };
-        if !output.status.success() { continue; }
-        let text = String::from_utf8_lossy(&output.stdout);
-        for line in text.lines() {
-            let Some((name, value)) = line.split_once("REG_SZ") else { continue; };
+    for hive in [LOCAL_MACHINE, CURRENT_USER] {
+        let Ok(key) = hive.open(REGISTRY_FONT_PATH) else { continue; };
+        let Ok(values) = key.values() else { continue; };
+        for (name, value) in values {
+            if !matches!(value.ty(), Type::String) { continue; }
+            let Ok(text) = String::try_from(value) else { continue; };
             let name = name.trim();
-            let value = value.trim();
-            if name.is_empty() || value.is_empty() { continue; }
-            entries.push((name.to_string(), value.to_string()));
+            let text = text.trim();
+            if name.is_empty() || text.is_empty() { continue; }
+            entries.push((name.to_string(), text.to_string()));
         }
     }
     entries
 }
 
+#[cfg(not(target_os = "windows"))]
+fn query_registry_fonts() -> Vec<(String, String)> {
+    Vec::new()
+}
+
+static FONT_CACHE: OnceLock<Mutex<Option<Vec<InstalledFont>>>> = OnceLock::new();
+
+fn font_cache() -> &'static Mutex<Option<Vec<InstalledFont>>> {
+    FONT_CACHE.get_or_init(|| Mutex::new(None))
+}
+
 pub fn installed_fonts() -> Result<Vec<InstalledFont>, String> {
+    if let Ok(cache) = font_cache().lock() {
+        if let Some(fonts) = cache.as_ref() {
+            return Ok(fonts.clone());
+        }
+    }
+    let fonts = collect_installed_fonts()?;
+    if let Ok(mut cache) = font_cache().lock() {
+        *cache = Some(fonts.clone());
+    }
+    Ok(fonts)
+}
+
+fn collect_installed_fonts() -> Result<Vec<InstalledFont>, String> {
     let mut seen = HashSet::new();
     let mut fonts = Vec::new();
     for (name, value) in query_registry_fonts() {
-        let Some((family, weight, italic)) = parse_font_entry(&name, &value) else { continue; };
         let Some(path) = resolve_font_path(&value) else { continue; };
         let extension = path.extension().and_then(|value| value.to_str()).unwrap_or("").to_lowercase();
         if !FONT_EXTENSIONS.contains(&extension.as_str()) { continue; }
         let display = path.to_string_lossy().into_owned();
-        if !seen.insert((family.to_lowercase(), weight, italic, display.clone())) { continue; }
-        fonts.push(InstalledFont { family, weight, style: if italic { "italic".into() } else { "normal".into() }, path: display });
+        let base_name = name.split('(').next().unwrap_or(&name);
+        for part in base_name.split('&') {
+            let Some((family, weight, italic)) = parse_font_entry(part, &value) else { continue; };
+            if !seen.insert((family.to_lowercase(), weight, italic, display.clone())) { continue; }
+            fonts.push(InstalledFont { family, weight, style: if italic { "italic".into() } else { "normal".into() }, path: display.clone() });
+        }
     }
     fonts.sort_by(|left, right| left.family.to_lowercase().cmp(&right.family.to_lowercase()).then(left.weight.cmp(&right.weight)).then(left.style.cmp(&right.style)));
     Ok(fonts)
