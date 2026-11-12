@@ -1,9 +1,79 @@
 import { cp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
+import { existsSync } from 'node:fs';
 import path from 'node:path';
 
 const fonts = path.resolve('node_modules/@docx-editor.dev/fonts');
 const licensesDirectory = 'public/licenses';
+const noticesFile = 'THIRD_PARTY_NOTICES.md';
+const cacheFile = 'node_modules/.cache/insyndoc-prepare-assets.sha256';
+
+async function hashPath(hash, filePath) {
+  hash.update(filePath.replaceAll(path.sep, '/'));
+  hash.update('\0');
+  try {
+    hash.update(await readFile(filePath));
+  } catch {
+    hash.update('missing');
+  }
+  hash.update('\0');
+}
+
+async function hashFile(hash, filePath) {
+  await hashPath(hash, filePath);
+}
+
+async function hashDirectory(hash, directory) {
+  hash.update(directory);
+  hash.update('\0');
+  let files = [];
+  try {
+    files = await readdir(directory, { recursive: true });
+  } catch {
+    hash.update('missing-directory');
+    return;
+  }
+  files = files.filter((name) => !name.includes('node_modules')).sort();
+  hash.update(String(files.length));
+  hash.update('\0');
+  for (const name of files) {
+    const fullPath = path.join(directory, name);
+    try {
+      const entries = await readdir(fullPath);
+      void entries;
+      hash.update('directory:');
+      hash.update(name);
+      hash.update('\0');
+    } catch {
+      await hashPath(hash, fullPath);
+    }
+  }
+}
+
+async function computeInputsHash() {
+  const hash = createHash('sha256');
+  await hashFile(hash, 'scripts/prepare-assets.mjs');
+  await hashFile(hash, 'package-lock.json');
+  await hashFile(hash, 'node_modules/.package-lock.json');
+  await hashFile(hash, 'src/document-font-families.json');
+  await hashDirectory(hash, 'licenses');
+  await hashDirectory(hash, path.join(fonts, 'licenses'));
+  return hash.digest('hex');
+}
+
+const inputsHash = await computeInputsHash();
+let cachedHash = null;
+try {
+  cachedHash = (await readFile(cacheFile, 'utf8')).trim();
+} catch {
+  cachedHash = null;
+}
+const licensesExist = existsSync(licensesDirectory) && (await readdir(licensesDirectory)).length > 0;
+if (cachedHash === inputsHash && existsSync(noticesFile) && licensesExist) {
+  process.exit(0);
+}
+
 await rm(licensesDirectory, { recursive: true, force: true });
 await mkdir(licensesDirectory, { recursive: true });
 await cp(path.join(fonts, 'licenses'), path.join(licensesDirectory, 'fonts'), { recursive: true });
@@ -51,4 +121,7 @@ for (const family of documentFontFamilies) {
   const license = licenseText.includes('Apache License') ? 'Apache License 2.0' : 'SIL Open Font License 1.1';
   notices.push(`* ${family}: ${license}. See licenses/document-fonts/${licenseFile}`);
 }
-await writeFile('THIRD_PARTY_NOTICES.md', `${notices.join('\n')}\n`);
+await writeFile(noticesFile, `${notices.join('\n')}\n`);
+
+await mkdir(path.dirname(cacheFile), { recursive: true });
+await writeFile(cacheFile, `${inputsHash}\n`);

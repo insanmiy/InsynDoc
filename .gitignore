@@ -22,6 +22,7 @@ THIRD_PARTY_NOTICES.md
 
 # Local Toolchains And Caches
 .tools/
+.bench_workspace/
 src-tauri/target/
 src-tauri/gen/
 
