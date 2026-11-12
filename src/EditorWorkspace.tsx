@@ -137,15 +137,15 @@ function WorkspaceContent(props: WorkspaceProps) {
   }, [preferences.autoRecovery, state.ready, session]);
 
   useEffect(() => {
-    if (!state.ready || state.busy) return;
+    if (!state.ready || state.busy || !state.token) return;
     let disposed = false;
     void session.snapshotStatus().then((status) => {
-      if (disposed || !status?.latestCreatedAt) return;
-      if (status.fileModifiedAt !== null && status.latestCreatedAt <= status.fileModifiedAt) return;
+      if (disposed || !status?.latestCreatedAt || status.fileModifiedAt === null) return;
+      if (status.latestCreatedAt <= status.fileModifiedAt) return;
       setNotice('A Newer Autosaved Version Exists For This Document. Open Version History To Restore It.');
     }).catch(() => undefined);
     return () => { disposed = true; };
-  }, [session, state.ready, state.busy, state.token, state.name]);
+  }, [session, state.ready, state.busy, state.token]);
   const [narrowWindow, setNarrowWindow] = useState(() => matchMedia('(max-width: 1024px)').matches);
   const [outlineDrawerOpen, setOutlineDrawerOpen] = useState(false);
   const outlineVisible = preferences.showOutline && (!narrowWindow || outlineDrawerOpen);
@@ -546,9 +546,19 @@ function WorkspaceContent(props: WorkspaceProps) {
 }
 
 function EditorWorkspace(props: WorkspaceProps) {
-  const blankDocument = useMemo(createBlankDocument, []);
+  const initialDocument = useMemo(() => {
+    const startup = props.session.startupDocument();
+    if (startup && !startup.importFormat) {
+      const bytes = new Uint8Array(startup.bytes);
+      if (bytes.byteLength > 0) {
+        props.session.adoptStartupDocument(startup);
+        return bytes;
+      }
+    }
+    return createBlankDocument();
+  }, [props.session]);
   return <div className={`docx-editor docs-editor ${props.theme === 'dark' ? 'dark' : ''}`}>
-    <DocxEditor.Root document={blankDocument} fonts={localFonts} mode="edit" colorMode={props.theme} translate={translate}
+    <DocxEditor.Root document={initialDocument} fonts={localFonts} mode="edit" colorMode={props.theme} translate={translate}
       onReady={(editor) => props.onReady(editor, createEditorAdapter(editor))}
       onChange={(change) => { if (!change.source) props.session.changed(); }}>
       <WorkspaceContent {...props}/>

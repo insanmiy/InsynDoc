@@ -14,17 +14,22 @@ interface FontSource {
   faceIndex: number;
 }
 
-const bundledUrls = new Map(GOOGLE_FONT_CATALOG.filter((face) => families.includes(face.family)).map((face) => [face.url, `/document-fonts/${new URL(face.url).pathname.split('/').pop()}`]));
+let bundledResolver: ReturnType<typeof googleFonts> | null = null;
 
-const bundledFonts = googleFonts({
-  allow: families,
-  fetcher: (input, options) => {
-    const requestedUrl = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
-    const localUrl = bundledUrls.get(requestedUrl);
-    if (!localUrl) return Promise.reject(new Error('This Font Is Not Bundled With InsynDoc.'));
-    return fetch(localUrl, options);
-  }
-});
+function bundledFontResolver(): ReturnType<typeof googleFonts> {
+  if (bundledResolver) return bundledResolver;
+  const bundledUrls = new Map(GOOGLE_FONT_CATALOG.filter((face) => families.includes(face.family)).map((face) => [face.url, `/document-fonts/${new URL(face.url).pathname.split('/').pop()}`]));
+  bundledResolver = googleFonts({
+    allow: families,
+    fetcher: (input, options) => {
+      const requestedUrl = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+      const localUrl = bundledUrls.get(requestedUrl);
+      if (!localUrl) return Promise.reject(new Error('This Font Is Not Bundled With InsynDoc.'));
+      return fetch(localUrl, options);
+    }
+  });
+  return bundledResolver;
+}
 
 interface InstalledFontFace {
   family: string;
@@ -88,5 +93,11 @@ const systemFonts = defineFontResolver(async (request) => {
   };
 });
 
-const origins = [systemFonts, packagedFonts(), bundledFonts];
-export const localFonts = defineFontResolver((request) => composeFontOrigins(origins, request));
+let origins: Parameters<typeof composeFontOrigins>[0] | null = null;
+
+function fontOrigins(): Parameters<typeof composeFontOrigins>[0] {
+  origins ??= [systemFonts, packagedFonts(), bundledFontResolver()];
+  return origins;
+}
+
+export const localFonts = defineFontResolver((request) => composeFontOrigins(fontOrigins(), request));

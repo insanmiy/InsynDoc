@@ -70,7 +70,7 @@ export function Spelling({ preferences, onPreferences, request, documentKey }: {
       openFirst.current = () => setPopup({ issue: null, left: 24, top: 140, suggestions: [], message: 'Turn On Check Spelling In Settings To Check This Document.' });
       return;
     }
-    const worker = new Worker(new URL('./spelling.worker.ts', import.meta.url), { type: 'module' });
+    let worker: Worker | null = null;
     let disposed = false;
     let version = 0;
     let suggestionVersion = 0;
@@ -80,7 +80,14 @@ export function Spelling({ preferences, onPreferences, request, documentKey }: {
     let timer: ReturnType<typeof setTimeout>;
     let issues: SpellingIssue[] = [];
     const excluded = [...preferences.spellingWords, ...ignored];
-    const post = (message: SpellingRequest): void => worker.postMessage(message);
+    const post = (message: SpellingRequest): void => {
+      if (!worker) {
+        worker = new Worker(new URL('./spelling.worker.ts', import.meta.url), { type: 'module' });
+        worker.onerror = unavailable;
+        worker.onmessage = onWorkerMessage;
+      }
+      worker.postMessage(message);
+    };
     const position = (rect?: { left: number; bottom: number }) => ({
       left: Math.max(8, Math.min(rect?.left ?? window.innerWidth - 320, window.innerWidth - 304)),
       top: Math.max(8, Math.min(rect?.bottom ? rect.bottom + 8 : 150, window.innerHeight - 320))
@@ -119,6 +126,14 @@ export function Spelling({ preferences, onPreferences, request, documentKey }: {
           if (text) paragraphs.push({ blockId, text });
         }
       }
+      if (paragraphs.length === 0 && !worker) {
+        checked = true;
+        issues = [];
+        setTruncated(false);
+        editor.clearHighlights('spelling');
+        if (reviewPending.current) { reviewPending.current = false; openFirst.current(); }
+        return;
+      }
       inFlight = true;
       queued = false;
       post({ type: 'check', id: version, paragraphs, excluded: [...excluded, ...learnedCorrections.current.map((entry) => entry.replacement)], ignoredGrammar });
@@ -139,8 +154,7 @@ export function Spelling({ preferences, onPreferences, request, documentKey }: {
       setError('Spelling Is Unavailable. Your Document Can Still Be Edited.');
       openFirst.current = () => setPopup({ issue: null, suggestions: [], message: 'Spelling Is Unavailable. Use Retry Spelling To Try Again.', focus: true, ...position() });
     };
-    worker.onerror = unavailable;
-    worker.onmessage = (event: MessageEvent<SpellingResponse>) => {
+    const onWorkerMessage = (event: MessageEvent<SpellingResponse>): void => {
       if (disposed) return;
       const result = event.data;
       if (result.type === 'error') { unavailable(); return; }
@@ -183,12 +197,15 @@ export function Spelling({ preferences, onPreferences, request, documentKey }: {
     document.addEventListener('keydown', keydown);
     document.addEventListener('scroll', scrolled, true);
     window.addEventListener('resize', resized);
-    schedule();
+    const runWhenIdle = window.requestIdleCallback ?? ((callback: () => void): number => window.setTimeout(callback, 2000));
+    const cancelWhenIdle = window.cancelIdleCallback ?? ((handle: number): void => window.clearTimeout(handle));
+    const idleHandle = runWhenIdle(() => schedule());
     return () => {
       disposed = true;
       scheduleCheck.current = () => undefined;
+      cancelWhenIdle(idleHandle);
       clearTimeout(timer);
-      worker.terminate();
+      worker?.terminate();
       stopChange();
       editor.clearHighlights('spelling');
       document.removeEventListener('click', pick, true);

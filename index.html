@@ -5,10 +5,44 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>InsynDoc</title>
     <link rel="icon" href="/branding/insyndoc-logo.png" type="image/png" />
-    <link rel="preload" href="/interface-fonts/Inter-Variable.ttf" as="font" type="font/ttf" crossorigin />
+    <link rel="preload" href="/interface-fonts/Inter-Variable.woff2" as="font" type="font/woff2" crossorigin />
+    <style>
+      #root { min-height: 100vh; }
+      .splash {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 18px;
+        font-family: Inter, "Segoe UI", system-ui, sans-serif;
+        background: #ffffff;
+        color: #1c1c1e;
+      }
+      .splash img { width: 64px; height: 64px; }
+      .splash-name {
+        font-size: 22px;
+        font-weight: 650;
+        letter-spacing: 0.02em;
+      }
+      .splash-status {
+        font-size: 13px;
+        color: #6e6e73;
+      }
+      @media (prefers-color-scheme: dark) {
+        .splash { background: #1c1c1e; color: #f5f5f7; }
+        .splash-status { color: #98989d; }
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div class="splash">
+        <img src="/branding/insyndoc-logo.png" alt="" width="64" height="64" />
+        <div class="splash-name">InsynDoc</div>
+        <div class="splash-status">Opening…</div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

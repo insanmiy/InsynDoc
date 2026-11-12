@@ -1,9 +1,8 @@
 import { Component, lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import type { Editor } from '@docx-editor.dev/core/contracts/editor';
-import { desktop, watchExternalLinks, setWindowTitle, setWindowTheme, watchClose, type TextStatistics } from './bridge';
+import { desktop, isCapsLockOn, watchExternalLinks, setWindowTitle, setWindowTheme, watchClose, type TextStatistics } from './bridge';
 import { DocumentSession, type DocumentAdapter, type UnsavedChoice } from './document-session';
 import { readPreferences, storePreferences, type Preferences } from './preferences';
-import { Settings } from './Settings';
 import { Modal } from './Modal';
 import { Icon } from './Icon';
 import { DownloadMenu } from './DownloadMenu';
@@ -11,6 +10,7 @@ import { checkForUpdates, findUpdate, installUpdate, type PendingUpdate, type Up
 import { version as appVersion } from '../package.json';
 
 const EditorWorkspace = lazy(() => import('./EditorWorkspace'));
+const Settings = lazy(() => import('./Settings').then((module) => ({ default: module.Settings })));
 
 class EditorBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
   state = { failed: false };
@@ -43,6 +43,7 @@ export function App() {
   const [linkError, setLinkError] = useState<string | null>(null);
   useEffect(() => watchExternalLinks(() => browserPathRef.current, setLinkError), []);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
   const [statisticsOpen, setStatisticsOpen] = useState(false);
   const [goToPageOpen, setGoToPageOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
@@ -50,6 +51,7 @@ export function App() {
   const [pageError, setPageError] = useState<string | null>(null);
   const editorRef = useRef<Editor | null>(null);
   const [focusMode, setFocusMode] = useState(false);
+  const [capsLock, setCapsLock] = useState(false);
   const [findOpen, setFindOpen] = useState(false);
   const [replaceMode, setReplaceMode] = useState(false);
   const [findRequest, setFindRequest] = useState(0);
@@ -75,8 +77,28 @@ export function App() {
     performance.mark('insyndoc-shell-ready');
     const media = matchMedia('(prefers-color-scheme: dark)');
     const update = () => setSystemDark(media.matches);
+    const syncCapsLock = () => {
+      void isCapsLockOn().then((active) => { if (active !== null) setCapsLock(active); });
+    };
+    const updateCapsLock = (event: KeyboardEvent | MouseEvent) => {
+      if (typeof event.getModifierState === 'function') setCapsLock(event.getModifierState('CapsLock'));
+      if ('key' in event && event.key === 'CapsLock') syncCapsLock();
+    };
+    syncCapsLock();
     media.addEventListener('change', update);
-    return () => media.removeEventListener('change', update);
+    window.addEventListener('focus', syncCapsLock);
+    window.addEventListener('keydown', updateCapsLock, true);
+    window.addEventListener('keyup', updateCapsLock, true);
+    window.addEventListener('pointerdown', updateCapsLock, true);
+    window.addEventListener('pointermove', updateCapsLock, true);
+    return () => {
+      media.removeEventListener('change', update);
+      window.removeEventListener('focus', syncCapsLock);
+      window.removeEventListener('keydown', updateCapsLock, true);
+      window.removeEventListener('keyup', updateCapsLock, true);
+      window.removeEventListener('pointerdown', updateCapsLock, true);
+      window.removeEventListener('pointermove', updateCapsLock, true);
+    };
   }, []);
 
   useLayoutEffect(() => {
@@ -87,11 +109,15 @@ export function App() {
 
   useEffect(() => { storePreferences(preferences); }, [preferences]);
 
+  useEffect(() => { if (settingsOpen) setSettingsLoaded(true); }, [settingsOpen]);
+
   useEffect(() => {
     if (!preferences.updateNotifications) return;
     let cancelled = false;
-    void findUpdate().then((pending) => { if (!cancelled && pending) setUpdate(pending); });
-    return () => { cancelled = true; };
+    const timer = window.setTimeout(() => {
+      void findUpdate().then((pending) => { if (!cancelled && pending) setUpdate(pending); });
+    }, 3000);
+    return () => { cancelled = true; window.clearTimeout(timer); };
   }, [preferences.updateNotifications]);
 
   useEffect(() => { void setWindowTitle(state.name, state.dirty).catch(() => undefined); }, [state.name, state.dirty]);
@@ -199,7 +225,7 @@ export function App() {
       </div>
     </header>
 
-    {focusMode && <div className="focus-strip"><span><Icon name="focus" size={16}/>Focus Mode</span><button onClick={() => setFocusMode(false)}>Exit Focus Mode <kbd>Esc</kbd></button></div>}
+    {focusMode && <div className="focus-strip"><span><Icon name="focus" size={16}/>Focus Mode{capsLock && <span className="caps-lock-warning" role="status" aria-live="polite"><Icon name="keyboard" size={14}/><span>Caps Lock On</span></span>}</span><button onClick={() => setFocusMode(false)}>Exit Focus Mode <kbd>Esc</kbd></button></div>}
     {linkError && <div className="error-banner" role="alert"><Icon name="info" size={18}/><span>{linkError}</span><button onClick={() => setLinkError(null)} aria-label="Dismiss Link Error"><Icon name="close" size={18}/></button></div>}
     {state.error && <div className="error-banner" role="alert"><Icon name="info" size={18}/><span>{state.error}</span><button onClick={session.clearError} aria-label="Dismiss Error"><Icon name="close" size={18}/></button></div>}
 
@@ -218,11 +244,11 @@ export function App() {
     </main>
 
     <footer className="status-bar">
-      <div className="document-status">{preferences.showWordCount && <><button aria-label="Word Count" onClick={() => setStatisticsOpen(true)}>{statistics.words.toLocaleString()} {preferences.wordGoal > 0 ? `/ ${preferences.wordGoal.toLocaleString()} Words` : statistics.words === 1 ? 'Word' : 'Words'}</button><span className="status-separator"/></>}<button aria-label="Go To Page" disabled={!state.ready} onClick={openGoToPage}>{Math.max(1, pageCount)} {pageCount === 1 ? 'Page' : 'Pages'}</button></div>
+      <div className="document-status">{preferences.showWordCount && <><button aria-label="Word Count" onClick={() => setStatisticsOpen(true)}>{statistics.words.toLocaleString()} {preferences.wordGoal > 0 ? `/ ${preferences.wordGoal.toLocaleString()} Words` : statistics.words === 1 ? 'Word' : 'Words'}</button><span className="status-separator"/></>}<button aria-label="Go To Page" disabled={!state.ready} onClick={openGoToPage}>{Math.max(1, pageCount)} {pageCount === 1 ? 'Page' : 'Pages'}</button>{capsLock && !focusMode && <><span className="status-separator"/><span className="caps-lock-warning" role="status" aria-live="polite"><Icon name="keyboard" size={14}/><span>Caps Lock On</span></span></>}</div>
       <div><div ref={setZoomHost} className="status-zoom" inert={unavailable}/><span className="status-separator"/><button aria-label="Continuous View" aria-pressed={state.view === 'continuous'} title={state.view === 'pages' ? 'Switch To Continuous View' : 'Switch To Separate Pages'} disabled={unavailable} onClick={() => session.setView(state.view === 'pages' ? 'continuous' : 'pages')}><Icon name="page" size={14}/>View: {state.view === 'pages' ? 'Separate Pages' : 'Continuous'}</button></div>
     </footer>
 
-    <Settings open={settingsOpen} onClose={() => setSettingsOpen(false)} preferences={preferences} onChange={updatePreferences} appVersion={appVersion} onCheckForUpdates={checkUpdates}/>
+    {settingsLoaded && <Suspense fallback={null}><Settings open={settingsOpen} onClose={() => setSettingsOpen(false)} preferences={preferences} onChange={updatePreferences} appVersion={appVersion} onCheckForUpdates={checkUpdates}/></Suspense>}
     <Modal open={goToPageOpen} title="Go To Page" onClose={() => setGoToPageOpen(false)} className="page-modal">
       <form noValidate onSubmit={(event) => {
         event.preventDefault();

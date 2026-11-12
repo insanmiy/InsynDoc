@@ -16,6 +16,10 @@ export function blankDocumentParts(): Zippable {
   return parts;
 }
 
+// The Patched Blank Document Is Identical For Every Mount, So Build It Once And Hand Out Copies.
+let blankDocumentCache: Uint8Array | null = null;
+
 export function createBlankDocument(): Uint8Array {
-  return zipSync(blankDocumentParts());
+  if (!blankDocumentCache) blankDocumentCache = zipSync(blankDocumentParts());
+  return blankDocumentCache.slice();
 }

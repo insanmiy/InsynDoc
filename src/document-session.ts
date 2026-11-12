@@ -1,8 +1,20 @@
 import type { DesktopBridge, DocumentFile, SnapshotInfo, SnapshotStatus, TemplateInfo } from './bridge';
 import { documentSnapshotStatus, listDocumentSnapshots, listDocumentTemplates, readDocumentSnapshot, readDocumentTemplate, saveDocumentTemplate, writeDocumentSnapshot } from './bridge';
 import type { ExportFormat } from './document-export';
-import { importDocument } from './document-import';
 import { sanitizeDocxMetadata } from './document-sanitize';
+
+// The Startup Document Request Starts Before The Editor Bundle Loads So File Opens Do Not Wait.
+let startupRequest: Promise<DocumentFile | null> | null = null;
+let startupResult: DocumentFile | null | undefined;
+
+export function prefetchStartupDocument(bridge: DesktopBridge): void {
+  if (startupRequest || !bridge.openStartup) return;
+  startupRequest = bridge.openStartup();
+  startupRequest.then(
+    (file) => { startupResult = file; },
+    () => { startupResult = null; }
+  );
+}
 
 export type UnsavedChoice = 'save' | 'discard' | 'cancel';
 export type ViewMode = 'pages' | 'continuous';
@@ -40,6 +52,8 @@ export class DocumentSession {
   private adapter: DocumentAdapter | null = null;
   private revision = 0;
   private startupRequested = false;
+  private adoptedStartupFile: DocumentFile | null = null;
+  private closeRequested = false;
 
   constructor(
     private readonly bridge: DesktopBridge,
@@ -123,6 +137,10 @@ export class DocumentSession {
       this.update({ error: error instanceof Error ? error.message : String(error) });
     } finally {
       this.update({ busy: false, message: this.state.dirty ? 'Unsaved Changes' : 'Ready' });
+      if (this.closeRequested) {
+        this.closeRequested = false;
+        void this.close();
+      }
     }
   }
 
@@ -140,11 +158,28 @@ export class DocumentSession {
     await this.loadFile(file);
   });
 
+  // Returns The Startup File Only After Its Bytes Have Arrived, So The Editor Can Open It Directly.
+  startupDocument = (): DocumentFile | null | undefined => startupResult;
+
+  // Marks A Startup File Whose Bytes Were Handed To The Editor At Mount, Skipping A Second Parse.
+  adoptStartupDocument = (file: DocumentFile): void => {
+    this.adoptedStartupFile = file;
+  };
+
   openStartup = (): Promise<void> => this.run('Opening Document', async () => {
+    const adopted = this.adoptedStartupFile;
+    if (adopted) {
+      this.adoptedStartupFile = null;
+      this.startupRequested = true;
+      this.revision = 0;
+      this.update({ name: adopted.name, token: adopted.token || null, dirty: this.state.dirty });
+      if (adopted.token) await this.bridge.remember?.(adopted.token).catch(() => undefined);
+      return;
+    }
     if (this.startupRequested || !this.bridge.openStartup) return;
     this.startupRequested = true;
     if (!await this.canReplace()) return;
-    const file = await this.bridge.openStartup();
+    const file = await (startupRequest ?? this.bridge.openStartup());
     if (file) await this.loadFile(file);
   });
 
@@ -159,6 +194,7 @@ export class DocumentSession {
     let name = file.name;
     let token = file.token || null;
     if (file.importFormat) {
+      const { importDocument } = await import('./document-import');
       const imported = await importDocument(file.name, bytes, file.importFormat);
       bytes = imported.bytes;
       name = imported.name;
@@ -240,7 +276,14 @@ export class DocumentSession {
   });
 
   close = async (): Promise<void> => {
-    if (this.state.busy) return;
+    if (this.state.busy) {
+      if (!this.state.dirty) {
+        await this.bridge.close();
+        return;
+      }
+      this.closeRequested = true;
+      return;
+    }
     this.update({ busy: true, error: null, message: 'Closing Document' });
     try {
       const discardEmpty = this.state.dirty && this.adapter?.isEmpty?.() === true;

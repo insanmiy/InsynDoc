@@ -219,6 +219,12 @@ export async function setWindowTheme(theme: 'light' | 'dark'): Promise<void> {
   if (isTauri()) await getCurrentWindow().setTheme(theme);
 }
 
+export async function isCapsLockOn(): Promise<boolean | null> {
+  if (!isTauri()) return null;
+  try { return await invoke<boolean>('caps_lock_on'); }
+  catch { return null; }
+}
+
 export async function chooseLinkBrowser(): Promise<string | null> {
   if (!isTauri()) throw new Error('Open The Desktop App To Choose A Browser.');
   return invoke<string | null>('choose_link_browser');
