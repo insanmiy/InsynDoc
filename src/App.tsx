@@ -140,6 +140,7 @@ export function App() {
   const openShortcuts = useCallback(() => setShortcutsOpen(true), []);
   const openGoToPage = useCallback(() => {
     setPageNumber(String(editorRef.current?.getCurrentPage('viewport') ?? 1));
+    if (editorRef.current) setPageCount(editorRef.current.snapshot().page.total);
     setPageError(null);
     setGoToPageOpen(true);
   }, []);

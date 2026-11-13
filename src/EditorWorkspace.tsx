@@ -5,6 +5,7 @@ import { createT, en, type TranslationKey } from '@docx-editor.dev/i18n';
 import { tableChromeIconPaths } from '@docx-editor.dev/core/editor';
 import type { Editor } from '@docx-editor.dev/core/contracts/editor';
 import { createEditorAdapter, localFonts } from './editor-adapter';
+import { observePageCount } from './page-count';
 import { clearRecentDocuments, countDocumentText, exportPlainText, recentDocuments, type RecentDocument, type TextStatistics } from './bridge';
 import { DocumentSession, type DocumentAdapter } from './document-session';
 import type { Preferences } from './preferences';
@@ -378,7 +379,7 @@ function WorkspaceContent(props: WorkspaceProps) {
     let timer: ReturnType<typeof setTimeout> | undefined;
     let version = 0;
     let disposed = false;
-    const updatePage = () => props.onPageCount(editor.snapshot().page.total);
+    const stopPageCount = observePageCount(editor, props.onPageCount);
     const scheduleStatistics = () => {
       const request = ++version;
       clearTimeout(timer);
@@ -389,10 +390,9 @@ function WorkspaceContent(props: WorkspaceProps) {
         }).catch(() => undefined);
       }, 300);
     };
-    updatePage(); scheduleStatistics();
-    const stopSelection = editor.on('selectionChange', updatePage);
-    const stopChange = editor.on('change', () => { updatePage(); scheduleStatistics(); });
-    return () => { disposed = true; clearTimeout(timer); stopSelection(); stopChange(); };
+    scheduleStatistics();
+    const stopChange = editor.on('change', scheduleStatistics);
+    return () => { disposed = true; clearTimeout(timer); stopPageCount(); stopChange(); };
   }, [editor, props.onPageCount, props.onStatistics]);
 
   const menus = <div className={`docx-editor docs-menu ${props.theme === 'dark' ? 'dark' : ''}`}>
