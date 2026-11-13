@@ -287,6 +287,7 @@ button svg { flex-shrink: 0; }
 .table-dimensions { display: flex; gap: 20px; margin-top: 20px; }
 .table-dimensions label { flex: 1; font-size: 12px; }
 .table-dimensions input { display: block; margin-top: 8px; }
+.statistics-heading { margin: 16px 0 8px; font-size: 13px; font-weight: 600; }
 .writing-goal { padding-top: 12px; border-top: 1px solid var(--app-border); font-size: 12px; }
 .writing-goal > div { display: flex; align-items: center; justify-content: space-between; }
 .writing-goal strong { color: var(--app-accent-ink); font-weight: 500; }

@@ -1,6 +1,6 @@
 import { Component, lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import type { Editor } from '@docx-editor.dev/core/contracts/editor';
-import { desktop, isCapsLockOn, watchExternalLinks, setWindowTitle, setWindowTheme, watchClose, type TextStatistics } from './bridge';
+import { countDocumentText, desktop, isCapsLockOn, watchExternalLinks, setWindowTitle, setWindowTheme, watchClose, type TextStatistics } from './bridge';
 import { DocumentSession, type DocumentAdapter, type UnsavedChoice } from './document-session';
 import { readPreferences, storePreferences, type Preferences } from './preferences';
 import { Modal } from './Modal';
@@ -45,6 +45,10 @@ export function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
   const [statisticsOpen, setStatisticsOpen] = useState(false);
+  const [selectedTextForStatistics, setSelectedTextForStatistics] = useState('');
+  const [selectionStatistics, setSelectionStatistics] = useState<TextStatistics | null>(null);
+  const [statisticsPending, setStatisticsPending] = useState(false);
+  const [statisticsError, setStatisticsError] = useState<string | null>(null);
   const [goToPageOpen, setGoToPageOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [pageNumber, setPageNumber] = useState('1');
@@ -134,7 +138,35 @@ export function App() {
   const updatePreferences = useCallback((next: Preferences) => setPreferences(next), []);
   const showFind = useCallback((replace = false) => { setReplaceMode(replace); setFindOpen(true); setFindRequest((value) => value + 1); }, []);
   const openSettings = useCallback(() => setSettingsOpen(true), []);
-  const openStatistics = useCallback(() => setStatisticsOpen(true), []);
+  const openStatistics = useCallback(() => {
+    setSelectedTextForStatistics(editorRef.current?.query({ type: 'selectedText' }) ?? '');
+    setStatisticsOpen(true);
+  }, []);
+  const closeStatistics = useCallback(() => {
+    setStatisticsOpen(false);
+    setSelectedTextForStatistics('');
+  }, []);
+  useEffect(() => {
+    setSelectionStatistics(null);
+    setStatisticsError(null);
+    setStatisticsPending(statisticsOpen);
+    if (!statisticsOpen) return;
+    let cancelled = false;
+    const documentText = editorRef.current?.query({ type: 'paragraphs' }).map((paragraph) => paragraph.text).join('\n') ?? '';
+    void Promise.all([
+      countDocumentText(documentText),
+      selectedTextForStatistics ? countDocumentText(selectedTextForStatistics) : Promise.resolve(null)
+    ]).then(([documentCounts, selectedCounts]) => {
+      if (cancelled) return;
+      setStatistics(documentCounts);
+      setSelectionStatistics(selectedCounts);
+    }).catch(() => {
+      if (!cancelled) setStatisticsError('The Text Could Not Be Counted. Close Word Count And Try Again.');
+    }).finally(() => {
+      if (!cancelled) setStatisticsPending(false);
+    });
+    return () => { cancelled = true; };
+  }, [statisticsOpen, selectedTextForStatistics]);
   const closeFind = useCallback(() => setFindOpen(false), []);
   const toggleFocus = useCallback(() => setFocusMode((value) => !value), []);
   const openShortcuts = useCallback(() => setShortcutsOpen(true), []);
@@ -245,7 +277,7 @@ export function App() {
     </main>
 
     <footer className="status-bar">
-      <div className="document-status">{preferences.showWordCount && <><button aria-label="Word Count" onClick={() => setStatisticsOpen(true)}>{statistics.words.toLocaleString()} {preferences.wordGoal > 0 ? `/ ${preferences.wordGoal.toLocaleString()} Words` : statistics.words === 1 ? 'Word' : 'Words'}</button><span className="status-separator"/></>}<button aria-label="Go To Page" disabled={!state.ready} onClick={openGoToPage}>{Math.max(1, pageCount)} {pageCount === 1 ? 'Page' : 'Pages'}</button>{capsLock && !focusMode && <><span className="status-separator"/><span className="caps-lock-warning" role="status" aria-live="polite"><Icon name="keyboard" size={14}/><span>Caps Lock On</span></span></>}</div>
+      <div className="document-status">{preferences.showWordCount && <><button aria-label="Word Count" onClick={openStatistics}>{statistics.words.toLocaleString()} {preferences.wordGoal > 0 ? `/ ${preferences.wordGoal.toLocaleString()} Words` : statistics.words === 1 ? 'Word' : 'Words'}</button><span className="status-separator"/></>}<button aria-label="Go To Page" disabled={!state.ready} onClick={openGoToPage}>{Math.max(1, pageCount)} {pageCount === 1 ? 'Page' : 'Pages'}</button>{capsLock && !focusMode && <><span className="status-separator"/><span className="caps-lock-warning" role="status" aria-live="polite"><Icon name="keyboard" size={14}/><span>Caps Lock On</span></span></>}</div>
       <div><div ref={setZoomHost} className="status-zoom" inert={unavailable}/><span className="status-separator"/><button aria-label="Continuous View" aria-pressed={state.view === 'continuous'} title={state.view === 'pages' ? 'Switch To Continuous View' : 'Switch To Separate Pages'} disabled={unavailable} onClick={() => session.setView(state.view === 'pages' ? 'continuous' : 'pages')}><Icon name="page" size={14}/>View: {state.view === 'pages' ? 'Separate Pages' : 'Continuous'}</button></div>
     </footer>
 
@@ -274,12 +306,23 @@ export function App() {
       ].map(([action, shortcut]) => <div key={action}><span>{action}</span><kbd>{shortcut}</kbd></div>)}</div>
       <footer className="modal-footer"><button className="primary-button" onClick={() => setShortcutsOpen(false)}>Done</button></footer>
     </Modal>
-    <Modal open={statisticsOpen} title="Word Count" onClose={() => setStatisticsOpen(false)} className="statistics-modal">
-      <p className="modal-description">Your Document At A Glance.</p><dl className="statistics-grid">
+    <Modal open={statisticsOpen} title="Word Count" onClose={closeStatistics} className="statistics-modal">
+      {statisticsPending && <p className="modal-description" role="status">Counting Text...</p>}
+      {statisticsError && <p className="form-error" role="alert">{statisticsError}</p>}
+      {selectionStatistics && <section aria-label="Selected Text Statistics">
+        <h3 className="statistics-heading">Selected Text</h3><dl className="statistics-grid">
+          <div><dt>Words</dt><dd>{selectionStatistics.words.toLocaleString()}</dd></div>
+          <div><dt>Characters</dt><dd>{selectionStatistics.characters.toLocaleString()}</dd></div>
+          <div><dt>Characters Without Spaces</dt><dd>{selectionStatistics.charactersWithoutSpaces.toLocaleString()}</dd></div>
+        </dl>
+      </section>}
+      <section aria-label="Document Statistics" aria-busy={statisticsPending}>
+      <h3 className="statistics-heading">Whole Document</h3><dl className="statistics-grid">
         <div><dt>Words</dt><dd>{statistics.words.toLocaleString()}</dd></div><div><dt>Pages</dt><dd>{pageCount}</dd></div>
         <div><dt>Characters</dt><dd>{statistics.characters.toLocaleString()}</dd></div><div><dt>Characters Without Spaces</dt><dd>{statistics.charactersWithoutSpaces.toLocaleString()}</dd></div>
         <div><dt>Estimated Reading Time</dt><dd>{Math.ceil(statistics.words / 200)} Min</dd></div>
-      </dl>{preferences.wordGoal > 0 && <div className="writing-goal"><div><span>Writing Goal</span><strong>{Math.min(100, Math.floor(statistics.words / preferences.wordGoal * 100))}%</strong></div><progress aria-label="Writing Goal Progress" value={Math.min(statistics.words, preferences.wordGoal)} max={preferences.wordGoal}/><p>{statistics.words >= preferences.wordGoal ? 'Goal Reached.' : `${(preferences.wordGoal - statistics.words).toLocaleString()} Words To Go.`}</p></div>}<footer className="modal-footer"><button className="primary-button" onClick={() => setStatisticsOpen(false)}>Done</button></footer>
+      </dl>{preferences.wordGoal > 0 && <div className="writing-goal"><div><span>Writing Goal</span><strong>{Math.min(100, Math.floor(statistics.words / preferences.wordGoal * 100))}%</strong></div><progress aria-label="Writing Goal Progress" value={Math.min(statistics.words, preferences.wordGoal)} max={preferences.wordGoal}/><p>{statistics.words >= preferences.wordGoal ? 'Goal Reached.' : `${(preferences.wordGoal - statistics.words).toLocaleString()} Words To Go.`}</p></div>}
+      </section><footer className="modal-footer"><button className="primary-button" onClick={closeStatistics}>Done</button></footer>
     </Modal>
     <Modal open={update !== null} title="Update Available" onClose={() => { if (!updateInstalling) setUpdate(null); }} className="update-modal">
       <p className="modal-description">InsynDoc {update?.version} Is Available.</p>

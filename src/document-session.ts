@@ -110,9 +110,11 @@ export class DocumentSession {
 
   private async saveCurrent(saveAs: boolean): Promise<boolean> {
     if (!this.adapter) return false;
-    const bytes = await this.adapter.save();
     const revision = this.revision;
-    const result = await this.bridge.save(bytes, this.state.token, saveAs, this.state.name);
+    const bytes = await this.adapter.save();
+    const result = saveAs
+      ? await this.bridge.save(bytes, this.state.token, true, this.state.name, true)
+      : await this.bridge.save(bytes, this.state.token, false, this.state.name);
     if (!result) return false;
     const dirty = revision !== this.revision;
     this.update({ ...result, dirty, message: dirty ? 'Unsaved Changes' : 'Saved To This Computer' });
@@ -216,6 +218,10 @@ export class DocumentSession {
 
   save = (): Promise<void> => this.run('Saving Document', async () => {
     await this.saveCurrent(false);
+  });
+
+  saveAs = (): Promise<void> => this.run('Saving Document As', async () => {
+    await this.saveCurrent(true);
   });
 
   exportCopy = (): Promise<void> => this.run('Exporting DOCX', async () => {

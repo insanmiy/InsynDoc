@@ -157,6 +157,8 @@ struct SaveMetadata {
     token: Option<String>,
     save_as: bool,
     name: Option<String>,
+    #[serde(default)]
+    activate: bool,
 }
 
 fn document_response(metadata: Option<SavedFile>, bytes: &[u8]) -> Result<Response, String> {
@@ -228,7 +230,7 @@ async fn open_document(sessions: State<'_, FileSessions>) -> Result<Response, St
 
 #[tauri::command]
 async fn save_document(app: tauri::AppHandle, request: Request<'_>, sessions: State<'_, FileSessions>) -> Result<Option<SavedFile>, String> {
-    let (SaveMetadata { token, save_as, name }, bytes) = save_request(request.body())?;
+    let (SaveMetadata { token, save_as, name, activate }, bytes) = save_request(request.body())?;
     files::validate_docx(&bytes)?;
     let current_path = token.as_deref().map(|value| sessions.resolve(value)).transpose()?;
     let documents_directory = app.path().app_data_dir().map_err(|error| error.to_string())?.join("Documents");
@@ -238,7 +240,8 @@ async fn save_document(app: tauri::AppHandle, request: Request<'_>, sessions: St
         }
         let path = if save_as {
             let suggested_name = name.unwrap_or_else(|| current_path.as_deref().map(files::document_name).unwrap_or_else(|| "Untitled.docx".into()));
-            let mut dialog = rfd::FileDialog::new().set_title("Export DOCX Copy").add_filter("Word Document", &["docx"]).set_file_name(suggested_name);
+            let title = if activate { "Save Document As" } else { "Export DOCX Copy" };
+            let mut dialog = rfd::FileDialog::new().set_title(title).add_filter("Word Document", &["docx"]).set_file_name(suggested_name);
             if let Some(parent) = current_path.as_deref().and_then(|path| path.parent()) {
                 dialog = dialog.set_directory(parent);
             }
@@ -255,7 +258,7 @@ async fn save_document(app: tauri::AppHandle, request: Request<'_>, sessions: St
 
     let Some(path) = saved_path else { return Ok(None) };
     let name = files::document_name(&path);
-    let token = if save_as { sessions.register_export(path)? } else {
+    let token = if save_as && !activate { sessions.register_export(path)? } else {
         let token = sessions.register(path)?;
         sessions.activate(&token)?;
         token

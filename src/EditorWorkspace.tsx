@@ -233,6 +233,7 @@ function WorkspaceContent(props: WorkspaceProps) {
     { label: 'New Document', shortcut: 'Ctrl+N', run: () => void session.newDocument() },
     { label: 'Open Document', shortcut: 'Ctrl+O', run: () => void session.open() },
     { label: 'Save Document', shortcut: 'Ctrl+S', run: () => void session.save() },
+    { label: 'Save As', shortcut: '', run: () => void session.saveAs() },
     { label: 'Export DOCX', shortcut: 'Ctrl+Shift+S', run: () => void session.exportCopy() },
     { label: 'Check Spelling', shortcut: 'Ctrl+Alt+X', run: () => setSpellingRequest((value) => value + 1) },
     { label: 'Find In Document', shortcut: 'Ctrl+F', run: () => props.onFind() },
@@ -411,6 +412,7 @@ function WorkspaceContent(props: WorkspaceProps) {
         </DocxEditor.Menu.Submenu>
         <DocxEditor.Menu.Separator/>
         <MenuAction icon={<Icon name="save" size={18}/>} onSelect={() => void session.save()} shortcut="Ctrl+S">Save</MenuAction>
+        <MenuAction icon={<Icon name="save" size={18}/>} onSelect={() => void session.saveAs()}>Save As...</MenuAction>
         <MenuAction icon={<Icon name="download" size={18}/>} onSelect={() => void session.exportCopy()} shortcut="Ctrl+Shift+S">Export DOCX</MenuAction>
         <MenuAction icon={<Icon name="document" size={18}/>} disabled={exporting} onSelect={() => void exportText()}>Export Plain Text</MenuAction>
         <DocxEditor.Menu.Separator/>

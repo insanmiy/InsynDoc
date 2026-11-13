@@ -34,7 +34,7 @@ export interface DesktopBridge {
   downloadPdf?(name: string): Promise<string | null>;
   openStartup?(): Promise<DocumentFile | null>;
   open(): Promise<DocumentFile | null>;
-  save(bytes: Uint8Array, token: string | null, saveAs: boolean, name?: string): Promise<SavedFile | null>;
+  save(bytes: Uint8Array, token: string | null, saveAs: boolean, name?: string, activate?: boolean): Promise<SavedFile | null>;
   rename?(token: string, name: string): Promise<SavedFile>;
   close(): Promise<void>;
   openRecent?(token: string): Promise<DocumentFile>;
@@ -65,9 +65,9 @@ function documentPacket(buffer: ArrayBuffer): DocumentFile | null {
   return file;
 }
 
-function savePacket(bytes: Uint8Array, token: string | null, saveAs: boolean, name?: string): Uint8Array {
+function savePacket(bytes: Uint8Array, token: string | null, saveAs: boolean, name?: string, activate = false): Uint8Array {
   if (bytes.length > MAX_DOCUMENT_BYTES) throw new Error('The Document Exceeds The 25 MB Limit.');
-  const metadata = new TextEncoder().encode(JSON.stringify({ token, saveAs, name }));
+  const metadata = new TextEncoder().encode(JSON.stringify({ token, saveAs, name, ...(activate ? { activate: true } : {}) }));
   if (metadata.length > MAX_METADATA_BYTES) throw new Error('Document Metadata Is Too Large.');
   const packet = new Uint8Array(4 + metadata.length + bytes.length);
   new DataView(packet.buffer).setUint32(0, metadata.length, true);
@@ -193,9 +193,9 @@ export const desktop: DesktopBridge = {
     if (!isTauri()) throw new Error('Open The Desktop App To Use Native File Dialogs.');
     return documentPacket(await invoke<ArrayBuffer>('open_document'));
   },
-  async save(bytes, token, saveAs, name) {
+  async save(bytes, token, saveAs, name, activate) {
     if (!isTauri()) throw new Error('Open The Desktop App To Save Documents.');
-    return invoke<SavedFile | null>('save_document', savePacket(bytes, token, saveAs, name));
+    return invoke<SavedFile | null>('save_document', savePacket(bytes, token, saveAs, name, activate));
   },
   async close() {
     if (isTauri()) await getCurrentWindow().destroy();
