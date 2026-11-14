@@ -24,7 +24,7 @@ function bundledFontResolver(): ReturnType<typeof googleFonts> {
     fetcher: (input, options) => {
       const requestedUrl = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
       const localUrl = bundledUrls.get(requestedUrl);
-      if (!localUrl) return Promise.reject(new Error('This Font Is Not Bundled With InsynDoc.'));
+      if (!localUrl) return Promise.reject(new Error('This font is not bundled with InsynDoc.'));
       return fetch(localUrl, options);
     }
   });

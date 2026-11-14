@@ -16,12 +16,12 @@ const jobs = [
 const results = await Promise.all(jobs.map((job) => new Promise((resolve) => {
   const child = spawn(job.command, job.args, { stdio: 'inherit' });
   child.on('error', (error) => {
-    console.error(`[${job.name}] Failed To Start: ${error.message}`);
+    console.error(`[${job.name}] Failed to start: ${error.message}`);
     resolve(1);
   });
   child.on('close', (code) => {
     if (code !== 0) {
-      console.error(`[${job.name}] Exited With Code ${code}`);
+      console.error(`[${job.name}] Exited with code ${code}`);
     }
     resolve(code ?? 1);
   });

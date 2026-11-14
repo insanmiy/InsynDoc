@@ -7,8 +7,8 @@ pub async fn print_to_file(window: tauri::WebviewWindow, destination: std::path:
     use webview2_com::PrintToPdfCompletedHandler;
     use windows_core::{HSTRING, Interface};
 
-    let parent = destination.parent().ok_or("Choose A Download Folder.")?;
-    let temporary_directory = tempfile::tempdir_in(parent).map_err(|error| format!("Could Not Prepare The PDF Download. {error}"))?;
+    let parent = destination.parent().ok_or("Choose a download folder.")?;
+    let temporary_directory = tempfile::tempdir_in(parent).map_err(|error| format!("Could not prepare the PDF download. {error}"))?;
     let temporary_pdf = temporary_directory.path().join("document.pdf");
     let temporary_path = temporary_pdf.clone();
     let (completion, result) = mpsc::sync_channel::<Result<(), String>>(1);
@@ -30,8 +30,8 @@ pub async fn print_to_file(window: tauri::WebviewWindow, destination: std::path:
                 let browser: ICoreWebView2_7 = webview.controller().CoreWebView2()?.cast()?;
                 let completed = completion.clone();
                 let handler = PrintToPdfCompletedHandler::create(Box::new(move |status, success| {
-                    let outcome = status.map_err(|error| format!("Could Not Create The PDF. {error}"))
-                        .and_then(|()| if success { Ok(()) } else { Err("The PDF Could Not Be Created. Try Again After The Document Finishes Loading.".into()) });
+                    let outcome = status.map_err(|error| format!("Could not create the PDF. {error}"))
+                        .and_then(|()| if success { Ok(()) } else { Err("The PDF could not be created. Try again after the document finishes loading.".into()) });
                     let _ = completed.try_send(outcome);
                     Ok(())
                 }));
@@ -39,22 +39,22 @@ pub async fn print_to_file(window: tauri::WebviewWindow, destination: std::path:
             }
             Ok(())
         })();
-        if let Err(error) = started { let _ = completion.try_send(Err(format!("PDF Export Is Unavailable. Update WebView2 And Try Again. {error}"))); }
-    }).map_err(|error| format!("Could Not Access The PDF Renderer. {error}"))?;
+        if let Err(error) = started { let _ = completion.try_send(Err(format!("PDF export is unavailable. Update WebView2 and try again. {error}"))); }
+    }).map_err(|error| format!("Could not access the PDF renderer. {error}"))?;
 
     tauri::async_runtime::spawn_blocking(move || {
-        result.recv_timeout(Duration::from_secs(120)).map_err(|_| "The PDF Download Timed Out. Try A Smaller Document.".to_string())??;
-        let file = std::fs::File::open(&temporary_pdf).map_err(|error| format!("Could Not Read The Generated PDF. {error}"))?;
+        result.recv_timeout(Duration::from_secs(120)).map_err(|_| "The PDF download timed out. Try a smaller document.".to_string())??;
+        let file = std::fs::File::open(&temporary_pdf).map_err(|error| format!("Could not read the generated PDF. {error}"))?;
         let mut bytes = Vec::new();
         file.take((crate::downloads::MAX_DOWNLOAD_BYTES + 1) as u64).read_to_end(&mut bytes)
-            .map_err(|error| format!("Could Not Read The Generated PDF. {error}"))?;
+            .map_err(|error| format!("Could not read the generated PDF. {error}"))?;
         crate::downloads::write_download(&destination, crate::downloads::DownloadFormat::Pdf, &bytes)?;
         drop(temporary_directory);
         Ok(())
-    }).await.map_err(|error| format!("Could Not Complete The PDF Download. {error}"))?
+    }).await.map_err(|error| format!("Could not complete the PDF download. {error}"))?
 }
 
 #[cfg(not(target_os = "windows"))]
 pub async fn print_to_file(_window: tauri::WebviewWindow, _destination: std::path::PathBuf) -> Result<(), String> {
-    Err("PDF Download Requires The Windows Desktop App.".into())
+    Err("PDF download requires the Windows desktop app.".into())
 }

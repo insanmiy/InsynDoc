@@ -51,24 +51,24 @@ const MAX_METADATA_BYTES = 64 * 1024;
 
 // Binary Packets Contain A Little Endian Metadata Length, UTF8 JSON, Then File Bytes.
 function documentPacket(buffer: ArrayBuffer): DocumentFile | null {
-  if (!(buffer instanceof ArrayBuffer) || buffer.byteLength < 4) throw new Error('Invalid Document Response.');
+  if (!(buffer instanceof ArrayBuffer) || buffer.byteLength < 4) throw new Error('Invalid document response.');
   const length = new DataView(buffer).getUint32(0, true);
-  if (length > MAX_METADATA_BYTES || length > buffer.byteLength - 4) throw new Error('Invalid Document Metadata.');
+  if (length > MAX_METADATA_BYTES || length > buffer.byteLength - 4) throw new Error('Invalid document metadata.');
   const bytes = new Uint8Array(buffer, 4 + length);
-  if (bytes.length > MAX_DOCUMENT_BYTES) throw new Error('The Document Exceeds The 25 MB Limit.');
+  if (bytes.length > MAX_DOCUMENT_BYTES) throw new Error('The document exceeds the 25 MB limit.');
   const metadata: unknown = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(new Uint8Array(buffer, 4, length)));
   if (metadata === null && bytes.length === 0) return null;
   if (typeof metadata !== 'object' || metadata === null || !('token' in metadata) || typeof metadata.token !== 'string'
-    || !('name' in metadata) || typeof metadata.name !== 'string') throw new Error('Invalid Document Metadata.');
+    || !('name' in metadata) || typeof metadata.name !== 'string') throw new Error('Invalid document metadata.');
   const file: DocumentFile = { token: metadata.token, name: metadata.name, bytes };
   if ('importFormat' in metadata && typeof metadata.importFormat === 'string') file.importFormat = metadata.importFormat;
   return file;
 }
 
 function savePacket(bytes: Uint8Array, token: string | null, saveAs: boolean, name?: string, activate = false): Uint8Array {
-  if (bytes.length > MAX_DOCUMENT_BYTES) throw new Error('The Document Exceeds The 25 MB Limit.');
+  if (bytes.length > MAX_DOCUMENT_BYTES) throw new Error('The document exceeds the 25 MB limit.');
   const metadata = new TextEncoder().encode(JSON.stringify({ token, saveAs, name, ...(activate ? { activate: true } : {}) }));
-  if (metadata.length > MAX_METADATA_BYTES) throw new Error('Document Metadata Is Too Large.');
+  if (metadata.length > MAX_METADATA_BYTES) throw new Error('Document metadata is too large.');
   const packet = new Uint8Array(4 + metadata.length + bytes.length);
   new DataView(packet.buffer).setUint32(0, metadata.length, true);
   packet.set(metadata, 4);
@@ -86,14 +86,14 @@ export async function clearRecentDocuments(): Promise<void> {
 }
 
 export async function exportPlainText(text: string, token: string | null): Promise<string | null> {
-  if (!isTauri()) throw new Error('Open The Desktop App To Export Plain Text.');
+  if (!isTauri()) throw new Error('Open the desktop app to export plain text.');
   return invoke<string | null>('export_plain_text', { text, token });
 }
 
 function snapshotPacket(bytes: Uint8Array, token: string | null, name: string): Uint8Array {
-  if (bytes.length > 100 * 1024 * 1024) throw new Error('The Snapshot Exceeds The 100 MB Limit.');
+  if (bytes.length > 100 * 1024 * 1024) throw new Error('The snapshot exceeds the 100 MB limit.');
   const metadata = new TextEncoder().encode(JSON.stringify({ token, name }));
-  if (metadata.length > MAX_METADATA_BYTES) throw new Error('Snapshot Metadata Is Too Large.');
+  if (metadata.length > MAX_METADATA_BYTES) throw new Error('Snapshot metadata is too large.');
   const packet = new Uint8Array(4 + metadata.length + bytes.length);
   new DataView(packet.buffer).setUint32(0, metadata.length, true);
   packet.set(metadata, 4);
@@ -112,7 +112,7 @@ export async function listDocumentSnapshots(token: string | null, name: string):
 }
 
 export async function readDocumentSnapshot(token: string | null, name: string, id: string): Promise<Uint8Array> {
-  if (!isTauri()) throw new Error('Open The Desktop App To Restore Snapshots.');
+  if (!isTauri()) throw new Error('Open the desktop app to restore snapshots.');
   const buffer = await invoke<ArrayBuffer>('read_document_snapshot', { token, name, id });
   return new Uint8Array(buffer);
 }
@@ -128,13 +128,13 @@ export async function listDocumentTemplates(): Promise<TemplateInfo[]> {
 }
 
 export async function readDocumentTemplate(id: string): Promise<Uint8Array> {
-  if (!isTauri()) throw new Error('Open The Desktop App To Use Templates.');
+  if (!isTauri()) throw new Error('Open the desktop app to use templates.');
   const buffer = await invoke<ArrayBuffer>('read_document_template', { id });
   return new Uint8Array(buffer);
 }
 
 export async function saveDocumentTemplate(bytes: Uint8Array, name: string): Promise<TemplateInfo> {
-  if (!isTauri()) throw new Error('Open The Desktop App To Save Templates.');
+  if (!isTauri()) throw new Error('Open the desktop app to save templates.');
   return invoke<TemplateInfo>('save_document_template', snapshotPacket(bytes, null, name));
 }
 
@@ -161,10 +161,10 @@ export async function countDocumentText(text: string): Promise<TextStatistics> {
 
 export const desktop: DesktopBridge = {
   async download(bytes, format, name) {
-    if (!isTauri()) throw new Error('Open The Desktop App To Download Documents.');
-    if (bytes.length > 100 * 1024 * 1024) throw new Error('The Download Exceeds The 100 MB Limit.');
+    if (!isTauri()) throw new Error('Open the desktop app to download documents.');
+    if (bytes.length > 100 * 1024 * 1024) throw new Error('The download exceeds the 100 MB limit.');
     const metadata = new TextEncoder().encode(JSON.stringify({ format, name }));
-    if (metadata.length > MAX_METADATA_BYTES) throw new Error('Download Metadata Is Too Large.');
+    if (metadata.length > MAX_METADATA_BYTES) throw new Error('Download metadata is too large.');
     const packet = new Uint8Array(4 + metadata.length + bytes.length);
     new DataView(packet.buffer).setUint32(0, metadata.length, true);
     packet.set(metadata, 4);
@@ -172,7 +172,7 @@ export const desktop: DesktopBridge = {
     return invoke<string | null>('download_document', packet);
   },
   async downloadPdf(name) {
-    if (!isTauri()) throw new Error('Open The Desktop App To Download Documents.');
+    if (!isTauri()) throw new Error('Open the desktop app to download documents.');
     return invoke<string | null>('download_pdf', { name });
   },
   async openStartup() {
@@ -182,7 +182,7 @@ export const desktop: DesktopBridge = {
   async rename(token, name) { return invoke<SavedFile>('rename_document', { token, name }); },
   async openRecent(token) {
     const file = documentPacket(await invoke<ArrayBuffer>('open_recent_document', { token }));
-    if (!file) throw new Error('The Recent Document Is Unavailable.');
+    if (!file) throw new Error('The recent document is unavailable.');
     return file;
   },
   async remember(token) {
@@ -190,11 +190,11 @@ export const desktop: DesktopBridge = {
     window.dispatchEvent(new Event('insyndoc:recent-changed'));
   },
   async open() {
-    if (!isTauri()) throw new Error('Open The Desktop App To Use Native File Dialogs.');
+    if (!isTauri()) throw new Error('Open the desktop app to use native file dialogs.');
     return documentPacket(await invoke<ArrayBuffer>('open_document'));
   },
   async save(bytes, token, saveAs, name, activate) {
-    if (!isTauri()) throw new Error('Open The Desktop App To Save Documents.');
+    if (!isTauri()) throw new Error('Open the desktop app to save documents.');
     return invoke<SavedFile | null>('save_document', savePacket(bytes, token, saveAs, name, activate));
   },
   async close() {
@@ -226,7 +226,7 @@ export async function isCapsLockOn(): Promise<boolean | null> {
 }
 
 export async function chooseLinkBrowser(): Promise<string | null> {
-  if (!isTauri()) throw new Error('Open The Desktop App To Choose A Browser.');
+  if (!isTauri()) throw new Error('Open the desktop app to choose a browser.');
   return invoke<string | null>('choose_link_browser');
 }
 

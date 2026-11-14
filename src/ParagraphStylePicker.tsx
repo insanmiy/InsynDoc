@@ -51,7 +51,7 @@ export function ParagraphStylePicker() {
   }
 
   const selectedStyle = styles.options.find((style) => style.styleId === styles.value);
-  const labelFor = (name: string): string => name.replace(/\b\p{L}/gu, (letter) => letter.toUpperCase());
+  const labelFor = (name: string): string => name.replace(/^\p{L}/u, (letter) => letter.toUpperCase());
 
   return <div ref={host} className="paragraph-style-picker" onBlur={(event) => {
     if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false);
@@ -76,12 +76,12 @@ export function ParagraphStylePicker() {
     if (!open && ['ArrowDown', 'ArrowUp'].includes(event.key)) { event.preventDefault(); setOpen(true); return; }
     if (open && next >= 0) { event.preventDefault(); options[next]?.focus(); }
   }}>
-    <button ref={trigger} type="button" role="combobox" aria-label="Paragraph Style" aria-haspopup="listbox" aria-expanded={open} aria-controls={open ? listId : undefined}
+    <button ref={trigger} type="button" role="combobox" aria-label="Paragraph style" aria-haspopup="listbox" aria-expanded={open} aria-controls={open ? listId : undefined}
       className="docx-toolbar__style-trigger" disabled={!styles.isEnabled} onMouseDown={(event) => event.preventDefault()} onClick={() => setOpen((value) => !value)}>
-      <span>{selectedStyle ? labelFor(selectedStyle.name) : 'Paragraph Style'}</span>
+      <span>{selectedStyle ? labelFor(selectedStyle.name) : 'Paragraph style'}</span>
     </button>
-    {open && <div id={listId} role="listbox" aria-label="Paragraph Styles" className="docx-toolbar__menu paragraph-style-menu">
-      <div className="docx-toolbar__menu-label">Paragraph Style</div>
+    {open && <div id={listId} role="listbox" aria-label="Paragraph styles" className="docx-toolbar__menu paragraph-style-menu">
+      <div className="docx-toolbar__menu-label">Paragraph style</div>
       {styles.options.filter((style) => !/^heading\s*[6-9]$/i.test(style.styleId)).map((style) => <button type="button" role="option" tabIndex={-1} aria-selected={styles.value === style.styleId}
         className="docx-toolbar__menu-item" key={style.styleId} onMouseDown={(event) => event.preventDefault()}
         onClick={() => { setOpen(false); applyStyle(style.styleId); }}>

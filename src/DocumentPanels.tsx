@@ -47,8 +47,8 @@ export function TemplateGallery({ session, onClose }: { session: DocumentSession
     finally { setSaving(false); }
   }
 
-  return <Modal open onClose={onClose} title="Document Templates" className="templates-modal">
-    <p className="modal-description">Start A New Document From A Template. Templates Stay On This Device.</p>
+  return <Modal open onClose={onClose} title="Document templates" className="templates-modal">
+    <p className="modal-description">Start a new document from a template. Templates stay on this device.</p>
     {error && <p className="form-error" role="alert">{error}</p>}
     <div className="template-grid">
       {BUILTIN_TEMPLATES.map((template) => <button key={template.id} className="template-card" onClick={() => {
@@ -66,8 +66,8 @@ export function TemplateGallery({ session, onClose }: { session: DocumentSession
       </button>)}
     </div>
     <div className="template-save-row">
-      <input aria-label="Template Name" placeholder="Template Name" value={templateName} onChange={(event) => setTemplateName(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); void saveCurrent(); } }}/>
-      <button className="secondary-button" disabled={!templateName.trim() || saving} onClick={() => void saveCurrent()}>{saving ? 'Saving...' : 'Save Current Document As Template'}</button>
+      <input aria-label="Template name" placeholder="Template name" value={templateName} onChange={(event) => setTemplateName(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); void saveCurrent(); } }}/>
+      <button className="secondary-button" disabled={!templateName.trim() || saving} onClick={() => void saveCurrent()}>{saving ? 'Saving...' : 'Save current document as template'}</button>
     </div>
     <footer className="modal-footer"><button className="primary-button" onClick={onClose}>Done</button></footer>
   </Modal>;
@@ -96,12 +96,12 @@ export function VersionHistory({ session, onClose }: { session: DocumentSession;
     finally { setRestoring(null); }
   }
 
-  return <Modal open onClose={onClose} title="Version History" className="history-modal">
-    <p className="modal-description">InsynDoc Saves Local Snapshots While You Work. Restoring Replaces The Current Document.</p>
+  return <Modal open onClose={onClose} title="Version history" className="history-modal">
+    <p className="modal-description">InsynDoc saves local snapshots while you work. Restoring replaces the current document.</p>
     {error && <p className="form-error" role="alert">{error}</p>}
     <div className="history-list">
-      {snapshots === null && <p className="modal-description">Loading Snapshots...</p>}
-      {snapshots?.length === 0 && <p className="modal-description">No Snapshots Yet. Snapshots Are Saved Automatically Every Two Minutes While The Document Has Unsaved Changes.</p>}
+      {snapshots === null && <p className="modal-description">Loading snapshots...</p>}
+      {snapshots?.length === 0 && <p className="modal-description">No snapshots yet. Snapshots are saved automatically every two minutes while the document has unsaved changes.</p>}
       {snapshots?.map((snapshot) => <div key={snapshot.id} className="history-row">
         <Icon name="document" size={18}/>
         <span>{formatSnapshotTime(snapshot.createdAt)}</span>

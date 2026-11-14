@@ -30,7 +30,7 @@
     "targets": ["nsis"],
     "createUpdaterArtifacts": true,
     "category": "Productivity",
-    "shortDescription": "Offline DOCX Editor",
+    "shortDescription": "Offline DOCX editor",
     "icon": ["icons/insyndoc/32x32.png", "icons/insyndoc/128x128.png", "icons/insyndoc/128x128@2x.png", "icons/insyndoc/icon.ico"],
     "resources": ["../THIRD_PARTY_NOTICES.md", "../public/licenses/*"],
     "windows": {

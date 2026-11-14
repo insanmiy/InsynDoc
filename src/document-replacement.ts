@@ -5,13 +5,13 @@ import type { TreeDocOp } from '@docx-editor.dev/core/store';
 export function replaceDocumentMatches(editor: DocxEditorInstance, matches: readonly TextMatch[], replacement: string): string | null {
   const originalScope = editor.getActiveScope();
   const surface = editor.surface;
-  if (!surface) return 'The Editor Is Not Ready.';
+  if (!surface) return 'The editor is not ready.';
   const groups: Array<{ scope: ReturnType<typeof surface.storyScope>; ops: TreeDocOp[] }> = [];
   try {
     for (const match of matches) {
       editor.setActiveScope(match.scope ?? { kind: 'body' });
       if (!editor.can({ type: 'replaceMatch', match, text: replacement }).ok) {
-        return 'This Match Could Not Be Replaced. It May Be In Protected Content.';
+        return 'This match could not be replaced. It may be in protected content.';
       }
       const scope = surface.storyScope();
       let group = groups.find((candidate) => JSON.stringify(candidate.scope) === JSON.stringify(scope));
@@ -24,6 +24,6 @@ export function replaceDocumentMatches(editor: DocxEditorInstance, matches: read
       const result = surface.session.applyTreeOpsAtomic(groups, { historyToken });
       return { committed: result.committed, reason: result.reason };
     }, 'package-scoped');
-    return rejection ? 'The Replacement Could Not Be Completed. Your Original Text Was Kept.' : null;
+    return rejection ? 'The replacement could not be completed. Your original text was kept.' : null;
   } finally { editor.setActiveScope(originalScope); }
 }

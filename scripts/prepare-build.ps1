@@ -16,7 +16,7 @@ while ($true) {
     })
     foreach ($runningApp in $runningApps) {
         if ($requestedProcesses.ContainsKey($runningApp.Id)) { continue }
-        Write-Host 'InsynDoc Is Open. Save Any Changes And Close The App To Continue Building.'
+        Write-Host 'InsynDoc is open. Save any changes and close the app to continue building.'
         $requestedProcesses[$runningApp.Id] = $true
         $null = $runningApp.CloseMainWindow()
     }
@@ -38,11 +38,11 @@ while ($true) {
 
     if ($runningApps.Count -eq 0 -and $null -eq $lockedFile) { exit 0 }
     if (-not $announced) {
-        Write-Host 'Waiting For InsynDoc Build Files To Be Released. No App Will Be Force Closed.'
+        Write-Host 'Waiting for InsynDoc build files to be released. No app will be force closed.'
         $announced = $true
     }
     if ([DateTime]::UtcNow -ge $deadline) {
-        Write-Host 'Build Stopped Because InsynDoc Files Are Still In Use. Close The App And Run Start.bat Again.'
+        Write-Host 'Build stopped because InsynDoc files are still in use. Close the app and run Start.bat again.'
         exit 1
     }
     Start-Sleep -Milliseconds 500

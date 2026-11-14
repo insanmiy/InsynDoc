@@ -16,13 +16,13 @@ class EditorBoundary extends Component<{ children: ReactNode }, { failed: boolea
   state = { failed: false };
   static getDerivedStateFromError() { return { failed: true }; }
   render() {
-    if (this.state.failed) return <div className="editor-failure" role="alert"><Icon name="document" size={32}/><h2>The Editor Could Not Start</h2><p>Close And Reopen InsynDoc To Try Again.</p></div>;
+    if (this.state.failed) return <div className="editor-failure" role="alert"><Icon name="document" size={32}/><h2>The editor could not start</h2><p>Close and reopen InsynDoc to try again.</p></div>;
     return this.props.children;
   }
 }
 
 function WorkspaceSkeleton() {
-  return <div className="workspace-skeleton" aria-label="Loading Editor"><div className="skeleton-toolbar"><span/><span/><span/></div><div className="skeleton-stage"><div className="skeleton-page"><span>Opening Your Workspace…</span></div></div></div>;
+  return <div className="workspace-skeleton" aria-label="Loading editor"><div className="skeleton-toolbar"><span/><span/><span/></div><div className="skeleton-stage"><div className="skeleton-page"><span>Opening your workspace…</span></div></div></div>;
 }
 
 export function App() {
@@ -161,7 +161,7 @@ export function App() {
       setStatistics(documentCounts);
       setSelectionStatistics(selectedCounts);
     }).catch(() => {
-      if (!cancelled) setStatisticsError('The Text Could Not Be Counted. Close Word Count And Try Again.');
+      if (!cancelled) setStatisticsError('The text could not be counted. Close word count and try again.');
     }).finally(() => {
       if (!cancelled) setStatisticsPending(false);
     });
@@ -247,9 +247,9 @@ export function App() {
     <header className="app-header">
       <div className="app-logo"><img src="/branding/insyndoc-logo.png" alt="InsynDoc" width="44" height="44"/></div>
       <div className="document-heading">
-        <div className="document-title-row"><h1>{renaming ? <input className="document-name-input" aria-label="Document Name" autoFocus value={titleDraft} onFocus={(event) => event.currentTarget.select()} onChange={(event) => setTitleDraft(event.target.value)} onBlur={() => { setRenaming(false); void session.rename(titleDraft); }} onKeyDown={(event) => { if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') { event.preventDefault(); setRenaming(false); void session.rename(titleDraft).then(() => { if (!session.getSnapshot().error) void (event.shiftKey ? session.exportCopy() : session.save()); }); return; } if (event.key === 'Enter') { event.preventDefault(); event.currentTarget.blur(); } if (event.key === 'Escape') { event.preventDefault(); setRenaming(false); } }}/>
-          : <button className="document-name-button" disabled={unavailable} title="Rename Document" onClick={() => { setTitleDraft(state.name.replace(/\.docx$/i, '')); setRenaming(true); }}><span>{state.name}</span><Icon name="edit" size={14}/></button>}</h1><span className={`document-save-indicator ${state.dirty ? 'has-changes' : ''}`} title={state.dirty ? 'Unsaved Changes' : 'Your Document Stays On This Device'}><Icon name={state.dirty ? 'save' : 'check'} size={16}/><span>{state.dirty ? 'Unsaved Changes' : state.token ? 'Saved Locally' : 'New Document'}</span></span></div>
-        <nav ref={setMenuHost} className="main-menu-host" aria-label="Document Menus" inert={unavailable}>{!state.ready && <div className="menu-placeholder">File<span>Edit</span><span>View</span><span>Insert</span><span>Format</span><span>Tools</span></div>}</nav>
+        <div className="document-title-row"><h1>{renaming ? <input className="document-name-input" aria-label="Document name" autoFocus value={titleDraft} onFocus={(event) => event.currentTarget.select()} onChange={(event) => setTitleDraft(event.target.value)} onBlur={() => { setRenaming(false); void session.rename(titleDraft); }} onKeyDown={(event) => { if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') { event.preventDefault(); setRenaming(false); void session.rename(titleDraft).then(() => { if (!session.getSnapshot().error) void (event.shiftKey ? session.exportCopy() : session.save()); }); return; } if (event.key === 'Enter') { event.preventDefault(); event.currentTarget.blur(); } if (event.key === 'Escape') { event.preventDefault(); setRenaming(false); } }}/>
+          : <button className="document-name-button" disabled={unavailable} title="Rename document" onClick={() => { setTitleDraft(state.name.replace(/\.docx$/i, '')); setRenaming(true); }}><span>{state.name}</span><Icon name="edit" size={14}/></button>}</h1><span className={`document-save-indicator ${state.dirty ? 'has-changes' : ''}`} title={state.dirty ? 'Unsaved changes' : 'Your document stays on this device'}><Icon name={state.dirty ? 'save' : 'check'} size={16}/><span>{state.dirty ? 'Unsaved changes' : state.token ? 'Saved locally' : 'New document'}</span></span></div>
+        <nav ref={setMenuHost} className="main-menu-host" aria-label="Document menus" inert={unavailable}>{!state.ready && <div className="menu-placeholder">File<span>Edit</span><span>View</span><span>Insert</span><span>Format</span><span>Tools</span></div>}</nav>
       </div>
       <div className="header-actions">
         <button className="secondary-button import-document" aria-label="Import DOCX" disabled={unavailable} onClick={() => void session.open()} title="Import DOCX (Ctrl+O)"><Icon name="folder" size={16}/><span>Import</span></button>
@@ -258,11 +258,11 @@ export function App() {
       </div>
     </header>
 
-    {focusMode && <div className="focus-strip"><span><Icon name="focus" size={16}/>Focus Mode{capsLock && <span className="caps-lock-warning" role="status" aria-live="polite"><Icon name="keyboard" size={14}/><span>Caps Lock On</span></span>}</span><button onClick={() => setFocusMode(false)}>Exit Focus Mode <kbd>Esc</kbd></button></div>}
-    {linkError && <div className="error-banner" role="alert"><Icon name="info" size={18}/><span>{linkError}</span><button onClick={() => setLinkError(null)} aria-label="Dismiss Link Error"><Icon name="close" size={18}/></button></div>}
-    {state.error && <div className="error-banner" role="alert"><Icon name="info" size={18}/><span>{state.error}</span><button onClick={session.clearError} aria-label="Dismiss Error"><Icon name="close" size={18}/></button></div>}
+    {focusMode && <div className="focus-strip"><span><Icon name="focus" size={16}/>Focus mode{capsLock && <span className="caps-lock-warning" role="status" aria-live="polite"><Icon name="keyboard" size={14}/><span>Caps lock on</span></span>}</span><button onClick={() => setFocusMode(false)}>Exit focus mode <kbd>Esc</kbd></button></div>}
+    {linkError && <div className="error-banner" role="alert"><Icon name="info" size={18}/><span>{linkError}</span><button onClick={() => setLinkError(null)} aria-label="Dismiss link error"><Icon name="close" size={18}/></button></div>}
+    {state.error && <div className="error-banner" role="alert"><Icon name="info" size={18}/><span>{state.error}</span><button onClick={session.clearError} aria-label="Dismiss error"><Icon name="close" size={18}/></button></div>}
 
-    <main className={`editor-workspace view-${state.view}`} aria-label="Document Editor" aria-busy={state.busy}>
+    <main className={`editor-workspace view-${state.view}`} aria-label="Document editor" aria-busy={state.busy}>
       <div className="editor-container" inert={state.busy}>
         <EditorBoundary><Suspense fallback={<WorkspaceSkeleton/>}>
           <EditorWorkspace session={session} theme={theme} preferences={preferences} onPreferences={updatePreferences}
@@ -273,71 +273,71 @@ export function App() {
         </Suspense></EditorBoundary>
       </div>
       {state.busy && !confirmation && <div className="busy-indicator" role="status">{state.message}…</div>}
-      {state.notice && <div className="workspace-notice" role="status"><span>{state.notice}</span><button className="icon-button" onClick={session.clearNotice} aria-label="Dismiss Export Notification"><Icon name="close" size={16}/></button></div>}
+      {state.notice && <div className="workspace-notice" role="status"><span>{state.notice}</span><button className="icon-button" onClick={session.clearNotice} aria-label="Dismiss export notification"><Icon name="close" size={16}/></button></div>}
     </main>
 
     <footer className="status-bar">
-      <div className="document-status">{preferences.showWordCount && <><button aria-label="Word Count" onClick={openStatistics}>{statistics.words.toLocaleString()} {preferences.wordGoal > 0 ? `/ ${preferences.wordGoal.toLocaleString()} Words` : statistics.words === 1 ? 'Word' : 'Words'}</button><span className="status-separator"/></>}<button aria-label="Go To Page" disabled={!state.ready} onClick={openGoToPage}>{Math.max(1, pageCount)} {pageCount === 1 ? 'Page' : 'Pages'}</button>{capsLock && !focusMode && <><span className="status-separator"/><span className="caps-lock-warning" role="status" aria-live="polite"><Icon name="keyboard" size={14}/><span>Caps Lock On</span></span></>}</div>
-      <div><div ref={setZoomHost} className="status-zoom" inert={unavailable}/><span className="status-separator"/><button aria-label="Continuous View" aria-pressed={state.view === 'continuous'} title={state.view === 'pages' ? 'Switch To Continuous View' : 'Switch To Separate Pages'} disabled={unavailable} onClick={() => session.setView(state.view === 'pages' ? 'continuous' : 'pages')}><Icon name="page" size={14}/>View: {state.view === 'pages' ? 'Separate Pages' : 'Continuous'}</button></div>
+      <div className="document-status">{preferences.showWordCount && <><button aria-label="Word count" onClick={openStatistics}>{statistics.words.toLocaleString()} {preferences.wordGoal > 0 ? `/ ${preferences.wordGoal.toLocaleString()} words` : statistics.words === 1 ? 'word' : 'words'}</button><span className="status-separator"/></>}<button aria-label="Go to page" disabled={!state.ready} onClick={openGoToPage}>{Math.max(1, pageCount)} {pageCount === 1 ? 'page' : 'pages'}</button>{capsLock && !focusMode && <><span className="status-separator"/><span className="caps-lock-warning" role="status" aria-live="polite"><Icon name="keyboard" size={14}/><span>Caps lock on</span></span></>}</div>
+      <div><div ref={setZoomHost} className="status-zoom" inert={unavailable}/><span className="status-separator"/><button aria-label="Continuous view" aria-pressed={state.view === 'continuous'} title={state.view === 'pages' ? 'Switch to continuous view' : 'Switch to separate pages'} disabled={unavailable} onClick={() => session.setView(state.view === 'pages' ? 'continuous' : 'pages')}><Icon name="page" size={14}/>View: {state.view === 'pages' ? 'Separate pages' : 'Continuous'}</button></div>
     </footer>
 
     {settingsLoaded && <Suspense fallback={null}><Settings open={settingsOpen} onClose={() => setSettingsOpen(false)} preferences={preferences} onChange={updatePreferences} appVersion={appVersion} onCheckForUpdates={checkUpdates}/></Suspense>}
-    <Modal open={goToPageOpen} title="Go To Page" onClose={() => setGoToPageOpen(false)} className="page-modal">
+    <Modal open={goToPageOpen} title="Go to page" onClose={() => setGoToPageOpen(false)} className="page-modal">
       <form noValidate onSubmit={(event) => {
         event.preventDefault();
         const page = Number(pageNumber);
-        if (!Number.isInteger(page) || page < 1 || page > pageCount) { setPageError(`Choose A Page From 1 To ${pageCount}.`); return; }
+        if (!Number.isInteger(page) || page < 1 || page > pageCount) { setPageError(`Choose a page from 1 to ${pageCount}.`); return; }
         if (editorRef.current?.scrollToPage(page)) setGoToPageOpen(false);
-        else setPageError('This Page Is Not Ready. Try Again.');
+        else setPageError('This page is not ready. Try again.');
       }}>
-        <label className="page-input-label" htmlFor="page-number">Page Number</label>
+        <label className="page-input-label" htmlFor="page-number">Page number</label>
         <input id="page-number" className="page-number-input" type="number" min="1" max={Math.max(1, pageCount)} step="1" autoFocus value={pageNumber} onChange={(event) => { setPageNumber(event.target.value); setPageError(null); }}/>
-        <p className="modal-description">{pageCount} {pageCount === 1 ? 'Page' : 'Pages'} In This Document.</p>
+        <p className="modal-description">{pageCount} {pageCount === 1 ? 'page' : 'pages'} in this document.</p>
         {pageError && <p className="form-error" role="alert">{pageError}</p>}
-        <footer className="modal-footer"><button type="submit" className="primary-button">Go To Page</button></footer>
+        <footer className="modal-footer"><button type="submit" className="primary-button">Go to page</button></footer>
       </form>
     </Modal>
-    <Modal open={shortcutsOpen} title="Keyboard Shortcuts" onClose={() => setShortcutsOpen(false)} className="shortcuts-modal">
+    <Modal open={shortcutsOpen} title="Keyboard shortcuts" onClose={() => setShortcutsOpen(false)} className="shortcuts-modal">
       <div className="shortcut-list">{[
-        ['New Document', 'Ctrl+N'], ['Open Document', 'Ctrl+O'], ['Save', 'Ctrl+S'], ['Export DOCX', 'Ctrl+Shift+S'],
-        ['Find', 'Ctrl+F'], ['Find And Replace', 'Ctrl+Shift+I'], ['Go To Page', 'Ctrl+G'], ['Focus Mode', 'Ctrl+Shift+F'],
-        ['Settings', 'Ctrl+,'], ['Keyboard Shortcuts', 'Ctrl+/'], ['Undo', 'Ctrl+Z'], ['Redo', 'Ctrl+Y'],
+        ['New document', 'Ctrl+N'], ['Open document', 'Ctrl+O'], ['Save', 'Ctrl+S'], ['Export DOCX', 'Ctrl+Shift+S'],
+        ['Find', 'Ctrl+F'], ['Find and replace', 'Ctrl+Shift+I'], ['Go to page', 'Ctrl+G'], ['Focus mode', 'Ctrl+Shift+F'],
+        ['Settings', 'Ctrl+,'], ['Keyboard shortcuts', 'Ctrl+/'], ['Undo', 'Ctrl+Z'], ['Redo', 'Ctrl+Y'],
         ['Bold', 'Ctrl+B'], ['Italic', 'Ctrl+I'], ['Underline', 'Ctrl+U']
       ].map(([action, shortcut]) => <div key={action}><span>{action}</span><kbd>{shortcut}</kbd></div>)}</div>
       <footer className="modal-footer"><button className="primary-button" onClick={() => setShortcutsOpen(false)}>Done</button></footer>
     </Modal>
-    <Modal open={statisticsOpen} title="Word Count" onClose={closeStatistics} className="statistics-modal">
-      {statisticsPending && <p className="modal-description" role="status">Counting Text...</p>}
+    <Modal open={statisticsOpen} title="Word count" onClose={closeStatistics} className="statistics-modal">
+      {statisticsPending && <p className="modal-description" role="status">Counting text...</p>}
       {statisticsError && <p className="form-error" role="alert">{statisticsError}</p>}
-      {selectionStatistics && <section aria-label="Selected Text Statistics">
-        <h3 className="statistics-heading">Selected Text</h3><dl className="statistics-grid">
+      {selectionStatistics && <section aria-label="Selected text statistics">
+        <h3 className="statistics-heading">Selected text</h3><dl className="statistics-grid">
           <div><dt>Words</dt><dd>{selectionStatistics.words.toLocaleString()}</dd></div>
           <div><dt>Characters</dt><dd>{selectionStatistics.characters.toLocaleString()}</dd></div>
-          <div><dt>Characters Without Spaces</dt><dd>{selectionStatistics.charactersWithoutSpaces.toLocaleString()}</dd></div>
+          <div><dt>Characters without spaces</dt><dd>{selectionStatistics.charactersWithoutSpaces.toLocaleString()}</dd></div>
         </dl>
       </section>}
-      <section aria-label="Document Statistics" aria-busy={statisticsPending}>
-      <h3 className="statistics-heading">Whole Document</h3><dl className="statistics-grid">
+      <section aria-label="Document statistics" aria-busy={statisticsPending}>
+      <h3 className="statistics-heading">Whole document</h3><dl className="statistics-grid">
         <div><dt>Words</dt><dd>{statistics.words.toLocaleString()}</dd></div><div><dt>Pages</dt><dd>{pageCount}</dd></div>
-        <div><dt>Characters</dt><dd>{statistics.characters.toLocaleString()}</dd></div><div><dt>Characters Without Spaces</dt><dd>{statistics.charactersWithoutSpaces.toLocaleString()}</dd></div>
-        <div><dt>Estimated Reading Time</dt><dd>{Math.ceil(statistics.words / 200)} Min</dd></div>
-      </dl>{preferences.wordGoal > 0 && <div className="writing-goal"><div><span>Writing Goal</span><strong>{Math.min(100, Math.floor(statistics.words / preferences.wordGoal * 100))}%</strong></div><progress aria-label="Writing Goal Progress" value={Math.min(statistics.words, preferences.wordGoal)} max={preferences.wordGoal}/><p>{statistics.words >= preferences.wordGoal ? 'Goal Reached.' : `${(preferences.wordGoal - statistics.words).toLocaleString()} Words To Go.`}</p></div>}
+        <div><dt>Characters</dt><dd>{statistics.characters.toLocaleString()}</dd></div><div><dt>Characters without spaces</dt><dd>{statistics.charactersWithoutSpaces.toLocaleString()}</dd></div>
+        <div><dt>Estimated reading time</dt><dd>{Math.ceil(statistics.words / 200)} min</dd></div>
+      </dl>{preferences.wordGoal > 0 && <div className="writing-goal"><div><span>Writing goal</span><strong>{Math.min(100, Math.floor(statistics.words / preferences.wordGoal * 100))}%</strong></div><progress aria-label="Writing goal progress" value={Math.min(statistics.words, preferences.wordGoal)} max={preferences.wordGoal}/><p>{statistics.words >= preferences.wordGoal ? 'Goal reached.' : `${(preferences.wordGoal - statistics.words).toLocaleString()} words to go.`}</p></div>}
       </section><footer className="modal-footer"><button className="primary-button" onClick={closeStatistics}>Done</button></footer>
     </Modal>
-    <Modal open={update !== null} title="Update Available" onClose={() => { if (!updateInstalling) setUpdate(null); }} className="update-modal">
-      <p className="modal-description">InsynDoc {update?.version} Is Available.</p>
+    <Modal open={update !== null} title="Update available" onClose={() => { if (!updateInstalling) setUpdate(null); }} className="update-modal">
+      <p className="modal-description">InsynDoc {update?.version} is available.</p>
       {update?.notes && <p className="update-notes">{update.notes}</p>}
-      {updateInstalling && <p className="modal-description" role="status">{updateProgress?.total ? `Downloading Update... ${Math.min(100, Math.round(updateProgress.downloaded / updateProgress.total * 100))}%` : 'Downloading Update...'}</p>}
+      {updateInstalling && <p className="modal-description" role="status">{updateProgress?.total ? `Downloading update... ${Math.min(100, Math.round(updateProgress.downloaded / updateProgress.total * 100))}%` : 'Downloading update...'}</p>}
       {updateError && <p className="form-error" role="alert">{updateError}</p>}
       <footer className="modal-footer">
         {updateInstalling
           ? <button className="secondary-button" disabled>Installing...</button>
-          : <><button className="text-button" onClick={() => setUpdate(null)}>Later</button><button className="text-button" onClick={dismissUpdate}>Don't Ask Again</button><button className="primary-button" onClick={() => void applyUpdate()}>Update Now</button></>}
+          : <><button className="text-button" onClick={() => setUpdate(null)}>Later</button><button className="text-button" onClick={dismissUpdate}>Don't ask again</button><button className="primary-button" onClick={() => void applyUpdate()}>Update now</button></>}
       </footer>
     </Modal>
-    <Modal open={confirmation} title="Save Your Changes?" onClose={() => resolveConfirmation('cancel')} className="unsaved-dialog">
-      <p className="modal-description">Your Changes To <strong>{state.name}</strong> Have Not Been Saved.</p>
-      <div className="dialog-actions"><button className="text-button" onClick={() => resolveConfirmation('discard')}>{state.message === 'Closing Document' ? 'Close Without Saving' : 'Discard Changes'}</button><button className="secondary-button" autoFocus onClick={() => resolveConfirmation('cancel')}>Cancel</button><button className="primary-button" onClick={() => resolveConfirmation('save')}>Save Changes</button></div>
+    <Modal open={confirmation} title="Save your changes?" onClose={() => resolveConfirmation('cancel')} className="unsaved-dialog">
+      <p className="modal-description">Your changes to <strong>{state.name}</strong> have not been saved.</p>
+      <div className="dialog-actions"><button className="text-button" onClick={() => resolveConfirmation('discard')}>{state.message.toLowerCase() === 'closing document' ? 'Close without saving' : 'Discard changes'}</button><button className="secondary-button" autoFocus onClick={() => resolveConfirmation('cancel')}>Cancel</button><button className="primary-button" onClick={() => resolveConfirmation('save')}>Save changes</button></div>
     </Modal>
   </div>;
 }

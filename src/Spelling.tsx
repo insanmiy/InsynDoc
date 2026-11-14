@@ -67,7 +67,7 @@ export function Spelling({ preferences, onPreferences, request, documentKey }: {
     setTruncated(false);
     if (!editor || !preferences.checkSpelling) {
       editor?.clearHighlights('spelling');
-      openFirst.current = () => setPopup({ issue: null, left: 24, top: 140, suggestions: [], message: 'Turn On Check Spelling In Settings To Check This Document.' });
+      openFirst.current = () => setPopup({ issue: null, left: 24, top: 140, suggestions: [], message: 'Turn on check spelling in settings to check this document.' });
       return;
     }
     let worker: Worker | null = null;
@@ -102,7 +102,7 @@ export function Spelling({ preferences, onPreferences, request, documentKey }: {
     openFirst.current = () => {
       if (!checked) {
         reviewPending.current = true;
-        setPopup({ issue: null, suggestions: [], message: 'Checking Spelling...', focus: true, ...position() });
+        setPopup({ issue: null, suggestions: [], message: 'Checking spelling...', focus: true, ...position() });
         return;
       }
       if (issues[0]) {
@@ -112,7 +112,7 @@ export function Spelling({ preferences, onPreferences, request, documentKey }: {
         requestAnimationFrame(() => { if (!disposed && issueVersion === version) openIssue(issue, undefined, true); });
         return;
       }
-      setPopup({ issue: null, suggestions: [], message: 'No Spelling Issues Found In English (US). Sentence Context Checked Too.', focus: true, ...position() });
+      setPopup({ issue: null, suggestions: [], message: 'No spelling issues found in English (US). Sentence context checked too.', focus: true, ...position() });
     };
     const check = (): void => {
       if (disposed) return;
@@ -151,8 +151,8 @@ export function Spelling({ preferences, onPreferences, request, documentKey }: {
       if (disposed) return;
       editor.clearHighlights('spelling');
       dismiss();
-      setError('Spelling Is Unavailable. Your Document Can Still Be Edited.');
-      openFirst.current = () => setPopup({ issue: null, suggestions: [], message: 'Spelling Is Unavailable. Use Retry Spelling To Try Again.', focus: true, ...position() });
+      setError('Spelling is unavailable. Your document can still be edited.');
+      openFirst.current = () => setPopup({ issue: null, suggestions: [], message: 'Spelling is unavailable. Use retry spelling to try again.', focus: true, ...position() });
     };
     const onWorkerMessage = (event: MessageEvent<SpellingResponse>): void => {
       if (disposed) return;
@@ -259,36 +259,36 @@ export function Spelling({ preferences, onPreferences, request, documentKey }: {
   }
 
   return <>
-    {error && <div className="spelling-error" role="status"><span>{error}</span><button className="text-button" onClick={() => setRetry((value) => value + 1)}>Retry Spelling</button></div>}
-    {popup && createPortal(<div ref={popupElement} className="spelling-popover" role="dialog" aria-label="Spelling Suggestions" style={{ left: popup.left, top: popup.top }} onKeyDown={(event) => {
+    {error && <div className="spelling-error" role="status"><span>{error}</span><button className="text-button" onClick={() => setRetry((value) => value + 1)}>Retry spelling</button></div>}
+    {popup && createPortal(<div ref={popupElement} className="spelling-popover" role="dialog" aria-label="Spelling suggestions" style={{ left: popup.left, top: popup.top }} onKeyDown={(event) => {
       if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); close(); }
     }}>
-      <div className="spelling-heading"><strong>{popup.issue?.word ?? 'Spelling'}</strong><button className="icon-button" aria-label="Close Spelling Suggestions" onClick={close}><Icon name="close" size={16}/></button></div>
-      {truncated && <p role="status" className="spelling-caption">Showing The First 1,000 Spelling Issues. Fix Some To See More.</p>}
+      <div className="spelling-heading"><strong>{popup.issue?.word ?? 'Spelling'}</strong><button className="icon-button" aria-label="Close spelling suggestions" onClick={close}><Icon name="close" size={16}/></button></div>
+      {truncated && <p role="status" className="spelling-caption">Showing the first 1,000 spelling issues. Fix some to see more.</p>}
       {popup.issue ? <>
-        <p className="spelling-caption">{popup.issue.kind === 'grammar' ? 'Grammar Suggestion' : 'Spelling Suggestion'}</p>
+        <p className="spelling-caption">{popup.issue.kind === 'grammar' ? 'Grammar suggestion' : 'Spelling suggestion'}</p>
         {popup.issue.message && <p className="spelling-caption">{popup.issue.message}</p>}
-        <div className="spelling-suggestions">{popup.suggestions === null ? <p role="status">Finding Suggestions...</p> : popup.suggestions.length ? popup.suggestions.map((suggestion) => <button key={suggestion} onClick={() => correctWord(suggestion)}>{suggestion || 'Remove Text'}</button>) : <p>No Suggestions Found.</p>}</div>
+        <div className="spelling-suggestions">{popup.suggestions === null ? <p role="status">Finding suggestions...</p> : popup.suggestions.length ? popup.suggestions.map((suggestion) => <button key={suggestion} onClick={() => correctWord(suggestion)}>{suggestion || 'Remove text'}</button>) : <p>No suggestions found.</p>}</div>
         {popup.issue.kind !== 'grammar' && <>
-          <p className="spelling-caption">Suggestions Learn From Corrections You Accept On This Device.</p>
+          <p className="spelling-caption">Suggestions learn from corrections you accept on this device.</p>
           {customWord !== null && <form className="spelling-custom" onSubmit={(event) => {
             event.preventDefault();
             const replacement = customWord.trim();
             if (isSpellingWord(replacement) && spellingKey(replacement) !== spellingKey(popup.issue!.word)) correctWord(replacement);
           }}>
-            <label htmlFor="spelling-custom-word">Correct Word</label>
+            <label htmlFor="spelling-custom-word">Correct word</label>
             <input id="spelling-custom-word" autoFocus autoComplete="off" maxLength={64} value={customWord} onChange={(event) => setCustomWord(event.target.value)}/>
-            <button type="submit" className="secondary-button" disabled={!isSpellingWord(customWord.trim()) || spellingKey(customWord.trim()) === spellingKey(popup.issue.word)}>Apply Correction</button>
+            <button type="submit" className="secondary-button" disabled={!isSpellingWord(customWord.trim()) || spellingKey(customWord.trim()) === spellingKey(popup.issue.word)}>Apply correction</button>
           </form>}
         </>}
-        {popup.issue.kind !== 'grammar' && <div className="spelling-actions"><button onClick={() => setCustomWord('')}>No Words Match</button></div>}
+        {popup.issue.kind !== 'grammar' && <div className="spelling-actions"><button onClick={() => setCustomWord('')}>No words match</button></div>}
         <div className="spelling-actions"><button onClick={() => { if (popup.issue!.ignoreKey) setIgnoredGrammar((keys) => [...keys, popup.issue!.ignoreKey!]);
           else setIgnored((words) => [...words, popup.issue!.word]);
-          close(); }}>Ignore For This Session</button>{popup.issue.kind !== 'grammar' && <button disabled={preferences.spellingWords.length >= 5000} onClick={() => {
+          close(); }}>Ignore for this session</button>{popup.issue.kind !== 'grammar' && <button disabled={preferences.spellingWords.length >= 5000} onClick={() => {
           const word = popup.issue!.word;
           if (!preferences.spellingWords.some((saved) => spellingKey(saved) === spellingKey(word))) onPreferences({ ...preferences, spellingWords: [...preferences.spellingWords, word] });
           close();
-        }}>Add To Dictionary</button>}</div>
+        }}>Add to dictionary</button>}</div>
       </> : <p role="status" className="spelling-caption">{popup.message}</p>}
     </div>, document.body)}
   </>;

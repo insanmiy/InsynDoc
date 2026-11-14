@@ -50,7 +50,7 @@ export async function checkWriting(paragraphs: readonly SpellingParagraph[], cor
         const start = match.index + match.groups!.prefix.length;
         const word = match.groups!.word;
         const replacement = word === 'ME' ? 'BE' : word === 'Me' ? 'Be' : 'be';
-        addGrammar(start, start + word.length, 'This Sentence Needs The Verb “Be” Here, Rather Than The Pronoun “Me”.', [replacement]);
+        addGrammar(start, start + word.length, 'This sentence needs the verb “be” here, rather than the pronoun “me”.', [replacement]);
       }
     }
     candidates.sort((left, right) => left.start - right.start);

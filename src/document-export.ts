@@ -226,7 +226,7 @@ function epub(model: ExportModel, title: string): Uint8Array {
 }
 
 export async function exportDocument(bytes: Uint8Array, format: ExportFormat, title: string): Promise<ExportedDocument> {
-  if (format === 'pdf') throw new Error('Use The Native PDF Exporter To Download This Document.');
+  if (format === 'pdf') throw new Error('Use the native PDF exporter to download this document.');
   if (format === 'docx') return { bytes: bytes.slice(), extension: 'docx', mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' };
   const model = readExportModel(bytes);
   if (format === 'txt') return { bytes: strToU8(plainText(model.blocks)), extension: 'txt', mime: 'text/plain;charset=utf-8' };

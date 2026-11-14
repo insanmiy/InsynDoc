@@ -367,9 +367,9 @@ function odtBlocks(node: Node, styles: OdtTextStyles, listLevel = 0): DocxBlock[
 function parseOdt(bytes: Uint8Array): DocxBlock[] {
   const parts = unzipSync(bytes);
   const content = parts['content.xml'];
-  if (!content) throw new Error('The ODT File Has No Readable Content.');
+  if (!content) throw new Error('The ODT file has no readable content.');
   const document = new DOMParser().parseFromString(strFromU8(content), 'text/xml');
-  if (document.getElementsByTagName('parsererror').length) throw new Error('The ODT File Could Not Be Read.');
+  if (document.getElementsByTagName('parsererror').length) throw new Error('The ODT file could not be read.');
   const text = document.getElementsByTagNameNS(OFFICE_NS, 'text')[0];
   const blocks = text ? odtBlocks(text, odtTextStyles(document)) : [];
   return blocks.length ? blocks : [paragraph([])];
@@ -388,7 +388,7 @@ export function importBlocks(_name: string, bytes: Uint8Array, format: ImportFor
     case 'odt':
       return parseOdt(bytes);
     default:
-      throw new Error('This File Type Cannot Be Imported.');
+      throw new Error('This file type cannot be imported.');
   }
 }
 

@@ -10,25 +10,25 @@ use crate::statistics::{count_text, TextStatistics};
 #[tauri::command]
 async fn document_statistics(text: String) -> Result<TextStatistics, String> {
     tauri::async_runtime::spawn_blocking(move || count_text(&text))
-        .await.map_err(|error| format!("Could Not Count Document Text. {error}"))
+        .await.map_err(|error| format!("Could not count document text. {error}"))
 }
 
 #[tauri::command]
 async fn open_external_link(url: String, browser_path: Option<String>) -> Result<(), String> {
     tauri::async_runtime::spawn_blocking(move || links::open(&url, browser_path.as_deref()))
-        .await.map_err(|error| format!("Could Not Open The Browser. {error}"))?
+        .await.map_err(|error| format!("Could not open the browser. {error}"))?
 }
 
 #[tauri::command]
 async fn choose_link_browser() -> Result<Option<String>, String> {
     tauri::async_runtime::spawn_blocking(|| {
-        let dialog = rfd::FileDialog::new().set_title("Choose A Browser Application");
+        let dialog = rfd::FileDialog::new().set_title("Choose a browser application");
         #[cfg(target_os = "windows")]
-        let dialog = dialog.add_filter("Browser Application", &["exe"]);
+        let dialog = dialog.add_filter("Browser application", &["exe"]);
         let Some(path) = dialog.pick_file() else { return Ok(None) };
         links::validate_browser(&path)?;
         Ok(Some(path.to_string_lossy().into_owned()))
-    }).await.map_err(|error| format!("Could Not Choose A Browser. {error}"))?
+    }).await.map_err(|error| format!("Could not choose a browser. {error}"))?
 }
 
 #[derive(Default)]
@@ -48,7 +48,7 @@ async fn recent_documents(app: tauri::AppHandle) -> Result<Vec<RecentDocument>, 
     let directory = app.path().app_data_dir().map_err(|error| error.to_string())?;
     tauri::async_runtime::spawn_blocking(move || {
         let access = app.state::<RecentAccess>();
-        let _guard = access.0.lock().map_err(|_| "Recent Documents Are Unavailable.".to_string())?;
+        let _guard = access.0.lock().map_err(|_| "Recent documents are unavailable.".to_string())?;
         let paths = recent::list(&directory)?;
         let tokens = app.state::<FileSessions>().sync_recent(&paths)?;
         paths.into_iter().zip(tokens).map(|(path, token)| {
@@ -67,7 +67,7 @@ async fn remember_document(app: tauri::AppHandle, token: String, sessions: State
     let directory = app.path().app_data_dir().map_err(|error| error.to_string())?;
     tauri::async_runtime::spawn_blocking(move || {
         let access = app.state::<RecentAccess>();
-        let _guard = access.0.lock().map_err(|_| "Recent Documents Are Unavailable.".to_string())?;
+        let _guard = access.0.lock().map_err(|_| "Recent documents are unavailable.".to_string())?;
         recent::remember(&directory, &path)?;
         app.state::<FileSessions>().sync_recent(&recent::list(&directory)?)?;
         Ok(())
@@ -79,7 +79,7 @@ async fn clear_recent_documents(app: tauri::AppHandle) -> Result<(), String> {
     let directory = app.path().app_data_dir().map_err(|error| error.to_string())?;
     tauri::async_runtime::spawn_blocking(move || {
         let access = app.state::<RecentAccess>();
-        let _guard = access.0.lock().map_err(|_| "Recent Documents Are Unavailable.".to_string())?;
+        let _guard = access.0.lock().map_err(|_| "Recent documents are unavailable.".to_string())?;
         recent::clear(&directory)?;
         app.state::<FileSessions>().sync_recent(&[])?;
         Ok(())
@@ -102,29 +102,29 @@ async fn export_plain_text(text: String, token: Option<String>, sessions: State<
         .map(|path| path.with_extension("txt")).as_deref().map(files::document_name)
         .unwrap_or_else(|| "Untitled.txt".into());
     tauri::async_runtime::spawn_blocking(move || {
-        let path = rfd::FileDialog::new().set_title("Export Plain Text").add_filter("Plain Text", &["txt"]).set_file_name(suggested).save_file();
+        let path = rfd::FileDialog::new().set_title("Export plain text").add_filter("Plain text", &["txt"]).set_file_name(suggested).save_file();
         let Some(path) = path else { return Ok(None) };
         if !path.extension().is_some_and(|extension| extension.eq_ignore_ascii_case("txt")) {
-            return Err("Use The TXT Extension When Exporting Plain Text.".into());
+            return Err("Use the TXT extension when exporting plain text.".into());
         }
         files::write_text(&path, &text)?;
         Ok(Some(files::document_name(&path)))
-    }).await.map_err(|error| format!("Could Not Export Plain Text. {error}"))?
+    }).await.map_err(|error| format!("Could not export plain text. {error}"))?
 }
 
 #[tauri::command]
 async fn download_document(request: Request<'_>) -> Result<Option<String>, String> {
-    let InvokeBody::Raw(packet) = request.body() else { return Err("Use A Binary Download Transfer.".into()) };
+    let InvokeBody::Raw(packet) = request.body() else { return Err("Use a binary download transfer.".into()) };
     let (metadata, bytes) = downloads::read_request(packet)?;
     let bytes = bytes.to_vec();
     let suggested = metadata.suggested_name()?;
     tauri::async_runtime::spawn_blocking(move || {
-        let path = rfd::FileDialog::new().set_title("Download Document")
+        let path = rfd::FileDialog::new().set_title("Download document")
             .add_filter(metadata.format.label(), &[metadata.format.extension()]).set_file_name(suggested).save_file();
         let Some(path) = path else { return Ok(None) };
         downloads::write_download(&path, metadata.format, &bytes)?;
         Ok(Some(files::document_name(&path)))
-    }).await.map_err(|error| format!("Could Not Download The Document. {error}"))?
+    }).await.map_err(|error| format!("Could not download the document. {error}"))?
 }
 
 #[tauri::command]
@@ -133,7 +133,7 @@ async fn download_pdf(window: tauri::WebviewWindow, name: String) -> Result<Opti
     let suggested = downloads::DownloadMetadata { format, name }.suggested_name()?;
     let selected = tauri::async_runtime::spawn_blocking(move || {
         rfd::FileDialog::new().set_title("Download PDF").add_filter(format.label(), &[format.extension()]).set_file_name(suggested).save_file()
-    }).await.map_err(|error| format!("Could Not Choose A PDF Download Location. {error}"))?;
+    }).await.map_err(|error| format!("Could not choose a PDF download location. {error}"))?;
     let Some(path) = selected else { return Ok(None) };
     format.validate_destination(&path)?;
     pdf::print_to_file(window, path.clone()).await?;
@@ -164,7 +164,7 @@ struct SaveMetadata {
 fn document_response(metadata: Option<SavedFile>, bytes: &[u8]) -> Result<Response, String> {
     let header = serde_json::to_vec(&metadata).map_err(|error| error.to_string())?;
     if header.len() > MAX_METADATA_BYTES || bytes.len() > files::MAX_DOCUMENT_BYTES {
-        return Err("The Document Transfer Is Too Large.".into());
+        return Err("The document transfer is too large.".into());
     }
     let mut packet = Vec::with_capacity(4 + header.len() + bytes.len());
     packet.extend_from_slice(&(header.len() as u32).to_le_bytes());
@@ -174,15 +174,15 @@ fn document_response(metadata: Option<SavedFile>, bytes: &[u8]) -> Result<Respon
 }
 
 fn save_request(body: &InvokeBody) -> Result<(SaveMetadata, Vec<u8>), String> {
-    let InvokeBody::Raw(packet) = body else { return Err("Use A Binary Document Transfer.".into()) };
-    let prefix: [u8; 4] = packet.get(..4).ok_or("Invalid Document Transfer.")?.try_into().map_err(|_| "Invalid Document Transfer.")?;
+    let InvokeBody::Raw(packet) = body else { return Err("Use a binary document transfer.".into()) };
+    let prefix: [u8; 4] = packet.get(..4).ok_or("Invalid document transfer.")?.try_into().map_err(|_| "Invalid document transfer.")?;
     let length = u32::from_le_bytes(prefix) as usize;
     if length > MAX_METADATA_BYTES || length > packet.len() - 4 {
-        return Err("Invalid Document Metadata.".into());
+        return Err("Invalid document metadata.".into());
     }
     let bytes = &packet[4 + length..];
-    if bytes.len() > files::MAX_DOCUMENT_BYTES { return Err("The Document Exceeds The 25 MB Limit.".into()); }
-    let metadata = serde_json::from_slice(&packet[4..4 + length]).map_err(|error| format!("Invalid Document Metadata. {error}"))?;
+    if bytes.len() > files::MAX_DOCUMENT_BYTES { return Err("The document exceeds the 25 MB limit.".into()); }
+    let metadata = serde_json::from_slice(&packet[4..4 + length]).map_err(|error| format!("Invalid document metadata. {error}"))?;
     Ok((metadata, bytes.to_vec()))
 }
 
@@ -198,7 +198,7 @@ async fn open_startup_document(startup: State<'_, StartupDocument>, sessions: St
             files::read_import(&read_path).map(|(bytes, format)| (bytes, files::document_name(&check_path), Some(format), false))
         }
     })
-        .await.map_err(|error| format!("Could Not Open The Startup Document. {error}"))??;
+        .await.map_err(|error| format!("Could not open the startup document. {error}"))??;
     let token = if registered { sessions.register(path)? } else { String::new() };
     document_response(Some(SavedFile { token, name, import_format }), &bytes)
 }
@@ -206,11 +206,11 @@ async fn open_startup_document(startup: State<'_, StartupDocument>, sessions: St
 #[tauri::command]
 async fn open_document(sessions: State<'_, FileSessions>) -> Result<Response, String> {
     let selection = tauri::async_runtime::spawn_blocking(|| {
-        let path = rfd::FileDialog::new().set_title("Open Document")
-            .add_filter("Word Document", &["docx"])
+        let path = rfd::FileDialog::new().set_title("Open document")
+            .add_filter("Word document", &["docx"])
             .add_filter("Markdown", &["md", "markdown"])
-            .add_filter("HTML Document", &["html", "htm"])
-            .add_filter("Plain Text", &["txt"])
+            .add_filter("HTML document", &["html", "htm"])
+            .add_filter("Plain text", &["txt"])
             .add_filter("OpenDocument Text", &["odt"])
             .pick_file();
         path.map(|path| {
@@ -220,7 +220,7 @@ async fn open_document(sessions: State<'_, FileSessions>) -> Result<Response, St
                 files::read_import(&path).map(|(bytes, format)| (path, bytes, Some(format)))
             }
         }).transpose()
-    }).await.map_err(|error| format!("Could Not Open The File Dialog. {error}"))??;
+    }).await.map_err(|error| format!("Could not open the file dialog. {error}"))??;
 
     let Some((path, bytes, import_format)) = selection else { return document_response(None, &[]) };
     let name = files::document_name(&path);
@@ -240,8 +240,8 @@ async fn save_document(app: tauri::AppHandle, request: Request<'_>, sessions: St
         }
         let path = if save_as {
             let suggested_name = name.unwrap_or_else(|| current_path.as_deref().map(files::document_name).unwrap_or_else(|| "Untitled.docx".into()));
-            let title = if activate { "Save Document As" } else { "Export DOCX Copy" };
-            let mut dialog = rfd::FileDialog::new().set_title(title).add_filter("Word Document", &["docx"]).set_file_name(suggested_name);
+            let title = if activate { "Save document as" } else { "Export DOCX copy" };
+            let mut dialog = rfd::FileDialog::new().set_title(title).add_filter("Word document", &["docx"]).set_file_name(suggested_name);
             if let Some(parent) = current_path.as_deref().and_then(|path| path.parent()) {
                 dialog = dialog.set_directory(parent);
             }
@@ -250,11 +250,11 @@ async fn save_document(app: tauri::AppHandle, request: Request<'_>, sessions: St
 
         let Some(path) = path else { return Ok(None) };
         if !path.extension().is_some_and(|extension| extension.eq_ignore_ascii_case("docx")) {
-            return Err("Use The DOCX Extension When Saving A Document.".into());
+            return Err("Use the DOCX extension when saving a document.".into());
         }
         files::write_document(&path, &bytes)?;
         Ok::<_, String>(Some(path))
-    }).await.map_err(|error| format!("Could Not Save The Document. {error}"))??;
+    }).await.map_err(|error| format!("Could not save the document. {error}"))??;
 
     let Some(path) = saved_path else { return Ok(None) };
     let name = files::document_name(&path);
@@ -273,7 +273,7 @@ async fn rename_document(app: tauri::AppHandle, token: String, name: String) -> 
     let directory = app.path().app_data_dir().map_err(|error| error.to_string())?;
     tauri::async_runtime::spawn_blocking(move || {
         let access = app.state::<RecentAccess>();
-        let _guard = access.0.lock().map_err(|_| "Recent Documents Are Unavailable.".to_string())?;
+        let _guard = access.0.lock().map_err(|_| "Recent documents are unavailable.".to_string())?;
         let renamed = files::rename_document(&path, &name)?;
         app.state::<FileSessions>().rename(&token, renamed.clone())?;
         replace_recent_path(&directory, &path, &renamed)?;
@@ -297,15 +297,15 @@ fn replace_recent_path(directory: &Path, previous: &Path, renamed: &Path) -> Res
 }
 
 fn raw_document_request(body: &InvokeBody) -> Result<(serde_json::Value, Vec<u8>), String> {
-    let InvokeBody::Raw(packet) = body else { return Err("Use A Binary Document Transfer.".into()) };
-    let prefix: [u8; 4] = packet.get(..4).ok_or("Invalid Document Transfer.")?.try_into().map_err(|_| "Invalid Document Transfer.")?;
+    let InvokeBody::Raw(packet) = body else { return Err("Use a binary document transfer.".into()) };
+    let prefix: [u8; 4] = packet.get(..4).ok_or("Invalid document transfer.")?.try_into().map_err(|_| "Invalid document transfer.")?;
     let length = u32::from_le_bytes(prefix) as usize;
     if length > MAX_METADATA_BYTES || length > packet.len() - 4 {
-        return Err("Invalid Document Metadata.".into());
+        return Err("Invalid document metadata.".into());
     }
     let bytes = &packet[4 + length..];
-    if bytes.len() > files::MAX_DOCUMENT_BYTES { return Err("The Document Exceeds The 25 MB Limit.".into()); }
-    let metadata: serde_json::Value = serde_json::from_slice(&packet[4..4 + length]).map_err(|error| format!("Invalid Document Metadata. {error}"))?;
+    if bytes.len() > files::MAX_DOCUMENT_BYTES { return Err("The document exceeds the 25 MB limit.".into()); }
+    let metadata: serde_json::Value = serde_json::from_slice(&packet[4..4 + length]).map_err(|error| format!("Invalid document metadata. {error}"))?;
     Ok((metadata, bytes.to_vec()))
 }
 
@@ -319,14 +319,14 @@ struct SnapshotMetadata {
 #[tauri::command]
 async fn write_document_snapshot(app: tauri::AppHandle, request: Request<'_>, sessions: State<'_, FileSessions>) -> Result<(), String> {
     let (metadata, bytes) = raw_document_request(request.body())?;
-    let metadata: SnapshotMetadata = serde_json::from_value(metadata).map_err(|error| format!("Invalid Document Metadata. {error}"))?;
+    let metadata: SnapshotMetadata = serde_json::from_value(metadata).map_err(|error| format!("Invalid document metadata. {error}"))?;
     let token = metadata.token.filter(|value| !value.is_empty());
     let key = snapshots::snapshot_key(sessions.inner(), token.as_deref(), &metadata.name)?;
     let directory = app.path().app_data_dir().map_err(|error| error.to_string())?;
     tauri::async_runtime::spawn_blocking(move || {
         snapshots::write(&directory, &key, &bytes)?;
         Ok(())
-    }).await.map_err(|error| format!("Could Not Save The Snapshot. {error}"))?
+    }).await.map_err(|error| format!("Could not save the snapshot. {error}"))?
 }
 
 #[tauri::command]
@@ -379,10 +379,10 @@ async fn document_snapshot_status(app: tauri::AppHandle, token: Option<String>, 
 #[tauri::command]
 async fn save_document_template(app: tauri::AppHandle, request: Request<'_>) -> Result<templates::TemplateInfo, String> {
     let (metadata, bytes) = raw_document_request(request.body())?;
-    let name = metadata.get("name").and_then(|value| value.as_str()).ok_or("Template Metadata Requires A Name.")?.to_string();
+    let name = metadata.get("name").and_then(|value| value.as_str()).ok_or("Template metadata requires a name.")?.to_string();
     let directory = app.path().app_data_dir().map_err(|error| error.to_string())?.join("Templates");
     tauri::async_runtime::spawn_blocking(move || templates::save(&directory, &name, &bytes))
-        .await.map_err(|error| format!("Could Not Save The Template. {error}"))?
+        .await.map_err(|error| format!("Could not save the template. {error}"))?
 }
 
 #[tauri::command]
@@ -410,13 +410,13 @@ async fn delete_document_template(app: tauri::AppHandle, id: String) -> Result<(
 #[tauri::command]
 async fn installed_fonts() -> Result<Vec<fonts::InstalledFont>, String> {
     tauri::async_runtime::spawn_blocking(fonts::installed_fonts)
-        .await.map_err(|error| format!("Could Not List Installed Fonts. {error}"))?
+        .await.map_err(|error| format!("Could not list installed fonts. {error}"))?
 }
 
 #[tauri::command]
 async fn read_font_file(path: String) -> Result<Response, String> {
     let bytes = tauri::async_runtime::spawn_blocking(move || fonts::read_font_file(std::path::Path::new(&path)))
-        .await.map_err(|error| format!("Could Not Read The Font File. {error}"))??;
+        .await.map_err(|error| format!("Could not read the font file. {error}"))??;
     Ok(Response::new(bytes))
 }
 
@@ -449,7 +449,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![open_external_link, choose_link_browser, open_startup_document, open_document, save_document, rename_document, document_statistics, recent_documents, remember_document, clear_recent_documents, open_recent_document, export_plain_text, download_document, download_pdf, write_document_snapshot, list_document_snapshots, read_document_snapshot, document_snapshot_status, save_document_template, list_document_templates, read_document_template, delete_document_template, installed_fonts, read_font_file, caps_lock_on])
         .run(tauri::generate_context!())
-        .expect("Could Not Start InsynDoc");
+        .expect("Could not start InsynDoc");
 }
 
 #[cfg(test)]

@@ -11,7 +11,7 @@ impl StartupDocument {
         let mut arguments = arguments.into_iter().skip(1);
         let pending = arguments.next().map(|argument| {
             if arguments.next().is_some() {
-                return Err("Open One DOCX File Per Window.".into());
+                return Err("Open one DOCX file per window.".into());
             }
             let path = PathBuf::from(argument);
             let supported = path.extension().is_some_and(|extension| {
@@ -19,7 +19,7 @@ impl StartupDocument {
                     || crate::files::IMPORT_EXTENSIONS.iter().any(|import| extension.eq_ignore_ascii_case(import))
             });
             if !supported {
-                return Err("Choose A DOCX, Markdown, HTML, Text, Or ODT File.".into());
+                return Err("Choose a DOCX, markdown, HTML, text, or ODT file.".into());
             }
             Ok(path)
         });
@@ -27,7 +27,7 @@ impl StartupDocument {
     }
 
     pub fn take(&self) -> Result<Option<PathBuf>, String> {
-        self.pending.lock().map_err(|_| "The Startup Document Is Unavailable. Reopen The App.".to_string())?
+        self.pending.lock().map_err(|_| "The startup document is unavailable. Reopen the app.".to_string())?
             .take().transpose()
     }
 }

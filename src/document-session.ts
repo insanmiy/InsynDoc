@@ -46,7 +46,7 @@ export interface SessionHooks {
 export class DocumentSession {
   private state: SessionState = {
     name: 'Untitled.docx', token: null, dirty: false, busy: false,
-    ready: false, error: null, view: 'pages', message: 'Opening Editor', notice: null
+    ready: false, error: null, view: 'pages', message: 'Opening editor', notice: null
   };
   private listeners = new Set<() => void>();
   private adapter: DocumentAdapter | null = null;
@@ -80,21 +80,21 @@ export class DocumentSession {
 
   changed = (): void => {
     this.revision += 1;
-    if (!this.state.dirty) this.update({ dirty: true, message: 'Unsaved Changes' });
+    if (!this.state.dirty) this.update({ dirty: true, message: 'Unsaved changes' });
   };
 
   setView = (view: ViewMode): void => this.update({ view });
   clearError = (): void => this.update({ error: null });
   clearNotice = (): void => this.update({ notice: null });
 
-  rename = (title: string): Promise<void> => this.run('Renaming Document', async () => {
+  rename = (title: string): Promise<void> => this.run('Renaming document', async () => {
     const trimmed = title.trim();
-    if (!trimmed || /[<>:"/\\|?*\u0000-\u001f]/u.test(trimmed) || /[. ]$/.test(trimmed)) throw new Error('Choose A Name Without Slashes, Reserved Characters, Or A Trailing Dot.');
+    if (!trimmed || /[<>:"/\\|?*\u0000-\u001f]/u.test(trimmed) || /[. ]$/.test(trimmed)) throw new Error('Choose a name without slashes, reserved characters, or a trailing dot.');
     const name = /\.docx$/i.test(trimmed) ? trimmed : `${trimmed}.docx`;
-    if (name.length > 180 || name.startsWith('.') || /[\u007f-\u009f]/u.test(name) || /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i.test(name)) throw new Error('Choose A Shorter Name That Is Not Reserved By Windows.');
+    if (name.length > 180 || name.startsWith('.') || /[\u007f-\u009f]/u.test(name) || /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i.test(name)) throw new Error('Choose a shorter name that is not reserved by Windows.');
     if (name === this.state.name) return;
     if (this.state.token) {
-      if (!this.bridge.rename) throw new Error('Document Renaming Is Unavailable.');
+      if (!this.bridge.rename) throw new Error('Document renaming is unavailable.');
       const result = await this.bridge.rename(this.state.token, name);
       this.update(result);
       await this.bridge.remember?.(result.token).catch(() => undefined);
@@ -117,7 +117,7 @@ export class DocumentSession {
       : await this.bridge.save(bytes, this.state.token, false, this.state.name);
     if (!result) return false;
     const dirty = revision !== this.revision;
-    this.update({ ...result, dirty, message: dirty ? 'Unsaved Changes' : 'Saved To This Computer' });
+    this.update({ ...result, dirty, message: dirty ? 'Unsaved changes' : 'Saved to this computer' });
     await this.bridge.remember?.(result.token).catch(() => undefined);
     return !dirty;
   }
@@ -138,7 +138,7 @@ export class DocumentSession {
     } catch (error: unknown) {
       this.update({ error: error instanceof Error ? error.message : String(error) });
     } finally {
-      this.update({ busy: false, message: this.state.dirty ? 'Unsaved Changes' : 'Ready' });
+      this.update({ busy: false, message: this.state.dirty ? 'Unsaved changes' : 'Ready' });
       if (this.closeRequested) {
         this.closeRequested = false;
         void this.close();
@@ -146,14 +146,14 @@ export class DocumentSession {
     }
   }
 
-  newDocument = (): Promise<void> => this.run('Creating Document', async () => {
+  newDocument = (): Promise<void> => this.run('Creating document', async () => {
     if (!await this.canReplace()) return;
     await this.adapter!.load();
     this.revision = 0;
     this.update({ name: 'Untitled.docx', token: null, dirty: false });
   });
 
-  open = (): Promise<void> => this.run('Opening Document', async () => {
+  open = (): Promise<void> => this.run('Opening document', async () => {
     if (!await this.canReplace()) return;
     const file = await this.bridge.open();
     if (!file) return;
@@ -168,7 +168,7 @@ export class DocumentSession {
     this.adoptedStartupFile = file;
   };
 
-  openStartup = (): Promise<void> => this.run('Opening Document', async () => {
+  openStartup = (): Promise<void> => this.run('Opening document', async () => {
     const adopted = this.adoptedStartupFile;
     if (adopted) {
       this.adoptedStartupFile = null;
@@ -185,7 +185,7 @@ export class DocumentSession {
     if (file) await this.loadFile(file);
   });
 
-  openRecent = (token: string): Promise<void> => this.run('Opening Recent Document', async () => {
+  openRecent = (token: string): Promise<void> => this.run('Opening recent document', async () => {
     if (!this.bridge.openRecent || !await this.canReplace()) return;
     const file = await this.bridge.openRecent(token);
     await this.loadFile(file);
@@ -209,18 +209,18 @@ export class DocumentSession {
     if (token) await this.bridge.remember?.(token).catch(() => undefined);
   }
 
-  openTemplate = (name: string, bytes: Uint8Array): Promise<void> => this.run('Opening Template', async () => {
+  openTemplate = (name: string, bytes: Uint8Array): Promise<void> => this.run('Opening template', async () => {
     if (!await this.canReplace()) return;
     await this.adapter!.load(bytes);
     this.revision = 0;
     this.update({ name, token: null, dirty: false });
   });
 
-  save = (): Promise<void> => this.run('Saving Document', async () => {
+  save = (): Promise<void> => this.run('Saving document', async () => {
     await this.saveCurrent(false);
   });
 
-  saveAs = (): Promise<void> => this.run('Saving Document As', async () => {
+  saveAs = (): Promise<void> => this.run('Saving document as', async () => {
     await this.saveCurrent(true);
   });
 
@@ -230,15 +230,15 @@ export class DocumentSession {
     if (result) this.update({ notice: `Exported ${result.name}` });
   });
 
-  download = (format: ExportFormat): Promise<void> => this.run('Preparing Download', async () => {
+  download = (format: ExportFormat): Promise<void> => this.run('Preparing download', async () => {
     let filename: string | null;
     if (format === 'pdf') {
-      if (!this.bridge.downloadPdf || !this.adapter?.preparePdf) throw new Error('PDF Download Is Unavailable.');
+      if (!this.bridge.downloadPdf || !this.adapter?.preparePdf) throw new Error('PDF download is unavailable.');
       const cleanup = await this.adapter.preparePdf(this.state.name);
       try { filename = await this.bridge.downloadPdf(this.state.name); }
       finally { cleanup(); }
     } else {
-      if (!this.bridge.download) throw new Error('Document Downloads Are Unavailable.');
+      if (!this.bridge.download) throw new Error('Document downloads are unavailable.');
       let bytes = await this.saveBytes();
       if (format !== 'docx') {
         const { exportDocument } = await import('./document-export');
@@ -263,7 +263,7 @@ export class DocumentSession {
 
   snapshotStatus = (): Promise<SnapshotStatus | null> => documentSnapshotStatus(this.state.token, this.state.name);
 
-  restoreSnapshot = (id: string): Promise<void> => this.run('Restoring Snapshot', async () => {
+  restoreSnapshot = (id: string): Promise<void> => this.run('Restoring snapshot', async () => {
     const bytes = await readDocumentSnapshot(this.state.token, this.state.name, id);
     await this.adapter!.validate(bytes);
     await this.adapter!.load(bytes);
@@ -275,10 +275,10 @@ export class DocumentSession {
 
   readTemplate = (id: string): Promise<Uint8Array> => readDocumentTemplate(id);
 
-  saveAsTemplate = (name: string): Promise<void> => this.run('Saving Template', async () => {
+  saveAsTemplate = (name: string): Promise<void> => this.run('Saving template', async () => {
     const bytes = await this.adapter!.save();
     const template = await saveDocumentTemplate(bytes, name);
-    this.update({ notice: `Saved Template ${template.name}` });
+    this.update({ notice: `Saved template ${template.name}` });
   });
 
   close = async (): Promise<void> => {
@@ -290,7 +290,7 @@ export class DocumentSession {
       this.closeRequested = true;
       return;
     }
-    this.update({ busy: true, error: null, message: 'Closing Document' });
+    this.update({ busy: true, error: null, message: 'Closing document' });
     try {
       const discardEmpty = this.state.dirty && this.adapter?.isEmpty?.() === true;
       if (!discardEmpty && !await this.canReplace()) return;
@@ -298,7 +298,7 @@ export class DocumentSession {
     } catch (error: unknown) {
       this.update({ error: error instanceof Error ? error.message : String(error) });
     } finally {
-      this.update({ busy: false, message: this.state.dirty ? 'Unsaved Changes' : 'Ready' });
+      this.update({ busy: false, message: this.state.dirty ? 'Unsaved changes' : 'Ready' });
     }
   };
 }

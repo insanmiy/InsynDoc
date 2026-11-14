@@ -45,7 +45,7 @@ const editorShortcuts = new Map<string, string>([
 const english = createT(en);
 const translate = (key: string, params?: Record<string, string | number>): string => {
   if (key.startsWith('shortcut.')) return editorShortcuts.get(key.slice('shortcut.'.length)) ?? key;
-  return english(key as TranslationKey, params).replace(/\b\p{L}/gu, (letter) => letter.toLocaleUpperCase('en-US'));
+  return english(key as TranslationKey, params);
 };
 
 function MenuAction(props: ComponentProps<typeof DocxEditor.Menu.Row>) {
@@ -80,10 +80,10 @@ interface WorkspaceProps {
 }
 
 function Outline({ outline, onClose }: { outline: ReturnType<typeof useDocumentOutline>; onClose: () => void }) {
-  return <aside className="document-outline" aria-label="Document Outline">
-    <div className="outline-title"><span>Document Outline</span><button className="icon-button" aria-label="Hide Outline" onClick={onClose}><Icon name="close" size={17}/></button></div>
-    {outline.isEmpty ? <div className="outline-empty"><span className="outline-empty-lines"><i/><i/><i/></span><p>Your Document, At A Glance</p><span>Add Headings To Navigate Your Document Here.</span></div>
-      : <nav aria-label="Headings">{outline.items.map(({ heading, depth }) => <button key={heading.blockId} title={heading.text || 'Untitled Heading'} aria-current={outline.selectedBlockId === heading.blockId ? 'location' : undefined} onClick={() => { outline.goTo(heading.blockId); if (matchMedia('(max-width: 1024px)').matches) onClose(); }} className={outline.selectedBlockId === heading.blockId ? 'selected' : ''} style={{ paddingLeft: 16 + depth * 14 }}>{heading.text || 'Untitled Heading'}</button>)}</nav>}
+  return <aside className="document-outline" aria-label="Document outline">
+    <div className="outline-title"><span>Document outline</span><button className="icon-button" aria-label="Hide outline" onClick={onClose}><Icon name="close" size={17}/></button></div>
+    {outline.isEmpty ? <div className="outline-empty"><span className="outline-empty-lines"><i/><i/><i/></span><p>Your document, at a glance</p><span>Add headings to navigate your document here.</span></div>
+      : <nav aria-label="Headings">{outline.items.map(({ heading, depth }) => <button key={heading.blockId} title={heading.text || 'Untitled heading'} aria-current={outline.selectedBlockId === heading.blockId ? 'location' : undefined} onClick={() => { outline.goTo(heading.blockId); if (matchMedia('(max-width: 1024px)').matches) onClose(); }} className={outline.selectedBlockId === heading.blockId ? 'selected' : ''} style={{ paddingLeft: 16 + depth * 14 }}>{heading.text || 'Untitled heading'}</button>)}</nav>}
   </aside>;
 }
 
@@ -99,7 +99,7 @@ function FindPanel({ replaceMode, request, onClose }: { replaceMode: boolean; re
   function replace(all: boolean): void {
     if (!editor || !search.query || search.isPending || !search.matches.length) return;
     if (all && search.truncated) {
-      setError('Narrow Your Search Before Replacing All Matches.');
+      setError('Narrow your search before replacing all matches.');
       return;
     }
     const matches = all ? [...search.matches].reverse() : [search.activeMatch ?? search.matches[0]];
@@ -107,12 +107,12 @@ function FindPanel({ replaceMode, request, onClose }: { replaceMode: boolean; re
     search.find(search.query, { matchCase: search.matchCase, wholeWord: search.wholeWord });
   }
 
-  return <section className="find-panel" aria-label="Find And Replace">
-    <div className="find-panel-heading"><strong>Find In Document</strong><button className="icon-button" onClick={onClose} aria-label="Close Find"><Icon name="close" size={18}/></button></div>
-    <div className="find-input-row"><Icon name="search" size={18}/><input ref={input} aria-label="Find Text" placeholder="Search Text" value={search.query} onChange={(event) => { search.setQuery(event.target.value); setError(null); }} onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); if (event.shiftKey) search.previous(); else search.next(); } }}/><span className="match-count" aria-live="polite">{search.isPending ? '…' : `${search.activeIndex >= 0 ? `${search.activeIndex + 1} Of ` : ''}${search.matches.length}${search.truncated ? '+' : ''}`}</span></div>
-    <div className="find-options"><label><input type="checkbox" checked={search.matchCase} onChange={(event) => search.setMatchCase(event.target.checked)}/>Match Case</label><label><input type="checkbox" checked={search.wholeWord} onChange={(event) => search.setWholeWord(event.target.checked)}/>Whole Words</label><button className="icon-button" onClick={search.previous} disabled={!search.matches.length} aria-label="Previous Match"><Icon name="arrowUp" size={18}/></button><button className="icon-button" onClick={search.next} disabled={!search.matches.length} aria-label="Next Match"><Icon name="arrowDown" size={18}/></button></div>
+  return <section className="find-panel" aria-label="Find and replace">
+    <div className="find-panel-heading"><strong>Find in document</strong><button className="icon-button" onClick={onClose} aria-label="Close find"><Icon name="close" size={18}/></button></div>
+    <div className="find-input-row"><Icon name="search" size={18}/><input ref={input} aria-label="Find text" placeholder="Search text" value={search.query} onChange={(event) => { search.setQuery(event.target.value); setError(null); }} onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); if (event.shiftKey) search.previous(); else search.next(); } }}/><span className="match-count" aria-live="polite">{search.isPending ? '…' : `${search.activeIndex >= 0 ? `${search.activeIndex + 1} of ` : ''}${search.matches.length}${search.truncated ? '+' : ''}`}</span></div>
+    <div className="find-options"><label><input type="checkbox" checked={search.matchCase} onChange={(event) => search.setMatchCase(event.target.checked)}/>Match case</label><label><input type="checkbox" checked={search.wholeWord} onChange={(event) => search.setWholeWord(event.target.checked)}/>Whole words</label><button className="icon-button" onClick={search.previous} disabled={!search.matches.length} aria-label="Previous match"><Icon name="arrowUp" size={18}/></button><button className="icon-button" onClick={search.next} disabled={!search.matches.length} aria-label="Next match"><Icon name="arrowDown" size={18}/></button></div>
     <button className="replace-toggle" aria-expanded={showReplace} onClick={() => setShowReplace((value) => !value)}><Icon name="chevronDown" size={15}/>Replace</button>
-    {showReplace && <div className="replace-controls"><input aria-label="Replace With" placeholder="Replace With" value={replacement} onChange={(event) => setReplacement(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); replace(event.ctrlKey || event.metaKey); } }}/><div><button className="secondary-button" disabled={!search.matches.length || search.isPending} onClick={() => replace(false)}>Replace</button><button className="primary-button" disabled={!search.matches.length || search.isPending} onClick={() => replace(true)}>Replace All</button></div></div>}
+    {showReplace && <div className="replace-controls"><input aria-label="Replace with" placeholder="Replace with" value={replacement} onChange={(event) => setReplacement(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); replace(event.ctrlKey || event.metaKey); } }}/><div><button className="secondary-button" disabled={!search.matches.length || search.isPending} onClick={() => replace(false)}>Replace</button><button className="primary-button" disabled={!search.matches.length || search.isPending} onClick={() => replace(true)}>Replace all</button></div></div>}
     {error && <p role="alert" className="find-error">{error}</p>}
   </section>;
 }
@@ -143,7 +143,7 @@ function WorkspaceContent(props: WorkspaceProps) {
     void session.snapshotStatus().then((status) => {
       if (disposed || !status?.latestCreatedAt || status.fileModifiedAt === null) return;
       if (status.latestCreatedAt <= status.fileModifiedAt) return;
-      setNotice('A Newer Autosaved Version Exists For This Document. Open Version History To Restore It.');
+      setNotice('A newer autosaved version exists for this document. Open version history to restore it.');
     }).catch(() => undefined);
     return () => { disposed = true; };
   }, [session, state.ready, state.busy, state.token]);
@@ -224,53 +224,53 @@ function WorkspaceContent(props: WorkspaceProps) {
   function runFormattingCommand(command: Parameters<Editor['exec']>[0]): void {
     if (!editor) return;
     const result = editor.exec(command);
-    if (!result.ok) { setNotice('This Formatting Cannot Be Applied At The Current Selection.'); return; }
+    if (!result.ok) { setNotice('This formatting cannot be applied at the current selection.'); return; }
     editor.focus();
   }
 
 
   const menuCommands = [
-    { label: 'New Document', shortcut: 'Ctrl+N', run: () => void session.newDocument() },
-    { label: 'Open Document', shortcut: 'Ctrl+O', run: () => void session.open() },
-    { label: 'Save Document', shortcut: 'Ctrl+S', run: () => void session.save() },
-    { label: 'Save As', shortcut: '', run: () => void session.saveAs() },
+    { label: 'New document', shortcut: 'Ctrl+N', run: () => void session.newDocument() },
+    { label: 'Open document', shortcut: 'Ctrl+O', run: () => void session.open() },
+    { label: 'Save document', shortcut: 'Ctrl+S', run: () => void session.save() },
+    { label: 'Save as', shortcut: '', run: () => void session.saveAs() },
     { label: 'Export DOCX', shortcut: 'Ctrl+Shift+S', run: () => void session.exportCopy() },
-    { label: 'Check Spelling', shortcut: 'Ctrl+Alt+X', run: () => setSpellingRequest((value) => value + 1) },
-    { label: 'Find In Document', shortcut: 'Ctrl+F', run: () => props.onFind() },
-    { label: 'Find And Replace', shortcut: 'Ctrl+Shift+I', run: () => props.onFind(true) },
+    { label: 'Check spelling', shortcut: 'Ctrl+Alt+X', run: () => setSpellingRequest((value) => value + 1) },
+    { label: 'Find in document', shortcut: 'Ctrl+F', run: () => props.onFind() },
+    { label: 'Find and replace', shortcut: 'Ctrl+Shift+I', run: () => props.onFind(true) },
     { label: 'Bold', shortcut: 'Ctrl+B', run: () => runFormattingCommand({ type: 'toggleMark', mark: 'bold' }) },
     { label: 'Italic', shortcut: 'Ctrl+I', run: () => runFormattingCommand({ type: 'toggleMark', mark: 'italic' }) },
     { label: 'Underline', shortcut: 'Ctrl+U', run: () => runFormattingCommand({ type: 'toggleMark', mark: 'underline' }) },
     { label: 'Strikethrough', shortcut: '', run: () => runFormattingCommand({ type: 'toggleMark', mark: 'strike' }) },
     { label: 'Superscript', shortcut: editorShortcuts.get('script.super') ?? '', run: () => runFormattingCommand({ type: 'toggleMark', mark: 'superscript' }) },
     { label: 'Subscript', shortcut: editorShortcuts.get('script.sub') ?? '', run: () => runFormattingCommand({ type: 'toggleMark', mark: 'subscript' }) },
-    { label: 'Align Left', shortcut: editorShortcuts.get('alignment.left') ?? '', run: () => runFormattingCommand({ type: 'setAlignment', align: 'left' }) },
-    { label: 'Align Center', shortcut: editorShortcuts.get('alignment.center') ?? '', run: () => runFormattingCommand({ type: 'setAlignment', align: 'center' }) },
-    { label: 'Align Right', shortcut: editorShortcuts.get('alignment.right') ?? '', run: () => runFormattingCommand({ type: 'setAlignment', align: 'right' }) },
+    { label: 'Align left', shortcut: editorShortcuts.get('alignment.left') ?? '', run: () => runFormattingCommand({ type: 'setAlignment', align: 'left' }) },
+    { label: 'Align center', shortcut: editorShortcuts.get('alignment.center') ?? '', run: () => runFormattingCommand({ type: 'setAlignment', align: 'center' }) },
+    { label: 'Align right', shortcut: editorShortcuts.get('alignment.right') ?? '', run: () => runFormattingCommand({ type: 'setAlignment', align: 'right' }) },
     { label: 'Justify', shortcut: editorShortcuts.get('alignment.justify') ?? '', run: () => runFormattingCommand({ type: 'setAlignment', align: 'justify' }) },
-    { label: 'Bulleted List', shortcut: '', run: () => runFormattingCommand({ type: 'toggleList', kind: 'bullet' }) },
-    { label: 'Numbered List', shortcut: '', run: () => runFormattingCommand({ type: 'toggleList', kind: 'ordered' }) },
-    { label: 'Increase Indent', shortcut: 'Ctrl+M', run: () => runFormattingCommand({ type: 'adjustIndent', direction: 'increase' }) },
-    { label: 'Decrease Indent', shortcut: 'Ctrl+Shift+M', run: () => runFormattingCommand({ type: 'adjustIndent', direction: 'decrease' }) },
-    { label: 'Clear Formatting', shortcut: '', run: () => runFormattingCommand({ type: 'clearFormatting' }) },
-    { label: 'Word Count', shortcut: '', run: props.onWordCount },
-    { label: 'Insert Date And Time', shortcut: '', run: () => setWritingTool('date') },
-    { label: 'Special Characters', shortcut: '', run: () => setWritingTool('symbols') },
-    { label: 'Insert Custom Table', shortcut: '', run: () => setWritingTool('table') },
-    { label: 'Math Equation', shortcut: '', run: () => setWritingTool('math') },
-    { label: 'Edit Header', shortcut: '', run: () => editFurniture('header') },
-    { label: 'Edit Footer', shortcut: '', run: () => editFurniture('footer') },
-    { label: 'Go To Page', shortcut: 'Ctrl+G', run: props.onGoToPage },
-    { label: 'Document Outline', shortcut: '', run: toggleOutline },
-    { label: 'Focus Mode', shortcut: 'Ctrl+Shift+F', run: props.onFocusMode },
+    { label: 'Bulleted list', shortcut: '', run: () => runFormattingCommand({ type: 'toggleList', kind: 'bullet' }) },
+    { label: 'Numbered list', shortcut: '', run: () => runFormattingCommand({ type: 'toggleList', kind: 'ordered' }) },
+    { label: 'Increase indent', shortcut: 'Ctrl+M', run: () => runFormattingCommand({ type: 'adjustIndent', direction: 'increase' }) },
+    { label: 'Decrease indent', shortcut: 'Ctrl+Shift+M', run: () => runFormattingCommand({ type: 'adjustIndent', direction: 'decrease' }) },
+    { label: 'Clear formatting', shortcut: '', run: () => runFormattingCommand({ type: 'clearFormatting' }) },
+    { label: 'Word count', shortcut: '', run: props.onWordCount },
+    { label: 'Insert date and time', shortcut: '', run: () => setWritingTool('date') },
+    { label: 'Special characters', shortcut: '', run: () => setWritingTool('symbols') },
+    { label: 'Insert custom table', shortcut: '', run: () => setWritingTool('table') },
+    { label: 'Math equation', shortcut: '', run: () => setWritingTool('math') },
+    { label: 'Edit header', shortcut: '', run: () => editFurniture('header') },
+    { label: 'Edit footer', shortcut: '', run: () => editFurniture('footer') },
+    { label: 'Go to page', shortcut: 'Ctrl+G', run: props.onGoToPage },
+    { label: 'Document outline', shortcut: '', run: toggleOutline },
+    { label: 'Focus mode', shortcut: 'Ctrl+Shift+F', run: props.onFocusMode },
     { label: 'Settings', shortcut: 'Ctrl+,', run: props.onSettings },
-    { label: 'Keyboard Shortcuts', shortcut: 'Ctrl+/', run: props.onShortcuts }
+    { label: 'Keyboard shortcuts', shortcut: 'Ctrl+/', run: props.onShortcuts }
   ].filter((command) => command.label.toLowerCase().includes(menuQuery.trim().toLowerCase()));
 
   function editFurniture(position: 'header' | 'footer'): void {
     if (!editor) return;
     const result = editor.exec({ type: 'editHeaderFooter', position });
-    if (!result.ok) { setNotice('The Header Or Footer Cannot Be Edited At This Location.'); return; }
+    if (!result.ok) { setNotice('The header or footer cannot be edited at this location.'); return; }
     requestAnimationFrame(() => editor.focus());
   }
 
@@ -367,7 +367,7 @@ function WorkspaceContent(props: WorkspaceProps) {
 
   useEffect(() => {
     let disposed = false;
-    const refresh = () => { void recentDocuments().then((files) => { if (!disposed) { setRecent(files); setRecentError(null); } }).catch(() => { if (!disposed) setRecentError('Recent Files Could Not Be Loaded.'); }); };
+    const refresh = () => { void recentDocuments().then((files) => { if (!disposed) { setRecent(files); setRecentError(null); } }).catch(() => { if (!disposed) setRecentError('Recent files could not be loaded.'); }); };
     refresh();
     window.addEventListener('insyndoc:recent-changed', refresh);
     return () => { disposed = true; window.removeEventListener('insyndoc:recent-changed', refresh); };
@@ -401,57 +401,57 @@ function WorkspaceContent(props: WorkspaceProps) {
       <DocxEditor.Menu.File preset={false}>
         <MenuAction icon={<Icon name="newDocument" size={18}/>} onSelect={() => void session.newDocument()} shortcut="Ctrl+N">New</MenuAction>
         <MenuAction icon={<Icon name="folder" size={18}/>} onSelect={() => void session.open()} shortcut="Ctrl+O">Open</MenuAction>
-        <DocxEditor.Menu.Submenu label="Open Recent" paths={tableChromeIconPaths('file_upload')}>
+        <DocxEditor.Menu.Submenu label="Open recent" paths={tableChromeIconPaths('file_upload')}>
           {recentError && <DocxEditor.Menu.Row disabled>{recentError}</DocxEditor.Menu.Row>}
-          {recent.length === 0 && !recentError && <DocxEditor.Menu.Row disabled>No Recent Documents</DocxEditor.Menu.Row>}
-          {recent.map((file) => <MenuAction icon={<Icon name="document" size={18}/>} key={file.token} disabled={!file.available} title={!file.available ? 'This File Was Moved Or Is Unavailable.' : undefined}
+          {recent.length === 0 && !recentError && <DocxEditor.Menu.Row disabled>No recent documents</DocxEditor.Menu.Row>}
+          {recent.map((file) => <MenuAction icon={<Icon name="document" size={18}/>} key={file.token} disabled={!file.available} title={!file.available ? 'This file was moved or is unavailable.' : undefined}
             onSelect={() => void session.openRecent(file.token)}><span className="recent-document"><strong>{file.name}</strong><small>{file.path}</small></span></MenuAction>)}
           {recent.length > 0 && <><DocxEditor.Menu.Separator/><MenuAction icon={<Icon name="trash" size={18}/>} onSelect={() => {
-            void clearRecentDocuments().then(() => { setRecent([]); setRecentError(null); }).catch(() => setRecentError('Recent Files Could Not Be Cleared.'));
-          }}>Clear Recent Files</MenuAction></>}
+            void clearRecentDocuments().then(() => { setRecent([]); setRecentError(null); }).catch(() => setRecentError('Recent files could not be cleared.'));
+          }}>Clear recent files</MenuAction></>}
         </DocxEditor.Menu.Submenu>
         <DocxEditor.Menu.Separator/>
         <MenuAction icon={<Icon name="save" size={18}/>} onSelect={() => void session.save()} shortcut="Ctrl+S">Save</MenuAction>
-        <MenuAction icon={<Icon name="save" size={18}/>} onSelect={() => void session.saveAs()}>Save As...</MenuAction>
+        <MenuAction icon={<Icon name="save" size={18}/>} onSelect={() => void session.saveAs()}>Save as...</MenuAction>
         <MenuAction icon={<Icon name="download" size={18}/>} onSelect={() => void session.exportCopy()} shortcut="Ctrl+Shift+S">Export DOCX</MenuAction>
-        <MenuAction icon={<Icon name="document" size={18}/>} disabled={exporting} onSelect={() => void exportText()}>Export Plain Text</MenuAction>
+        <MenuAction icon={<Icon name="document" size={18}/>} disabled={exporting} onSelect={() => void exportText()}>Export plain text</MenuAction>
         <DocxEditor.Menu.Separator/>
         <MenuAction icon={<Icon name="document" size={18}/>} onSelect={() => setTemplatesOpen(true)}>Templates</MenuAction>
-        <MenuAction icon={<Icon name="pages" size={18}/>} onSelect={() => setHistoryOpen(true)}>Version History</MenuAction>
+        <MenuAction icon={<Icon name="pages" size={18}/>} onSelect={() => setHistoryOpen(true)}>Version history</MenuAction>
         <DocxEditor.Menu.Separator/><DocxEditor.Menu.PageSetup/>
       </DocxEditor.Menu.File>
       <DocxEditor.Menu.Menu id="edit" label="Edit" preset={false}>
         <DocxEditor.Menu.Item slotId="history.undo" labelKey="formattingBar.undo" shortcutKey="shortcut.history.undo"/><DocxEditor.Menu.Item slotId="history.redo" labelKey="formattingBar.redo" shortcutKey="shortcut.history.redo"/>
-        <DocxEditor.Menu.Separator/><MenuAction icon={<Icon name="selectAll" size={18}/>} onSelect={() => editor?.exec({ type: 'selectAll' })} shortcut="Ctrl+A">Select All</MenuAction>
+        <DocxEditor.Menu.Separator/><MenuAction icon={<Icon name="selectAll" size={18}/>} onSelect={() => editor?.exec({ type: 'selectAll' })} shortcut="Ctrl+A">Select all</MenuAction>
         <MenuAction icon={<Icon name="search" size={18}/>} onSelect={() => props.onFind()} shortcut="Ctrl+F">Find</MenuAction>
-        <MenuAction icon={<Icon name="replace" size={18}/>} onSelect={() => props.onFind(true)} shortcut="Ctrl+Shift+I">Find And Replace</MenuAction>
+        <MenuAction icon={<Icon name="replace" size={18}/>} onSelect={() => props.onFind(true)} shortcut="Ctrl+Shift+I">Find and replace</MenuAction>
       </DocxEditor.Menu.Menu>
       <DocxEditor.Menu.Menu id="view" label="View" preset={false}>
-        <MenuAction icon={<Icon name="pages" size={18}/>} active={state.view === 'pages'} onSelect={() => session.setView('pages')}>Separate Pages</MenuAction>
+        <MenuAction icon={<Icon name="pages" size={18}/>} active={state.view === 'pages'} onSelect={() => session.setView('pages')}>Separate pages</MenuAction>
         <MenuAction icon={<Icon name="page" size={18}/>} active={state.view === 'continuous'} onSelect={() => session.setView('continuous')}>Continuous</MenuAction>
         <DocxEditor.Menu.Separator/>
-        <MenuAction icon={<Icon name="outline" size={18}/>} active={outlineVisible} onSelect={toggleOutline}>Document Outline</MenuAction>
-        <MenuAction icon={<Icon name="ruler" size={18}/>} active={preferences.showRuler} onSelect={() => onPreferences({ ...preferences, showRuler: !preferences.showRuler })}>Show Ruler</MenuAction>
+        <MenuAction icon={<Icon name="outline" size={18}/>} active={outlineVisible} onSelect={toggleOutline}>Document outline</MenuAction>
+        <MenuAction icon={<Icon name="ruler" size={18}/>} active={preferences.showRuler} onSelect={() => onPreferences({ ...preferences, showRuler: !preferences.showRuler })}>Show ruler</MenuAction>
         <DocxEditor.Menu.Item slotId="review.paragraphMarks" shortcutKey="shortcut.review.paragraphMarks"/>
         <DocxEditor.Menu.Item slotId="review.bookmarks"/>
-        <MenuAction icon={<Icon name="focus" size={18}/>} active={props.focusMode} onSelect={props.onFocusMode} shortcut="Ctrl+Shift+F">Focus Mode</MenuAction>
-        <DocxEditor.Menu.Separator/><MenuAction icon={<Icon name="goToPage" size={18}/>} onSelect={props.onGoToPage} shortcut="Ctrl+G">Go To Page</MenuAction>
+        <MenuAction icon={<Icon name="focus" size={18}/>} active={props.focusMode} onSelect={props.onFocusMode} shortcut="Ctrl+Shift+F">Focus mode</MenuAction>
+        <DocxEditor.Menu.Separator/><MenuAction icon={<Icon name="goToPage" size={18}/>} onSelect={props.onGoToPage} shortcut="Ctrl+G">Go to page</MenuAction>
       </DocxEditor.Menu.Menu>
       <DocxEditor.Menu.Insert>
         <DocxEditor.Menu.Item slotId="insert.footnote" shortcutKey="shortcut.insert.footnote"/>
         <DocxEditor.Menu.Item slotId="insert.endnote" shortcutKey="shortcut.insert.endnote"/>
         <DocxEditor.Menu.Item slotId="insert.pageBreak" shortcutKey="shortcut.insert.pageBreak"/>
         <DocxEditor.Menu.Separator/>
-        <MenuAction icon={<Icon name="calendar" size={18}/>} onSelect={() => setWritingTool('date')}>Date And Time</MenuAction>
-        <MenuAction icon={<Icon name="symbols" size={18}/>} onSelect={() => setWritingTool('symbols')}>Special Characters</MenuAction>
-        <MenuAction icon={<Icon name="math" size={18}/>} onSelect={() => setWritingTool('math')}>Math Equation</MenuAction>
-        <MenuAction icon={<Icon name="table" size={18}/>} onSelect={() => setWritingTool('table')}>Custom Table</MenuAction>
-        <DocxEditor.Menu.Submenu label="Headers And Footers" paths={tableChromeIconPaths('vertical_align_top')}>
-          <MenuAction icon={<Icon name="header" size={18}/>} onSelect={() => editFurniture('header')}>Edit Header</MenuAction>
-          <MenuAction icon={<Icon name="footer" size={18}/>} onSelect={() => editFurniture('footer')}>Edit Footer</MenuAction>
-          <MenuAction icon={<Icon name="document" size={18}/>} disabled={!furniture?.editing} onSelect={() => editor?.exec({ type: 'exitHeaderFooter' })}>Return To Document</MenuAction>
+        <MenuAction icon={<Icon name="calendar" size={18}/>} onSelect={() => setWritingTool('date')}>Date and time</MenuAction>
+        <MenuAction icon={<Icon name="symbols" size={18}/>} onSelect={() => setWritingTool('symbols')}>Special characters</MenuAction>
+        <MenuAction icon={<Icon name="math" size={18}/>} onSelect={() => setWritingTool('math')}>Math equation</MenuAction>
+        <MenuAction icon={<Icon name="table" size={18}/>} onSelect={() => setWritingTool('table')}>Custom table</MenuAction>
+        <DocxEditor.Menu.Submenu label="Headers and footers" paths={tableChromeIconPaths('vertical_align_top')}>
+          <MenuAction icon={<Icon name="header" size={18}/>} onSelect={() => editFurniture('header')}>Edit header</MenuAction>
+          <MenuAction icon={<Icon name="footer" size={18}/>} onSelect={() => editFurniture('footer')}>Edit footer</MenuAction>
+          <MenuAction icon={<Icon name="document" size={18}/>} disabled={!furniture?.editing} onSelect={() => editor?.exec({ type: 'exitHeaderFooter' })}>Return to document</MenuAction>
         </DocxEditor.Menu.Submenu>
-        <DocxEditor.Menu.Submenu label="Page Number Fields" paths={tableChromeIconPaths('format_list_numbered')}>
+        <DocxEditor.Menu.Submenu label="Page number fields" paths={tableChromeIconPaths('format_list_numbered')}>
           <DocxEditor.Menu.Item slotId="insert.pageNumber"/>
           <DocxEditor.Menu.Item slotId="insert.totalPages"/>
           <DocxEditor.Menu.Item slotId="insert.pageXofY"/>
@@ -469,21 +469,21 @@ function WorkspaceContent(props: WorkspaceProps) {
         <DocxEditor.Menu.Item slotId="direction.rtl" shortcutKey="shortcut.direction.rtl"/>
         <DocxEditor.Menu.Item slotId="format.painter" labelKey="formattingBar.formatPainter" shortcutKey="shortcut.format.painter"/>
         <DocxEditor.Menu.Separator/>
-        <DocxEditor.Menu.Submenu label="Text Position" paths={tableChromeIconPaths('superscript')}>
+        <DocxEditor.Menu.Submenu label="Text position" paths={tableChromeIconPaths('superscript')}>
           <DocxEditor.Menu.Item slotId="script.super" labelKey="formattingBar.superscript" shortcutKey="shortcut.script.super"/>
           <DocxEditor.Menu.Item slotId="script.sub" labelKey="formattingBar.subscript" shortcutKey="shortcut.script.sub"/>
         </DocxEditor.Menu.Submenu>
       </DocxEditor.Menu.Format>
       <DocxEditor.Menu.Menu id="tools" label="Tools" preset={false}>
-        <MenuAction icon={<Icon name="spelling" size={18}/>} onSelect={() => setSpellingRequest((value) => value + 1)} shortcut="Ctrl+Alt+X" disabled={!preferences.checkSpelling}>Check Spelling</MenuAction>
-        <MenuAction icon={<Icon name="wordCount" size={18}/>} onSelect={props.onWordCount}>Word Count</MenuAction>
-        <MenuAction icon={<Icon name="keyboard" size={18}/>} onSelect={props.onShortcuts} shortcut="Ctrl+/">Keyboard Shortcuts</MenuAction>
-        <MenuAction icon={<Icon name="replace" size={18}/>} onSelect={() => props.onFind(true)} shortcut="Ctrl+Shift+I">Find And Replace</MenuAction>
+        <MenuAction icon={<Icon name="spelling" size={18}/>} onSelect={() => setSpellingRequest((value) => value + 1)} shortcut="Ctrl+Alt+X" disabled={!preferences.checkSpelling}>Check spelling</MenuAction>
+        <MenuAction icon={<Icon name="wordCount" size={18}/>} onSelect={props.onWordCount}>Word count</MenuAction>
+        <MenuAction icon={<Icon name="keyboard" size={18}/>} onSelect={props.onShortcuts} shortcut="Ctrl+/">Keyboard shortcuts</MenuAction>
+        <MenuAction icon={<Icon name="replace" size={18}/>} onSelect={() => props.onFind(true)} shortcut="Ctrl+Shift+I">Find and replace</MenuAction>
         <DocxEditor.Menu.Separator/><MenuAction icon={<Icon name="settings" size={18}/>} onSelect={props.onSettings} shortcut="Ctrl+,">Settings</MenuAction>
       </DocxEditor.Menu.Menu>
       <DocxEditor.Menu.Menu id="help" label="Help" preset={false}>
-        <MenuAction icon={<Icon name="search" size={18}/>} onSelect={() => { openToolFinder(); }} shortcut="Alt+/">Search The Menus</MenuAction>
-        <MenuAction icon={<Icon name="keyboard" size={18}/>} onSelect={props.onShortcuts} shortcut="Ctrl+/">Keyboard Shortcuts</MenuAction>
+        <MenuAction icon={<Icon name="search" size={18}/>} onSelect={() => { openToolFinder(); }} shortcut="Alt+/">Search the menus</MenuAction>
+        <MenuAction icon={<Icon name="keyboard" size={18}/>} onSelect={props.onShortcuts} shortcut="Ctrl+/">Keyboard shortcuts</MenuAction>
       </DocxEditor.Menu.Menu>
     </DocxEditor.Menu>
   </div>;
@@ -493,22 +493,22 @@ function WorkspaceContent(props: WorkspaceProps) {
     <div className="toolbar-shell"><DocxEditor.Toolbar t={translate} className="docs-toolbar" onSave={() => void session.save()}>
       {['history', 'zoom', 'styles', 'font', 'text', 'script', 'alignment', 'list', 'format', 'review'].map((id) => <DocxEditor.Toolbar.Group key={id} id={id} hidden/>)}
       <DocxEditor.Toolbar.Group id="docs-search" label="Search" pinned>
-        <button className="toolbar-menu-search" aria-label="Menus" title="Search The Menus (Alt+/)" onClick={() => { openToolFinder(); }}><Icon name="search" size={17}/></button>
+        <button className="toolbar-menu-search" aria-label="Menus" title="Search the menus (Alt+/)" onClick={() => { openToolFinder(); }}><Icon name="search" size={17}/></button>
       </DocxEditor.Toolbar.Group>
       <DocxEditor.Toolbar.Group id="docs-history" label="History" after="docs-search"><DocxEditor.Toolbar.Undo/><DocxEditor.Toolbar.Redo/><DocxEditor.Toolbar.Button slotId="format.painter"/></DocxEditor.Toolbar.Group>
       {props.zoomHost && createPortal(<DocxEditor.Toolbar.Zoom/>, props.zoomHost)}
-      <DocxEditor.Toolbar.Group id="docs-style" label="Paragraph Style" after="docs-history"><ParagraphStylePicker/></DocxEditor.Toolbar.Group>
+      <DocxEditor.Toolbar.Group id="docs-style" label="Paragraph style" after="docs-history"><ParagraphStylePicker/></DocxEditor.Toolbar.Group>
       <DocxEditor.Toolbar.Group id="docs-font" label="Font" after="docs-style"><DocxEditor.Toolbar.FontFamily/><DocxEditor.Toolbar.FontSize/></DocxEditor.Toolbar.Group>
-      <DocxEditor.Toolbar.Group id="docs-text" label="Text Formatting" after="docs-font"><DocxEditor.Toolbar.Bold/><DocxEditor.Toolbar.Italic/><DocxEditor.Toolbar.Underline/><DocxEditor.Toolbar.FontColor/><DocxEditor.Toolbar.Highlight/></DocxEditor.Toolbar.Group>
+      <DocxEditor.Toolbar.Group id="docs-text" label="Text formatting" after="docs-font"><DocxEditor.Toolbar.Bold/><DocxEditor.Toolbar.Italic/><DocxEditor.Toolbar.Underline/><DocxEditor.Toolbar.FontColor/><DocxEditor.Toolbar.Highlight/></DocxEditor.Toolbar.Group>
       <DocxEditor.Toolbar.Group id="docs-insert" label="Insert" after="docs-paragraph"><DocxEditor.Toolbar.Link/><DocxEditor.Toolbar.ImageInsert/><DocxEditor.Toolbar.TableInsert/></DocxEditor.Toolbar.Group>
-      <DocxEditor.Toolbar.Group id="docs-paragraph" label="Paragraph Formatting" after="docs-text"><DocxEditor.Toolbar.Alignment/><DocxEditor.Toolbar.LineSpacing/><DocxEditor.Toolbar.BulletList/><DocxEditor.Toolbar.NumberedList/><DocxEditor.Toolbar.Outdent/><DocxEditor.Toolbar.Indent/><DocxEditor.Toolbar.ClearFormatting/></DocxEditor.Toolbar.Group>
-      <DocxEditor.Toolbar.Group id="docs-script" label="More Text Formatting" after="docs-insert"><DocxEditor.Toolbar.Strike/><DocxEditor.Toolbar.Superscript/><DocxEditor.Toolbar.Subscript/></DocxEditor.Toolbar.Group>
+      <DocxEditor.Toolbar.Group id="docs-paragraph" label="Paragraph formatting" after="docs-text"><DocxEditor.Toolbar.Alignment/><DocxEditor.Toolbar.LineSpacing/><DocxEditor.Toolbar.BulletList/><DocxEditor.Toolbar.NumberedList/><DocxEditor.Toolbar.Outdent/><DocxEditor.Toolbar.Indent/><DocxEditor.Toolbar.ClearFormatting/></DocxEditor.Toolbar.Group>
+      <DocxEditor.Toolbar.Group id="docs-script" label="More text formatting" after="docs-insert"><DocxEditor.Toolbar.Strike/><DocxEditor.Toolbar.Superscript/><DocxEditor.Toolbar.Subscript/></DocxEditor.Toolbar.Group>
     </DocxEditor.Toolbar><div className="toolbar-end">
-      {!props.focusMode && <button className={`icon-button ${outlineVisible ? 'active' : ''}`} aria-label="Toggle Document Outline" aria-pressed={outlineVisible} title="Document Outline" onClick={toggleOutline}><Icon name="outline" size={18}/></button>}
-      <button className="icon-button" aria-label="Hide Menus" title="Hide Menus (Ctrl+Shift+F)" onClick={props.onFocusMode}><Icon name="arrowUp" size={18}/></button>
+      {!props.focusMode && <button className={`icon-button ${outlineVisible ? 'active' : ''}`} aria-label="Toggle document outline" aria-pressed={outlineVisible} title="Document outline" onClick={toggleOutline}><Icon name="outline" size={18}/></button>}
+      <button className="icon-button" aria-label="Hide menus" title="Hide menus (Ctrl+Shift+F)" onClick={props.onFocusMode}><Icon name="arrowUp" size={18}/></button>
     </div></div>
-    <Modal open={menuSearchOpen} title="Search The Menus" onClose={() => setMenuSearchOpen(false)} className="menu-search-modal">
-      <div className="menu-search-input"><Icon name="search" size={19}/><input autoFocus aria-label="Search The Menus" placeholder="Search For A Tool Or Action" value={menuQuery} onChange={(event) => setMenuQuery(event.target.value)} onKeyDown={(event) => {
+    <Modal open={menuSearchOpen} title="Search the menus" onClose={() => setMenuSearchOpen(false)} className="menu-search-modal">
+      <div className="menu-search-input"><Icon name="search" size={19}/><input autoFocus aria-label="Search the menus" placeholder="Search for a tool or action" value={menuQuery} onChange={(event) => setMenuQuery(event.target.value)} onKeyDown={(event) => {
         if (event.key === 'ArrowDown') { event.preventDefault(); document.querySelector<HTMLButtonElement>('.menu-search-results button')?.focus(); return; }
         if (event.key !== 'Enter' || !menuCommands.length) return;
         event.preventDefault(); runMenuCommand(menuCommands[0].run);
@@ -524,16 +524,16 @@ function WorkspaceContent(props: WorkspaceProps) {
         else return;
         event.preventDefault();
         buttons[next]?.focus();
-      }}>{menuCommands.map((command) => <button key={command.label} onClick={() => { runMenuCommand(command.run); }}><span>{command.label}</span><kbd>{command.shortcut}</kbd></button>)}{menuCommands.length === 0 && <p>No Matching Tools. Try Another Search.</p>}</div>
+      }}>{menuCommands.map((command) => <button key={command.label} onClick={() => { runMenuCommand(command.run); }}><span>{command.label}</span><kbd>{command.shortcut}</kbd></button>)}{menuCommands.length === 0 && <p>No matching tools. Try another search.</p>}</div>
     </Modal>
     <Spelling preferences={preferences} onPreferences={onPreferences} request={spellingRequest} documentKey={`${state.token}:${state.busy}`}/>
     <WritingTools tool={writingTool} onClose={() => setWritingTool(null)}/>
     {templatesOpen && <TemplateGallery session={session} onClose={() => setTemplatesOpen(false)}/>}
     {historyOpen && <VersionHistory session={session} onClose={() => setHistoryOpen(false)}/>}
-    {furniture?.editing && <div className="header-footer-strip"><span>Editing {furniture.editing === 'header' ? 'Header' : 'Footer'}</span><span>Insert Page Numbers From The Insert Menu.</span><button onClick={() => editor?.exec({ type: 'exitHeaderFooter' })}>Return To Document</button></div>}
+    {furniture?.editing && <div className="header-footer-strip"><span>Editing {furniture.editing === 'header' ? 'header' : 'footer'}</span><span>Insert page numbers from the insert menu.</span><button onClick={() => editor?.exec({ type: 'exitHeaderFooter' })}>Return to document</button></div>}
     {props.findOpen && <FindPanel replaceMode={props.replaceMode} request={props.findRequest} onClose={props.onCloseFind}/>}
     <div className="workspace-body">
-      {outlineVisible && !props.focusMode && <><button className="outline-backdrop" aria-label="Close Document Outline" onClick={closeOutline}/><Outline outline={outline} onClose={closeOutline}/></>}
+      {outlineVisible && !props.focusMode && <><button className="outline-backdrop" aria-label="Close document outline" onClick={closeOutline}/><Outline outline={outline} onClose={closeOutline}/></>}
       <div className="document-stage">
         {preferences.showRuler && <div className="ruler-wrap"><DocxEditor.HorizontalRuler unit={preferences.rulerUnit}/></div>}
         <DocxEditor.Viewport className="document-viewport">
@@ -543,7 +543,7 @@ function WorkspaceContent(props: WorkspaceProps) {
         </DocxEditor.Viewport>
       </div>
     </div>
-    {notice && <div className="workspace-notice" role="status"><span>{notice}</span><button className="icon-button" aria-label="Dismiss Notification" onClick={() => setNotice(null)}><Icon name="close" size={16}/></button></div>}
+    {notice && <div className="workspace-notice" role="status"><span>{notice}</span><button className="icon-button" aria-label="Dismiss notification" onClick={() => setNotice(null)}><Icon name="close" size={16}/></button></div>}
   </>;
 }
 

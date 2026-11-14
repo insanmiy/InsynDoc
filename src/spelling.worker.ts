@@ -20,7 +20,7 @@ function loadDictionary(): Promise<ReturnType<typeof nspell>> {
     fetch(new URL('../node_modules/dictionary-en/index.aff?no-inline', import.meta.url)),
     fetch(new URL('../node_modules/dictionary-en/index.dic', import.meta.url))
   ]).then(async ([affix, words]) => {
-    if (!affix.ok || !words.ok) throw new Error('The Spelling Dictionary Could Not Be Loaded.');
+    if (!affix.ok || !words.ok) throw new Error('The spelling dictionary could not be loaded.');
     // Treat All Dictionary Words Equally When Generating Suggestions.
     const rules = (await affix.text()).replace(/^NOSUGGEST[^\r\n]*(?:\r?\n|$)/gm, '');
     return nspell(rules, await words.text());

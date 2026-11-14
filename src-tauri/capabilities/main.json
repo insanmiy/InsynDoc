@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "main",
-  "description": "Local Editor Window Lifecycle Only",
+  "description": "Local editor window lifecycle only",
   "windows": ["main"],
   "permissions": ["core:event:default", "core:window:allow-set-title", "core:window:allow-set-theme", "core:window:allow-destroy", "updater:default", "process:allow-restart"]
 }

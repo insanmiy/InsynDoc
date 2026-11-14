@@ -36,10 +36,10 @@ async function waitForDocument(editor: Editor): Promise<void> {
   while (true) {
     const snapshot = editor.snapshot();
     if (snapshot.parseError || snapshot.openFailure) {
-      throw new Error('The Document Could Not Be Opened. It May Be Corrupt, Encrypted, Or Unsupported.');
+      throw new Error('The document could not be opened. It may be corrupt, encrypted, or unsupported.');
     }
     if (!snapshot.isLoading && !snapshot.isOpening) return;
-    if (performance.now() > deadline) throw new Error('Opening The Document Took Too Long. Try A Smaller Document.');
+    if (performance.now() > deadline) throw new Error('Opening the document took too long. Try a smaller document.');
     await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
   }
 }
@@ -62,19 +62,19 @@ export function createEditorAdapter(editor: Editor): DocumentAdapter {
     },
     async validate(bytes) {
       // Full Engine Validation Belongs To Load's Transaction, Before File Identity Changes.
-      if (bytes.byteLength === 0) throw new Error('The Document Could Not Be Opened. The File Is Empty.');
+      if (bytes.byteLength === 0) throw new Error('The document could not be opened. The file is empty.');
     },
     async load(bytes) {
       if (refresh.snapshot().recoveryAvailable && !await refresh.recover()) {
-        throw new Error('The Previous Document Could Not Be Restored. Save A Copy Before Reopening InsynDoc.');
+        throw new Error('The previous document could not be restored. Save a copy before reopening InsynDoc.');
       }
       const submission = await refresh.capture();
       try {
         const result = await refresh.applyUpdate({ submission, sequence: 0, bytes: bytes ?? createBlankDocument(), changes: [] });
         if (!result.ok && result.code === 'recovery-failed') {
-          throw new Error('The Previous Document Could Not Be Restored. Save A Copy Before Reopening InsynDoc.');
+          throw new Error('The previous document could not be restored. Save a copy before reopening InsynDoc.');
         }
-        if (!result.ok) throw new Error('The Document Could Not Be Opened. It May Be Corrupt, Encrypted, Or Unsupported.');
+        if (!result.ok) throw new Error('The document could not be opened. It may be corrupt, encrypted, or unsupported.');
       } finally {
         refresh.finish(submission);
       }

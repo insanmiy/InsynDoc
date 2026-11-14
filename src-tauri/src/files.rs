@@ -6,11 +6,11 @@ pub const MAX_DOCUMENT_BYTES: usize = 25 * 1024 * 1024;
 
 pub fn validate_docx(bytes: &[u8]) -> Result<(), String> {
     if bytes.len() > MAX_DOCUMENT_BYTES {
-        return Err("The Document Exceeds The 25 MB Limit.".into());
+        return Err("The document exceeds the 25 MB limit.".into());
     }
 
     if !bytes.starts_with(b"PK\x03\x04") {
-        return Err("This File Is Not A DOCX Package. Choose A Valid DOCX File.".into());
+        return Err("This file is not a DOCX package. Choose a valid DOCX file.".into());
     }
 
     Ok(())
@@ -19,15 +19,15 @@ pub fn validate_docx(bytes: &[u8]) -> Result<(), String> {
 pub fn read_document(path: &Path) -> Result<Vec<u8>, String> {
     let extension = path.extension().and_then(|value| value.to_str());
     if !extension.is_some_and(|value| value.eq_ignore_ascii_case("docx")) {
-        return Err("Choose A File With The DOCX Extension.".into());
+        return Err("Choose a file with the DOCX extension.".into());
     }
 
     let file = File::open(path)
-        .map_err(|error| format!("Could Not Open The Document. Check File Access. {error}"))?;
+        .map_err(|error| format!("Could not open the document. Check file access. {error}"))?;
     let mut bytes = Vec::new();
     file.take((MAX_DOCUMENT_BYTES + 1) as u64)
         .read_to_end(&mut bytes)
-        .map_err(|error| format!("Could Not Read The Document. {error}"))?;
+        .map_err(|error| format!("Could not read the document. {error}"))?;
     validate_docx(&bytes)?;
     Ok(bytes)
 }
@@ -42,16 +42,16 @@ pub fn import_extension(path: &Path) -> Option<String> {
 
 pub fn read_import(path: &Path) -> Result<(Vec<u8>, String), String> {
     let Some(extension) = import_extension(path) else {
-        return Err("Choose A Markdown, HTML, Text, Or ODT File.".into());
+        return Err("Choose a markdown, HTML, text, or ODT file.".into());
     };
     let file = File::open(path)
-        .map_err(|error| format!("Could Not Open The Document. Check File Access. {error}"))?;
+        .map_err(|error| format!("Could not open the document. Check file access. {error}"))?;
     let mut bytes = Vec::new();
     file.take((MAX_DOCUMENT_BYTES + 1) as u64)
         .read_to_end(&mut bytes)
-        .map_err(|error| format!("Could Not Read The Document. {error}"))?;
+        .map_err(|error| format!("Could not read the document. {error}"))?;
     if bytes.len() > MAX_DOCUMENT_BYTES {
-        return Err("The Document Exceeds The 25 MB Limit.".into());
+        return Err("The document exceeds the 25 MB limit.".into());
     }
     Ok((bytes, extension))
 }
@@ -68,12 +68,12 @@ pub fn write_text(path: &Path, text: &str) -> Result<(), String> {
 fn write_bytes(path: &Path, bytes: &[u8]) -> Result<(), String> {
     let parent = path.parent().filter(|parent| !parent.as_os_str().is_empty()).unwrap_or(Path::new("."));
     let mut temporary = tempfile::NamedTempFile::new_in(parent)
-        .map_err(|error| format!("Could Not Create A Temporary File. Check Folder Access. {error}"))?;
+        .map_err(|error| format!("Could not create a temporary file. Check folder access. {error}"))?;
     temporary.write_all(bytes)
         .and_then(|()| temporary.as_file().sync_all())
-        .map_err(|error| format!("Could Not Write The Document. The Original Is Unchanged. {error}"))?;
+        .map_err(|error| format!("Could not write the document. The original is unchanged. {error}"))?;
     temporary.persist(path)
-        .map_err(|error| format!("Could Not Replace The Document. Close Other Apps Using It And Retry. {error}"))?;
+        .map_err(|error| format!("Could not replace the document. Close other apps using it and retry. {error}"))?;
     Ok(())
 }
 
@@ -88,7 +88,7 @@ fn validate_document_name(name: &str) -> Result<(), String> {
     if stem.is_empty() || name.encode_utf16().count() > 180 || name.trim() != name || name.ends_with('.') || reserved
         || name.chars().any(|value| value.is_control() || "<>:\"/\\|?*".contains(value))
         || !name.to_ascii_lowercase().ends_with(".docx") {
-        return Err("Choose A Valid DOCX Filename Without Reserved Characters.".into());
+        return Err("Choose a valid DOCX filename without reserved characters.".into());
     }
     Ok(())
 }
@@ -96,9 +96,9 @@ fn validate_document_name(name: &str) -> Result<(), String> {
 pub fn save_new_document(directory: &Path, name: &str, bytes: &[u8]) -> Result<std::path::PathBuf, String> {
     validate_document_name(name)?;
     validate_docx(bytes)?;
-    std::fs::create_dir_all(directory).map_err(|error| format!("Could Not Create The Documents Folder. {error}"))?;
-    let mut temporary = tempfile::NamedTempFile::new_in(directory).map_err(|error| format!("Could Not Create The Document. {error}"))?;
-    temporary.write_all(bytes).and_then(|()| temporary.as_file().sync_all()).map_err(|error| format!("Could Not Save The Document. {error}"))?;
+    std::fs::create_dir_all(directory).map_err(|error| format!("Could not create the documents folder. {error}"))?;
+    let mut temporary = tempfile::NamedTempFile::new_in(directory).map_err(|error| format!("Could not create the document. {error}"))?;
+    temporary.write_all(bytes).and_then(|()| temporary.as_file().sync_all()).map_err(|error| format!("Could not save the document. {error}"))?;
     let stem = Path::new(name).file_stem().and_then(|value| value.to_str()).unwrap_or("Untitled");
     for index in 0..10000 {
         let filename = if index == 0 { name.to_string() } else { format!("{stem} ({index}).docx") };
@@ -106,10 +106,10 @@ pub fn save_new_document(directory: &Path, name: &str, bytes: &[u8]) -> Result<s
         match temporary.persist_noclobber(&path) {
             Ok(_) => return Ok(path),
             Err(error) if error.error.kind() == std::io::ErrorKind::AlreadyExists => temporary = error.file,
-            Err(error) => return Err(format!("Could Not Save The Document. {error}")),
+            Err(error) => return Err(format!("Could not save the document. {error}")),
         }
     }
-    Err("Too Many Documents Share This Name. Rename The Document And Try Again.".into())
+    Err("Too many documents share this name. Rename the document and try again.".into())
 }
 
 pub fn rename_document(path: &Path, name: &str) -> Result<std::path::PathBuf, String> {
@@ -117,10 +117,10 @@ pub fn rename_document(path: &Path, name: &str) -> Result<std::path::PathBuf, St
     let destination = path.with_file_name(name);
     if destination == path { return Ok(destination); }
     let same_name_case = cfg!(windows) && path.file_name().and_then(|value| value.to_str()).is_some_and(|value| value.eq_ignore_ascii_case(name));
-    if destination.try_exists().map_err(|error| format!("Could Not Check The Filename. {error}"))? && !same_name_case {
-        return Err("A Document With That Name Already Exists. Choose Another Name.".into());
+    if destination.try_exists().map_err(|error| format!("Could not check the filename. {error}"))? && !same_name_case {
+        return Err("A document with that name already exists. Choose another name.".into());
     }
-    std::fs::rename(path, &destination).map_err(|error| format!("Could Not Rename The Document. Close Other Apps Using It And Retry. {error}"))?;
+    std::fs::rename(path, &destination).map_err(|error| format!("Could not rename the document. Close other apps using it and retry. {error}"))?;
     Ok(destination)
 }
 

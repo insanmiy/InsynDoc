@@ -1,7 +1,7 @@
 {
   "name": "insyndoc",
   "version": "1.0.2",
-  "description": "Offline Windows DOCX Editor",
+  "description": "Offline Windows DOCX editor",
   "author": "InsynDoc",
   "license": "MIT",
   "private": true,

@@ -21,28 +21,28 @@ impl DownloadFormat {
 
     pub fn label(self) -> &'static str {
         match self {
-            Self::Docx => "Microsoft Word", Self::Pdf => "PDF Document", Self::Odt => "OpenDocument Text",
-            Self::Txt => "Plain Text", Self::Rtf => "Rich Text", Self::Html => "Zipped Web Page",
-            Self::Epub => "EPUB Publication", Self::Md => "Markdown",
+            Self::Docx => "Microsoft Word", Self::Pdf => "PDF document", Self::Odt => "OpenDocument Text",
+            Self::Txt => "Plain text", Self::Rtf => "Rich text", Self::Html => "Zipped web page",
+            Self::Epub => "EPUB publication", Self::Md => "Markdown",
         }
     }
 
     pub fn validate_destination(self, path: &Path) -> Result<(), String> {
         if !path.extension().is_some_and(|extension| extension.eq_ignore_ascii_case(self.extension())) {
-            return Err(format!("Use The {} Extension For This Download.", self.extension().to_ascii_uppercase()));
+            return Err(format!("Use the {} extension for this download.", self.extension().to_ascii_uppercase()));
         }
         Ok(())
     }
 
     fn validate_bytes(self, bytes: &[u8]) -> Result<(), String> {
-        if bytes.len() > MAX_DOWNLOAD_BYTES { return Err("The Download Exceeds The 100 MB Limit.".into()); }
+        if bytes.len() > MAX_DOWNLOAD_BYTES { return Err("The download exceeds the 100 MB limit.".into()); }
         let valid = match self {
             Self::Docx | Self::Odt | Self::Html | Self::Epub => bytes.starts_with(b"PK\x03\x04"),
             Self::Pdf => bytes.starts_with(b"%PDF-"),
             Self::Rtf => bytes.starts_with(br"{\rtf"),
             Self::Txt | Self::Md => std::str::from_utf8(bytes).is_ok(),
         };
-        if !valid { return Err("The Download Content Does Not Match Its File Format.".into()); }
+        if !valid { return Err("The download content does not match its file format.".into()); }
         Ok(())
     }
 }
@@ -62,7 +62,7 @@ impl DownloadMetadata {
             || (stem.len() == 4 && (stem.starts_with("COM") || stem.starts_with("LPT")) && matches!(stem.as_bytes()[3], b'1'..=b'9'));
         if stem.is_empty() || name.encode_utf16().count() > 180 || name.trim() != name || name.ends_with('.') || reserved
             || name.chars().any(|value| value.is_control() || "<>:\"/\\|?*".contains(value)) {
-            return Err("Choose A Download Name Without Reserved Characters.".into());
+            return Err("Choose a download name without reserved characters.".into());
         }
         let stem = Path::new(name).file_stem().and_then(|value| value.to_str()).unwrap_or("Untitled");
         Ok(format!("{stem}.{}", self.format.extension()))
@@ -70,10 +70,10 @@ impl DownloadMetadata {
 }
 
 pub fn read_request(packet: &[u8]) -> Result<(DownloadMetadata, &[u8]), String> {
-    let prefix: [u8; 4] = packet.get(..4).ok_or("Invalid Download Transfer.")?.try_into().map_err(|_| "Invalid Download Transfer.")?;
+    let prefix: [u8; 4] = packet.get(..4).ok_or("Invalid download transfer.")?.try_into().map_err(|_| "Invalid download transfer.")?;
     let length = u32::from_le_bytes(prefix) as usize;
-    if length > MAX_METADATA_BYTES || length > packet.len() - 4 { return Err("Invalid Download Metadata.".into()); }
-    let metadata: DownloadMetadata = serde_json::from_slice(&packet[4..4 + length]).map_err(|error| format!("Invalid Download Metadata. {error}"))?;
+    if length > MAX_METADATA_BYTES || length > packet.len() - 4 { return Err("Invalid download metadata.".into()); }
+    let metadata: DownloadMetadata = serde_json::from_slice(&packet[4..4 + length]).map_err(|error| format!("Invalid download metadata. {error}"))?;
     metadata.suggested_name()?;
     let bytes = &packet[4 + length..];
     metadata.format.validate_bytes(bytes)?;
@@ -85,10 +85,10 @@ pub fn write_download(path: &Path, format: DownloadFormat, bytes: &[u8]) -> Resu
     format.validate_bytes(bytes)?;
     let parent = path.parent().filter(|parent| !parent.as_os_str().is_empty()).unwrap_or(Path::new("."));
     let mut temporary = tempfile::NamedTempFile::new_in(parent)
-        .map_err(|error| format!("Could Not Create A Temporary Download. Check Folder Access. {error}"))?;
+        .map_err(|error| format!("Could not create a temporary download. Check folder access. {error}"))?;
     temporary.write_all(bytes).and_then(|()| temporary.as_file().sync_all())
-        .map_err(|error| format!("Could Not Write The Download. The Original Is Unchanged. {error}"))?;
-    temporary.persist(path).map_err(|error| format!("Could Not Replace The Download. Close Other Apps Using It And Retry. {error}"))?;
+        .map_err(|error| format!("Could not write the download. The original is unchanged. {error}"))?;
+    temporary.persist(path).map_err(|error| format!("Could not replace the download. Close other apps using it and retry. {error}"))?;
     Ok(())
 }
 

@@ -37,7 +37,7 @@ impl FileSessions {
     }
 
     pub fn register(&self, path: PathBuf) -> Result<String, String> {
-        let mut state = self.state.lock().map_err(|_| "File Session Is Unavailable. Restart The App.".to_string())?;
+        let mut state = self.state.lock().map_err(|_| "File session is unavailable. Restart the app.".to_string())?;
         let token = self.token(&mut state, path);
         state.pending = Some(token.clone());
         state.prune();
@@ -45,7 +45,7 @@ impl FileSessions {
     }
 
     pub fn register_export(&self, path: PathBuf) -> Result<String, String> {
-        let mut state = self.state.lock().map_err(|_| "File Session Is Unavailable. Restart The App.".to_string())?;
+        let mut state = self.state.lock().map_err(|_| "File session is unavailable. Restart the app.".to_string())?;
         let token = self.token(&mut state, path);
         state.exported = Some(token.clone());
         state.prune();
@@ -53,8 +53,8 @@ impl FileSessions {
     }
 
     pub fn activate(&self, token: &str) -> Result<(), String> {
-        let mut state = self.state.lock().map_err(|_| "File Session Is Unavailable. Restart The App.".to_string())?;
-        if !state.paths.contains_key(token) { return Err("The File Session Has Expired. Reopen The Document.".into()); }
+        let mut state = self.state.lock().map_err(|_| "File session is unavailable. Restart the app.".to_string())?;
+        if !state.paths.contains_key(token) { return Err("The file session has expired. Reopen the document.".into()); }
         state.active = Some(token.to_string());
         state.pending = None;
         state.prune();
@@ -62,7 +62,7 @@ impl FileSessions {
     }
 
     pub fn sync_recent(&self, paths: &[PathBuf]) -> Result<Vec<String>, String> {
-        let mut state = self.state.lock().map_err(|_| "File Session Is Unavailable. Restart The App.".to_string())?;
+        let mut state = self.state.lock().map_err(|_| "File session is unavailable. Restart the app.".to_string())?;
         let tokens: Vec<String> = paths.iter().take(10).map(|path| self.token(&mut state, path.clone())).collect();
         state.recent = tokens.iter().cloned().collect();
         state.prune();
@@ -70,15 +70,15 @@ impl FileSessions {
     }
 
     pub fn rename(&self, token: &str, path: PathBuf) -> Result<(), String> {
-        let mut state = self.state.lock().map_err(|_| "File Session Is Unavailable. Restart The App.".to_string())?;
-        let previous = state.paths.get_mut(token).ok_or_else(|| "The File Session Has Expired. Reopen The Document.".to_string())?;
+        let mut state = self.state.lock().map_err(|_| "File session is unavailable. Restart the app.".to_string())?;
+        let previous = state.paths.get_mut(token).ok_or_else(|| "The file session has expired. Reopen the document.".to_string())?;
         *previous = path;
         Ok(())
     }
 
     pub fn resolve(&self, token: &str) -> Result<PathBuf, String> {
-        self.state.lock().map_err(|_| "File Session Is Unavailable. Restart The App.".to_string())?
-            .paths.get(token).cloned().ok_or_else(|| "The File Session Has Expired. Use Save As.".into())
+        self.state.lock().map_err(|_| "File session is unavailable. Restart the app.".to_string())?
+            .paths.get(token).cloned().ok_or_else(|| "The file session has expired. Use save as.".into())
     }
 }
 

@@ -4,12 +4,12 @@ import { Icon } from './Icon';
 
 const formats: readonly { format: ExportFormat; label: string }[] = [
   { format: 'docx', label: 'Microsoft Word (.docx)' },
-  { format: 'pdf', label: 'PDF Document (.pdf)' },
-  { format: 'odt', label: 'OpenDocument Format (.odt)' },
-  { format: 'txt', label: 'Plain Text (.txt)' },
-  { format: 'rtf', label: 'Rich Text Format (.rtf)' },
-  { format: 'html', label: 'Web Page (.html, Zipped)' },
-  { format: 'epub', label: 'EPUB Publication (.epub)' },
+  { format: 'pdf', label: 'PDF document (.pdf)' },
+  { format: 'odt', label: 'OpenDocument format (.odt)' },
+  { format: 'txt', label: 'Plain text (.txt)' },
+  { format: 'rtf', label: 'Rich text format (.rtf)' },
+  { format: 'html', label: 'Web page (.html, zipped)' },
+  { format: 'epub', label: 'EPUB publication (.epub)' },
   { format: 'md', label: 'Markdown (.md)' }
 ];
 
@@ -32,10 +32,10 @@ export function DownloadMenu({ disabled, onDownload }: { disabled: boolean; onDo
   }, [open]);
 
   return <div ref={container} className="download-menu-container">
-    <button ref={trigger} className="primary-button download-document" aria-label="Download Document" aria-haspopup="menu" aria-expanded={open} disabled={disabled} onClick={() => setOpen((value) => !value)} onKeyDown={(event) => {
+    <button ref={trigger} className="primary-button download-document" aria-label="Download document" aria-haspopup="menu" aria-expanded={open} disabled={disabled} onClick={() => setOpen((value) => !value)} onKeyDown={(event) => {
       if (event.key === 'ArrowDown' || event.key === 'ArrowUp') { event.preventDefault(); setOpen(true); }
     }}><Icon name="download" size={16}/>Download<Icon name="chevronDown" size={14}/></button>
-    {open && <div ref={menu} className="download-format-menu" role="menu" aria-label="Download Formats" onKeyDown={(event) => {
+    {open && <div ref={menu} className="download-format-menu" role="menu" aria-label="Download formats" onKeyDown={(event) => {
       if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); setOpen(false); trigger.current?.focus(); return; }
       if (event.key === 'Tab') { setOpen(false); return; }
       if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;

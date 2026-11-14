@@ -1,17 +1,17 @@
 <div align="center">
 
-<img src="src-tauri/icons/insyndoc/128x128.png" alt="InsynDoc Icon" width="96" height="96">
+<img src="src-tauri/icons/insyndoc/128x128.png" alt="InsynDoc icon" width="96" height="96">
 
 # InsynDoc
 
-### A Private, Offline Word Processing Workspace For Windows.
+### A private, offline word processing workspace for Windows.
 
-Create, Edit, And Export DOCX Documents. Your Documents And Preferences Stay On Your Device.
+Create, edit, and export DOCX documents. Your documents and preferences stay on your device.
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 ![Platform: Windows](https://img.shields.io/badge/platform-Windows-0078D4)
-![Offline First](https://img.shields.io/badge/offline-first-2E8B57)
-![Built With Tauri](https://img.shields.io/badge/built_with-Tauri_2-FFC131)
+![Offline first](https://img.shields.io/badge/offline-first-2E8B57)
+![Built with Tauri](https://img.shields.io/badge/built_with-Tauri_2-FFC131)
 
 </div>
 
@@ -19,78 +19,76 @@ Create, Edit, And Export DOCX Documents. Your Documents And Preferences Stay On 
 
 ## Features
 
-- Create A New Document Or Open An Existing DOCX File.
-- Edit And Format Text, Lists, Tables, Headers, Footers, And Page Layout.
-- Find Text, Replace Text, Navigate By Page Or Heading, And View Word Statistics.
-- Check English Spelling And Sentence Context Locally, With A Personal Dictionary.
-- Export Documents As DOCX Or PDF.
-- Choose Light, Dark, Or System Theme, Ruler Units, Word Goal, And Editor Preferences.
-- Use Focus Mode, Keyboard Shortcuts, And Automatic Formatting.
+- Create a new document or open an existing DOCX file.
+- Edit and format text, lists, tables, headers, footers, and page layout.
+- Find text, replace text, navigate by page or heading, and view word statistics.
+- Check English spelling and sentence context locally, with a personal dictionary.
+- Export documents as DOCX or PDF.
+- Choose light, dark, or system theme, ruler units, word goal, and editor preferences.
+- Use focus mode, keyboard shortcuts, and automatic formatting.
 
-InsynDoc Is Designed To Work Offline. Opening Links In A Browser And Downloading Document Fonts May Require An Internet Connection.
+InsynDoc is designed to work offline. Opening links in a browser and downloading document fonts may require an internet connection.
 
 ## Install
 
-Download The Windows Installer From [GitHub Releases](https://github.com/insanmiy/InsynDoc/releases/latest) And Run The Setup File. Choose An Installation For Your User Or For All Users. Installing For All Users Requires Administrator Approval.
+Download the [Windows installer](https://github.com/insanmiy/InsynDoc/releases/latest) and run the setup file. Choose an installation for your user or for all users. Installing for all users requires administrator approval.
 
-The Windows WebView2 Runtime Is Required. The Installer Can Download It When Needed.
+## Getting started
 
-## Getting Started
-
-1. Open InsynDoc And Start A New Document, Or Select **Import** To Open A DOCX File.
-2. Write And Format Your Document Using The Toolbar And Menus.
-3. Save Your Changes With **Ctrl+S**, Or Use The Download Menu To Export A Copy.
+1. Open InsynDoc and start a new document, or select **Import** to open a DOCX file.
+2. Write and format your document using the toolbar and menus.
+3. Save your changes with **Ctrl+S**, or use the Download menu to export a copy.
 
 | Shortcut | Action |
 | --- | --- |
-| `Ctrl+N` | New Document |
-| `Ctrl+O` | Open A Document |
+| `Ctrl+N` | New document |
+| `Ctrl+O` | Open a document |
 | `Ctrl+S` | Save |
-| `Ctrl+Shift+S` | Export A DOCX Copy |
-| `Ctrl+F` | Find Text |
-| `Ctrl+G` | Go To A Page |
-| `Ctrl+/` | Show Keyboard Shortcuts |
+| `Ctrl+Shift+S` | Export a DOCX copy |
+| `Ctrl+F` | Find text |
+| `Ctrl+G` | Go to a page |
+| `Ctrl+/` | Show keyboard shortcuts |
 
-## Run From This Repository
+## Run from this repository
 
-Install Node.js, npm, Rust 1.85 Or Newer, And The [Tauri Windows Prerequisites](https://v2.tauri.app/start/prerequisites/#windows), Including Microsoft C++ Build Tools And WebView2. From The Repository Directory, Run:
+Install Node.js, npm, Rust 1.85 or newer, and the [Tauri Windows Prerequisites](https://v2.tauri.app/start/prerequisites/#windows), including Microsoft C++ Build Tools and WebView2. From the repository directory, run:
 
 ```powershell
 npm ci
 npm run dev
 ```
 
-To Build The Web Frontend:
+To build the web frontend:
 
 ```powershell
 npm run build
 ```
 
-To Build The Windows Installer:
+To build the Windows installer:
 
 ```powershell
 npm run dist
 ```
 
-The Installer Is Written Under `src-tauri/target/release/bundle/nsis/`. You Can Also Run `Start.bat` On Windows To Build When Needed And Launch The Desktop App.
+The installer is written under `src-tauri/target/release/bundle/nsis/`. You can also run `Start.bat` on Windows to build when needed and launch the desktop app.
 
-## Development Commands
+## Development commands
 
 | Command | Description |
 | --- | --- |
-| `npm run dev` | Start The Tauri Desktop Development App. |
-| `npm run dev:web` | Start The Frontend Development Server. |
-| `npm run build` | Typecheck And Build The Frontend. |
-| `npm run typecheck` | Run The TypeScript Type Checker. |
-| `npm run test:rust` | Run The Rust Tests. |
-| `npm run dist` | Build The Windows NSIS Installer. |
+| `npm run dev` | Start the Tauri desktop development app. |
+| `npm run dev:web` | Start the frontend development server. |
+| `npm run build` | Typecheck and build the frontend. |
+| `npm run typecheck` | Run the TypeScript type checker. |
+| `npm run test:rust` | Run the Rust tests. |
+| `npm run dist` | Build the Windows NSIS installer. |
 
-## Privacy And Storage
+## Privacy and storage
 
-Documents Are Opened And Saved Locally. InsynDoc Does Not Require An Account Or A Hosted Service. Preferences, Including Personal Spelling Words And Learned Corrections, Are Stored On This Device.
+Documents are opened and saved locally. InsynDoc does not require an account or a hosted service. Preferences, including personal spelling words and learned corrections, are stored on this device.
 
-Opening External Links, Downloading Fonts, And Checking For Updates Require A Network Connection.
+Opening external links, downloading fonts, and checking for updates require a network connection.
 
 ## License
 
-InsynDoc Is Licensed Under The MIT License. See [LICENSE](LICENSE) And [Third Party Notices](THIRD_PARTY_NOTICES.md) For Dependency And Font Licensing Information.
+InsynDoc is licensed under the MIT license. See [LICENSE](LICENSE) and [Third party notices](THIRD_PARTY_NOTICES.md) for dependency and font licensing information.

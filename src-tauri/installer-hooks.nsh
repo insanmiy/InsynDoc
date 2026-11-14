@@ -1,14 +1,14 @@
 !macro NSIS_HOOK_POSTINSTALL
-  WriteRegStr SHCTX "Software\Classes\InsynDoc.Document" "" "Word Document"
+  WriteRegStr SHCTX "Software\Classes\InsynDoc.Document" "" "Word document"
   WriteRegStr SHCTX "Software\Classes\InsynDoc.Document\DefaultIcon" "" '$\"$INSTDIR\${MAINBINARYNAME}.exe$\",0'
-  WriteRegStr SHCTX "Software\Classes\InsynDoc.Document\shell\open" "" "Open With InsynDoc"
+  WriteRegStr SHCTX "Software\Classes\InsynDoc.Document\shell\open" "" "Open with InsynDoc"
   WriteRegStr SHCTX "Software\Classes\InsynDoc.Document\shell\open\command" "" '$\"$INSTDIR\${MAINBINARYNAME}.exe$\" $\"%1$\"'
   WriteRegStr SHCTX "Software\Classes\.docx\OpenWithProgids" "InsynDoc.Document" ""
   WriteRegStr SHCTX "Software\Classes\Applications\${MAINBINARYNAME}.exe" "FriendlyAppName" "InsynDoc"
   WriteRegStr SHCTX "Software\Classes\Applications\${MAINBINARYNAME}.exe\SupportedTypes" ".docx" ""
   WriteRegStr SHCTX "Software\Classes\Applications\${MAINBINARYNAME}.exe\shell\open\command" "" '$\"$INSTDIR\${MAINBINARYNAME}.exe$\" $\"%1$\"'
   WriteRegStr SHCTX "Software\InsynDoc\Capabilities" "ApplicationName" "InsynDoc"
-  WriteRegStr SHCTX "Software\InsynDoc\Capabilities" "ApplicationDescription" "Offline DOCX Editor"
+  WriteRegStr SHCTX "Software\InsynDoc\Capabilities" "ApplicationDescription" "Offline DOCX editor"
   WriteRegStr SHCTX "Software\InsynDoc\Capabilities\FileAssociations" ".docx" "InsynDoc.Document"
   WriteRegStr SHCTX "Software\RegisteredApplications" "InsynDoc" "Software\InsynDoc\Capabilities"
   ReadRegStr $R0 HKCR ".docx" ""

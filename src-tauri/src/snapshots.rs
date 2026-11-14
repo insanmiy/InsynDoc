@@ -54,7 +54,7 @@ fn snapshot_path(directory: &Path, id: &str) -> Option<PathBuf> {
 pub fn write(root: &Path, key: &str, bytes: &[u8]) -> Result<SnapshotInfo, String> {
     files::validate_docx(bytes)?;
     let directory = snapshot_directory(root, key);
-    fs::create_dir_all(&directory).map_err(|error| format!("Could Not Create The Snapshot Folder. {error}"))?;
+    fs::create_dir_all(&directory).map_err(|error| format!("Could not create the snapshot folder. {error}"))?;
     let millis = SystemTime::now().duration_since(UNIX_EPOCH).map_err(|error| error.to_string())?.as_millis() as u64;
     let mut sequence = 0u32;
     let path = loop {
@@ -62,13 +62,13 @@ pub fn write(root: &Path, key: &str, bytes: &[u8]) -> Result<SnapshotInfo, Strin
         let candidate = directory.join(format!("{id}.docx"));
         if !candidate.exists() { break candidate; }
         sequence += 1;
-        if sequence > 1000 { return Err("Could Not Create A Unique Snapshot Name.".into()); }
+        if sequence > 1000 { return Err("Could not create a unique snapshot name.".into()); }
     };
-    let id = snapshot_id(&path).ok_or("Could Not Name The Snapshot.".to_string())?;
+    let id = snapshot_id(&path).ok_or("Could not name the snapshot.".to_string())?;
     let created_at = snapshot_created(&id);
-    let mut temporary = tempfile::NamedTempFile::new_in(&directory).map_err(|error| format!("Could Not Create The Snapshot. {error}"))?;
-    temporary.write_all(bytes).and_then(|()| temporary.as_file().sync_all()).map_err(|error| format!("Could Not Write The Snapshot. {error}"))?;
-    temporary.persist(&path).map_err(|error| format!("Could Not Save The Snapshot. {error}"))?;
+    let mut temporary = tempfile::NamedTempFile::new_in(&directory).map_err(|error| format!("Could not create the snapshot. {error}"))?;
+    temporary.write_all(bytes).and_then(|()| temporary.as_file().sync_all()).map_err(|error| format!("Could not write the snapshot. {error}"))?;
+    temporary.persist(&path).map_err(|error| format!("Could not save the snapshot. {error}"))?;
     prune(&directory);
     Ok(SnapshotInfo { id, created_at })
 }
@@ -91,7 +91,7 @@ pub fn list(root: &Path, key: &str) -> Result<Vec<SnapshotInfo>, String> {
     let entries = match fs::read_dir(&directory) {
         Ok(entries) => entries,
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(Vec::new()),
-        Err(error) => return Err(format!("Could Not Read Snapshots. {error}")),
+        Err(error) => return Err(format!("Could not read snapshots. {error}")),
     };
     let mut snapshots: Vec<SnapshotInfo> = entries.filter_map(|entry| entry.ok()).filter_map(|entry| {
         let path = entry.path();
@@ -110,9 +110,9 @@ pub fn latest(root: &Path, key: &str) -> Result<Option<SnapshotInfo>, String> {
 
 pub fn read(root: &Path, key: &str, id: &str) -> Result<Vec<u8>, String> {
     let Some(path) = snapshot_path(&snapshot_directory(root, key), id) else {
-        return Err("The Snapshot Is Unavailable.".into());
+        return Err("The snapshot is unavailable.".into());
     };
-    let bytes = fs::read(&path).map_err(|error| format!("Could Not Read The Snapshot. {error}"))?;
+    let bytes = fs::read(&path).map_err(|error| format!("Could not read the snapshot. {error}"))?;
     files::validate_docx(&bytes)?;
     Ok(bytes)
 }

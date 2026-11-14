@@ -9,18 +9,18 @@ pub fn list(directory: &Path) -> Result<Vec<PathBuf>, String> {
     let bytes = match fs::read(&path) {
         Ok(bytes) => bytes,
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(Vec::new()),
-        Err(error) => return Err(format!("Could Not Read Recent Documents. {error}")),
+        Err(error) => return Err(format!("Could not read recent documents. {error}")),
     };
     let paths: Vec<PathBuf> = serde_json::from_slice(&bytes).unwrap_or_default();
     Ok(paths.into_iter().filter(|path| path.extension().is_some_and(|extension| extension.eq_ignore_ascii_case("docx"))).take(RECENT_LIMIT).collect())
 }
 
 fn write(directory: &Path, paths: &[PathBuf]) -> Result<(), String> {
-    fs::create_dir_all(directory).map_err(|error| format!("Could Not Create The Preferences Folder. {error}"))?;
-    let bytes = serde_json::to_vec(paths).map_err(|error| format!("Could Not Prepare Recent Documents. {error}"))?;
-    let mut file = tempfile::NamedTempFile::new_in(directory).map_err(|error| format!("Could Not Update Recent Documents. {error}"))?;
-    file.write_all(&bytes).and_then(|()| file.as_file().sync_all()).map_err(|error| format!("Could Not Write Recent Documents. {error}"))?;
-    file.persist(directory.join("recent-documents.json")).map_err(|error| format!("Could Not Save Recent Documents. {error}"))?;
+    fs::create_dir_all(directory).map_err(|error| format!("Could not create the preferences folder. {error}"))?;
+    let bytes = serde_json::to_vec(paths).map_err(|error| format!("Could not prepare recent documents. {error}"))?;
+    let mut file = tempfile::NamedTempFile::new_in(directory).map_err(|error| format!("Could not update recent documents. {error}"))?;
+    file.write_all(&bytes).and_then(|()| file.as_file().sync_all()).map_err(|error| format!("Could not write recent documents. {error}"))?;
+    file.persist(directory.join("recent-documents.json")).map_err(|error| format!("Could not save recent documents. {error}"))?;
     Ok(())
 }
 

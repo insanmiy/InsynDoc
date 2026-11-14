@@ -89,7 +89,7 @@ function runStyle(node: XmlNode | undefined): ExportTextStyle {
 
 export function readExportModel(bytes: Uint8Array): ExportModel {
   const opened = openHeadlessDocument(bytes);
-  if (!opened.ok) throw new Error('The Document Could Not Read For Export. Save A DOCX Copy And Try Again.');
+  if (!opened.ok) throw new Error('The document could not be read for export. Save a DOCX copy and try again.');
   const view = opened.view;
   const packageData = view.currentPackage();
   const images: ExportImage[] = [];

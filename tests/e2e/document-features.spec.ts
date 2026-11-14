@@ -60,7 +60,7 @@ async function openEditor(page: Page): Promise<Locator> {
     };
   });
   await page.goto('http://127.0.0.1:1420');
-  const editor = page.getByRole('textbox', { name: 'Document Content' });
+  const editor = page.getByRole('textbox', { name: 'Document content' });
   await expect(editor).toBeVisible();
   await editor.focus();
   return editor;
@@ -80,7 +80,7 @@ test('Save As Changes The Active Document And Export Remains A Copy', async ({ p
   await page.keyboard.insertText('Original Text');
   await page.keyboard.press('Control+s');
   await expect(page).toHaveTitle('Original.docx | InsynDoc');
-  await fileAction(page, 'Save As...');
+  await fileAction(page, 'Save as...');
   await expect(page).toHaveTitle('Copy.docx | InsynDoc');
   const saves = await page.evaluate(() => (window as unknown as { __featureTest: FeatureTestState }).__featureTest.saves);
   expect(saves[1]).toMatchObject({ token: 'original-token', saveAs: true, activate: true });
@@ -106,7 +106,7 @@ test('Cancelling Save As Preserves The Original Name And Unsaved Edits', async (
   await editor.focus();
   await page.keyboard.insertText(' Pending Edit');
   await page.evaluate(() => { (window as unknown as { __featureTest: FeatureTestState }).__featureTest.cancelSaveAs = true; });
-  await fileAction(page, 'Save As...');
+  await fileAction(page, 'Save as...');
   await expect(page).toHaveTitle('* Original.docx | InsynDoc');
   await expect(editor).toContainText('Pending Edit');
 });
@@ -114,38 +114,38 @@ test('Cancelling Save As Preserves The Original Name And Unsaved Edits', async (
 test('Counts A Selection On Demand And Clears It When The Caret Collapses', async ({ page }) => {
   const editor = await openEditor(page);
   await page.keyboard.insertText('Hello Wonderful World');
-  await expect(page.getByRole('button', { name: 'Word Count', exact: true })).toHaveText('3 Words');
+  await expect(page.getByRole('button', { name: 'Word count', exact: true })).toHaveText('3 words');
   await page.keyboard.press('Control+Home');
   await page.keyboard.down('Shift');
   for (let index = 0; index < 5; index++) await page.keyboard.press('ArrowRight');
   await page.keyboard.up('Shift');
   expect(await page.evaluate(() => (window as unknown as { __featureTest: FeatureTestState }).__featureTest.counts.includes('Hello'))).toBe(false);
-  await page.getByRole('button', { name: 'Word Count', exact: true }).click();
-  const dialog = page.getByRole('dialog', { name: 'Word Count', exact: true });
-  const selection = dialog.getByRole('region', { name: 'Selected Text Statistics' });
+  await page.getByRole('button', { name: 'Word count', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Word count', exact: true });
+  const selection = dialog.getByRole('region', { name: 'Selected text statistics' });
   await expectStatistic(selection, 'Words', '1');
   await expectStatistic(selection, 'Characters', '5');
-  await expectStatistic(selection, 'Characters Without Spaces', '5');
-  await expectStatistic(dialog.getByRole('region', { name: 'Document Statistics' }), 'Words', '3');
+  await expectStatistic(selection, 'Characters without spaces', '5');
+  await expectStatistic(dialog.getByRole('region', { name: 'Document statistics' }), 'Words', '3');
   await dialog.getByRole('button', { name: 'Done', exact: true }).click();
   await editor.focus();
   await page.keyboard.press('Control+End');
-  await page.getByRole('button', { name: 'Word Count', exact: true }).click();
+  await page.getByRole('button', { name: 'Word count', exact: true }).click();
   await expect(dialog).toBeVisible();
   await expect(selection).toHaveCount(0);
-  await expectStatistic(dialog.getByRole('region', { name: 'Document Statistics' }), 'Words', '3');
+  await expectStatistic(dialog.getByRole('region', { name: 'Document statistics' }), 'Words', '3');
 });
 
 test('Selection Counts Preserve Unicode Characters And Spaces', async ({ page }) => {
   await openEditor(page);
   await page.keyboard.insertText('Café 🙂 Second');
   await page.keyboard.press('Control+a');
-  await page.getByRole('button', { name: 'Word Count', exact: true }).click();
-  const selection = page.getByRole('dialog', { name: 'Word Count', exact: true }).getByRole('region', { name: 'Selected Text Statistics' });
+  await page.getByRole('button', { name: 'Word count', exact: true }).click();
+  const selection = page.getByRole('dialog', { name: 'Word count', exact: true }).getByRole('region', { name: 'Selected text statistics' });
   await expectStatistic(selection, 'Words', '2');
   await expectStatistic(selection, 'Characters', '13');
-  await expectStatistic(selection, 'Characters Without Spaces', '11');
-  await expectStatistic(page.getByRole('region', { name: 'Document Statistics' }), 'Words', '2');
+  await expectStatistic(selection, 'Characters without spaces', '11');
+  await expectStatistic(page.getByRole('region', { name: 'Document statistics' }), 'Words', '2');
 });
 
 test('Ignores A Late Count From A Previously Closed Dialog', async ({ page }) => {
@@ -156,9 +156,9 @@ test('Ignores A Late Count From A Previously Closed Dialog', async ({ page }) =>
   for (let index = 0; index < 5; index++) await page.keyboard.press('ArrowRight');
   await page.keyboard.up('Shift');
   await page.evaluate(() => { (window as unknown as { __featureTest: FeatureTestState }).__featureTest.delaySelectionCount = true; });
-  await page.getByRole('button', { name: 'Word Count', exact: true }).click();
-  const dialog = page.getByRole('dialog', { name: 'Word Count', exact: true });
-  await expect(dialog.getByRole('status')).toHaveText('Counting Text...');
+  await page.getByRole('button', { name: 'Word count', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Word count', exact: true });
+  await expect(dialog.getByRole('status')).toHaveText('Counting text...');
   await dialog.getByRole('button', { name: 'Done', exact: true }).click();
   await editor.focus();
   await page.keyboard.press('Control+Home');
@@ -166,8 +166,8 @@ test('Ignores A Late Count From A Previously Closed Dialog', async ({ page }) =>
   for (let index = 0; index < 3; index++) await page.keyboard.press('ArrowRight');
   await page.keyboard.up('Shift');
   await page.evaluate(() => { (window as unknown as { __featureTest: FeatureTestState }).__featureTest.delaySelectionCount = false; });
-  await page.getByRole('button', { name: 'Word Count', exact: true }).click();
-  const selection = dialog.getByRole('region', { name: 'Selected Text Statistics' });
+  await page.getByRole('button', { name: 'Word count', exact: true }).click();
+  const selection = dialog.getByRole('region', { name: 'Selected text statistics' });
   await expectStatistic(selection, 'Characters', '3');
   await page.evaluate(async () => {
     (window as unknown as { __featureTest: FeatureTestState }).__featureTest.finishSelectionCount?.();

@@ -7,7 +7,7 @@ const baselineDirectory = path.resolve(process.argv[2] ?? '.bench_workspace/page
 const currentDirectory = path.resolve(process.argv[3] ?? 'dist');
 const outputPath = path.resolve(process.argv[4] ?? '.bench_workspace/results/editor-paste-comparison.json');
 const runs = Number(process.env.BENCHMARK_RUNS ?? 6);
-if (!Number.isInteger(runs) || runs < 2) throw new Error('Benchmark Runs Must Be An Integer Of At Least Two.');
+if (!Number.isInteger(runs) || runs < 2) throw new Error('Benchmark runs must be an integer of at least two.');
 
 const variants = [
   { name: 'baseline', directory: baselineDirectory, port: 1431 },
@@ -64,23 +64,23 @@ try {
           await session.send('Performance.enable');
           const before = await session.send('Performance.getMetrics');
           const paste = await editor.evaluate(async (element, name) => {
-            const sentence = 'This Paragraph Contains Ordinary Document Text To Measure Paste Performance And Continued Editing Responsiveness. ';
+            const sentence = 'This paragraph contains ordinary document text to measure paste performance and continued editing responsiveness. ';
             const body = sentence.repeat(Math.ceil(300_000 / sentence.length)).slice(0, 300_000);
             const paragraphs = body.match(/.{1,600}/g);
-            const text = (name === 'long-paragraph' ? body : paragraphs.join('\n')) + '\nPaste End Marker';
+            const text = (name === 'long-paragraph' ? body : paragraphs.join('\n')) + '\nPaste end marker';
             const clipboardData = new DataTransfer();
             clipboardData.setData('text/plain', text);
-            if (name === 'rich-html') clipboardData.setData('text/html', [...paragraphs, 'Paste End Marker'].map((paragraph) => `<p><b>${paragraph.slice(0,100)}</b>${paragraph.slice(100)}</p>`).join(''));
+            if (name === 'rich-html') clipboardData.setData('text/html', [...paragraphs, 'Paste end marker'].map((paragraph) => `<p><b>${paragraph.slice(0,100)}</b>${paragraph.slice(100)}</p>`).join(''));
             const start = performance.now();
             element.dispatchEvent(new ClipboardEvent('paste', { clipboardData, bubbles: true, cancelable: true }));
             const handlerMs = performance.now() - start;
             await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
             return { characters: text.length, handlerMs, nextFramesMs: performance.now() - start };
           }, scenario);
-          await page.waitForFunction(() => document.querySelector('.docx-pages')?.textContent.includes('Paste End Marker'));
+          await page.waitForFunction(() => document.querySelector('.docx-pages')?.textContent.includes('Paste end marker'));
           await page.waitForTimeout(500);
           const typingMs = [];
-          // Move Into The Large Paragraph Rather Than Typing In The Small End Marker.
+          // Move into the large paragraph rather than typing in the small end marker.
           await page.keyboard.press('ArrowUp');
           await page.keyboard.press('End');
           for (let key = 0; key < 5; key++) {
@@ -89,11 +89,11 @@ try {
             await page.keyboard.insertText('x');
             await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
             typingMs.push(performance.now() - start);
-            if (await editor.getAttribute('data-revision') === revision) throw new Error('The Typing Probe Did Not Change The Document.');
+            if (await editor.getAttribute('data-revision') === revision) throw new Error('The typing probe did not change the document.');
           }
           await page.waitForTimeout(500);
           await page.waitForFunction(() => {
-            const count = Number(document.querySelector('.document-status button[aria-label="Go To Page"]')?.textContent.match(/\d+/)?.[0]);
+            const count = Number(document.querySelector('.document-status button[aria-label="Go to page"]')?.textContent.match(/\d+/)?.[0]);
             return count > 1 && count === document.querySelectorAll('.docx-page').length;
           });
           const after = await session.send('Performance.getMetrics');
@@ -124,10 +124,10 @@ try {
   await mkdir(path.dirname(outputPath), { recursive: true });
   await writeFile(outputPath, JSON.stringify({
     timestamp: new Date().toISOString(), runs, variants,
-    scope: 'Edge Production Frontend With Mocked Desktop Calls And Spelling Disabled. Synthetic Clipboard Events. Typing Uses Keyboard InsertText. Frame Timings Are Animation Frame Proxies, Not Verified Screen Presentation. CPU Includes Paste, Typing, And Two Settling Intervals. One Warmup Per Variant And Scenario Is Excluded.',
+    scope: 'Edge production frontend with mocked desktop calls and spelling disabled. Synthetic clipboard events. Typing uses keyboard insertText. Frame timings are animation frame proxies, not verified screen presentation. CPU includes paste, typing, and two settling intervals. One warmup per variant and scenario is excluded.',
     summary, results
   }, null, 2));
-  console.log(`Saved Benchmark Results To ${outputPath}`);
+  console.log(`Saved benchmark results to ${outputPath}`);
 } finally {
   await browser?.close();
   for (const server of servers) await new Promise((resolve, reject) => server.httpServer.close((error) => error ? reject(error) : resolve()));

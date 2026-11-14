@@ -164,19 +164,19 @@ fn allowed_font_root(path: &Path) -> bool {
 }
 
 pub fn read_font_file(path: &Path) -> Result<Vec<u8>, String> {
-    let canonical = path.canonicalize().map_err(|_| "The Font File Is Unavailable.".to_string())?;
+    let canonical = path.canonicalize().map_err(|_| "The font file is unavailable.".to_string())?;
     if !canonical.is_file() || !allowed_font_root(&canonical) {
-        return Err("The Font File Is Outside The Allowed Font Folders.".into());
+        return Err("The font file is outside the allowed font folders.".into());
     }
     let extension = canonical.extension().and_then(|value| value.to_str()).unwrap_or("").to_lowercase();
     if !FONT_EXTENSIONS.contains(&extension.as_str()) {
-        return Err("This File Type Cannot Be Used As A Font.".into());
+        return Err("This file type cannot be used as a font.".into());
     }
-    let metadata = fs::metadata(&canonical).map_err(|error| format!("Could Not Read The Font File. {error}"))?;
+    let metadata = fs::metadata(&canonical).map_err(|error| format!("Could not read the font file. {error}"))?;
     if metadata.len() > MAX_FONT_BYTES {
-        return Err("The Font File Exceeds The Size Limit.".into());
+        return Err("The font file exceeds the size limit.".into());
     }
-    fs::read(&canonical).map_err(|error| format!("Could Not Read The Font File. {error}"))
+    fs::read(&canonical).map_err(|error| format!("Could not read the font file. {error}"))
 }
 
 #[cfg(test)]

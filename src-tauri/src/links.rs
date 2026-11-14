@@ -3,30 +3,30 @@ use std::process::{Command, Stdio};
 
 pub fn validate_url(value: &str) -> Result<String, String> {
     if value.len() > 8192 || value.chars().any(char::is_control) {
-        return Err("This Link Is Invalid Or Too Long.".into());
+        return Err("This link is invalid or too long.".into());
     }
-    let url = url::Url::parse(value).map_err(|_| "This Link Is Not A Valid URL.".to_string())?;
+    let url = url::Url::parse(value).map_err(|_| "This link is not a valid URL.".to_string())?;
     match url.scheme() {
         "http" | "https" if url.host_str().is_some() => Ok(url.to_string()),
         "mailto" if !url.path().is_empty() => Ok(url.to_string()),
-        _ => Err("Only HTTP, HTTPS, And Email Links Can Be Opened.".into()),
+        _ => Err("Only HTTP, HTTPS, and email links can be opened.".into()),
     }
 }
 
 pub fn validate_browser(path: &Path) -> Result<(), String> {
     if !path.is_absolute() {
-        return Err("Choose An Installed Browser Using Its Full Path.".into());
+        return Err("Choose an installed browser using its full path.".into());
     }
     #[cfg(target_os = "macos")]
     if path.is_dir() && path.extension().is_some_and(|extension| extension == "app") {
         return Ok(());
     }
     if !path.is_file() {
-        return Err("The Selected Browser Is Unavailable. Choose It Again In Settings.".into());
+        return Err("The selected browser is unavailable. Choose it again in settings.".into());
     }
     #[cfg(target_os = "windows")]
     if !path.extension().is_some_and(|extension| extension.eq_ignore_ascii_case("exe")) {
-        return Err("Choose A Browser Application With The EXE Extension.".into());
+        return Err("Choose a browser application with the EXE extension.".into());
     }
     Ok(())
 }
@@ -38,7 +38,7 @@ fn spawn_browser(command: &mut Command) -> Result<(), String> {
         use std::os::windows::process::CommandExt;
         command.creation_flags(0x08000000);
     }
-    let mut child = command.spawn().map_err(|error| format!("Could Not Open The Browser. Check Your Link Browser Setting. {error}"))?;
+    let mut child = command.spawn().map_err(|error| format!("Could not open the browser. Check your link browser setting. {error}"))?;
     std::thread::spawn(move || { let _ = child.wait(); });
     Ok(())
 }
@@ -70,7 +70,7 @@ fn open_default(url: &str) -> Result<(), String> {
     // The URL Is Validated, And Both Strings Remain Null Terminated For This Call.
     let result = unsafe { ShellExecuteW(std::ptr::null_mut(), operation.as_ptr(), file.as_ptr(), std::ptr::null(), std::ptr::null(), 1) };
     if result <= 32 {
-        return Err("Could Not Open The System Default Browser. Check Your Default Apps Or Choose A Browser In Settings.".into());
+        return Err("Could not open the system default browser. Check your default apps or choose a browser in settings.".into());
     }
     Ok(())
 }

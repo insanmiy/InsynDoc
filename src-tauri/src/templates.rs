@@ -44,7 +44,7 @@ pub fn validate_template_name(name: &str) -> Result<String, String> {
     let trimmed = name.trim();
     if trimmed.is_empty() || trimmed.chars().count() > MAX_NAME_CHARS || trimmed.ends_with('.')
         || trimmed.chars().any(|value| value.is_control() || "<>:\"/\\|?*".contains(value)) {
-        return Err("Choose A Template Name Without Slashes, Reserved Characters, Or A Trailing Dot.".into());
+        return Err("Choose a template name without slashes, reserved characters, or a trailing dot.".into());
     }
     Ok(trimmed.to_string())
 }
@@ -65,11 +65,11 @@ fn read_index(directory: &Path) -> Vec<TemplateEntry> {
 }
 
 fn write_index(directory: &Path, entries: &[TemplateEntry]) -> Result<(), String> {
-    fs::create_dir_all(directory).map_err(|error| format!("Could Not Create The Templates Folder. {error}"))?;
+    fs::create_dir_all(directory).map_err(|error| format!("Could not create the templates folder. {error}"))?;
     let bytes = serde_json::to_vec(entries).map_err(|error| error.to_string())?;
-    let mut file = tempfile::NamedTempFile::new_in(directory).map_err(|error| format!("Could Not Update Templates. {error}"))?;
+    let mut file = tempfile::NamedTempFile::new_in(directory).map_err(|error| format!("Could not update templates. {error}"))?;
     file.write_all(&bytes).and_then(|()| file.as_file().sync_all()).map_err(|error| error.to_string())?;
-    file.persist(index_path(directory)).map_err(|error| format!("Could Not Save Templates. {error}"))?;
+    file.persist(index_path(directory)).map_err(|error| format!("Could not save templates. {error}"))?;
     Ok(())
 }
 
@@ -85,7 +85,7 @@ fn prune(directory: &Path, entries: &mut Vec<TemplateEntry>) {
 pub fn save(directory: &Path, name: &str, bytes: &[u8]) -> Result<TemplateInfo, String> {
     let name = validate_template_name(name)?;
     files::validate_docx(bytes)?;
-    fs::create_dir_all(directory).map_err(|error| format!("Could Not Create The Templates Folder. {error}"))?;
+    fs::create_dir_all(directory).map_err(|error| format!("Could not create the templates folder. {error}"))?;
     let millis = SystemTime::now().duration_since(UNIX_EPOCH).map_err(|error| error.to_string())?.as_millis() as u64;
     let mut sequence = 0u32;
     let (id, path) = loop {
@@ -93,11 +93,11 @@ pub fn save(directory: &Path, name: &str, bytes: &[u8]) -> Result<TemplateInfo, 
         let candidate = directory.join(format!("{candidate_id}.docx"));
         if !candidate.exists() && !read_index(directory).iter().any(|entry| entry.id == candidate_id) { break (candidate_id, candidate); }
         sequence += 1;
-        if sequence > 100 { return Err("Could Not Create A Unique Template Name.".into()); }
+        if sequence > 100 { return Err("Could not create a unique template name.".into()); }
     };
-    let mut temporary = tempfile::NamedTempFile::new_in(directory).map_err(|error| format!("Could Not Create The Template. {error}"))?;
-    temporary.write_all(bytes).and_then(|()| temporary.as_file().sync_all()).map_err(|error| format!("Could Not Write The Template. {error}"))?;
-    temporary.persist(&path).map_err(|error| format!("Could Not Save The Template. {error}"))?;
+    let mut temporary = tempfile::NamedTempFile::new_in(directory).map_err(|error| format!("Could not create the template. {error}"))?;
+    temporary.write_all(bytes).and_then(|()| temporary.as_file().sync_all()).map_err(|error| format!("Could not write the template. {error}"))?;
+    temporary.persist(&path).map_err(|error| format!("Could not save the template. {error}"))?;
     let mut entries = read_index(directory);
     entries.retain(|entry| entry.id != id);
     entries.insert(0, TemplateEntry { id: id.clone(), name: name.clone(), created_at: millis });
@@ -114,8 +114,8 @@ pub fn list(directory: &Path) -> Result<Vec<TemplateInfo>, String> {
 }
 
 pub fn read(directory: &Path, id: &str) -> Result<Vec<u8>, String> {
-    let Some(path) = template_path(directory, id) else { return Err("The Template Is Unavailable.".into()); };
-    let bytes = fs::read(&path).map_err(|error| format!("Could Not Read The Template. {error}"))?;
+    let Some(path) = template_path(directory, id) else { return Err("The template is unavailable.".into()); };
+    let bytes = fs::read(&path).map_err(|error| format!("Could not read the template. {error}"))?;
     files::validate_docx(&bytes)?;
     Ok(bytes)
 }
@@ -125,7 +125,7 @@ pub fn delete(directory: &Path, id: &str) -> Result<(), String> {
         match fs::remove_file(&path) {
             Ok(()) => {}
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
-            Err(error) => return Err(format!("Could Not Delete The Template. {error}")),
+            Err(error) => return Err(format!("Could not delete the template. {error}")),
         }
     }
     let mut entries = read_index(directory);

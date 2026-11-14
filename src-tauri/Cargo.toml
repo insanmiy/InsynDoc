@@ -1,7 +1,7 @@
 [package]
 name = "insyndoc"
 version = "1.0.2"
-description = "Offline Windows DOCX Editor"
+description = "Offline Windows DOCX editor"
 authors = ["InsynDoc"]
 edition = "2021"
 license = "MIT"
