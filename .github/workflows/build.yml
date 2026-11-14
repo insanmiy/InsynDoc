@@ -63,6 +63,12 @@ jobs:
       - name: Prepare App Assets
         run: node scripts/prepare-assets.mjs
 
+      - name: Run Frontend Tests
+        run: npx vitest run
+
+      - name: Run Release Note Tests
+        run: node --test tests/release-notes.test.mjs
+
       - name: Run Rust Tests
         run: npm run test:rust -- --locked
 

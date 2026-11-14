@@ -12,6 +12,7 @@ interface FeatureTestState {
   counts: string[];
   cancelSaveAs: boolean;
   delaySelectionCount: boolean;
+  snapshot?: number[];
   finishSelectionCount?: () => void;
 }
 
@@ -36,12 +37,15 @@ async function openEditor(page: Page): Promise<Locator> {
           const packet = args instanceof Uint8Array ? args : new Uint8Array(args as ArrayBuffer);
           const length = new DataView(packet.buffer, packet.byteOffset, packet.byteLength).getUint32(0, true);
           const metadata: SaveRequest = JSON.parse(new TextDecoder().decode(packet.subarray(4, 4 + length)));
+          state.snapshot = Array.from(packet.subarray(4 + length));
           state.saves.push(metadata);
           if (metadata.activate && state.cancelSaveAs) { state.cancelSaveAs = false; return null; }
           if (metadata.activate) return { token: 'copy-token', name: 'Copy.docx' };
           if (metadata.saveAs) return { token: 'export-token', name: 'Export.docx' };
           return { token: metadata.token ?? 'original-token', name: metadata.token ? metadata.name : 'Original.docx' };
         }
+        if (command === 'list_document_snapshots') return state.snapshot ? [{ id: 'older', createdAt: Date.now() }] : [];
+        if (command === 'read_document_snapshot') return new Uint8Array(state.snapshot ?? []).buffer;
         if (command === 'document_statistics') {
           const { text = '' } = args as { text?: string };
           state.counts.push(text);
@@ -70,6 +74,29 @@ async function fileAction(page: Page, name: string): Promise<void> {
   await page.locator('.docs-menu').getByText('File', { exact: true }).click();
   await page.getByRole('menuitem', { name }).click();
 }
+
+test('Snapshot Restore Confirms Unsaved Edits And Keeps History Open On Cancel', async ({ page }) => {
+  const editor = await openEditor(page);
+  await page.keyboard.insertText('Saved Text');
+  await page.keyboard.press('Control+s');
+  await expect(page).toHaveTitle('Original.docx | InsynDoc');
+  await editor.focus();
+  await page.keyboard.press('Control+End');
+  await page.keyboard.insertText(' Unsaved Text');
+  await fileAction(page, 'Version history');
+  const history = page.getByRole('dialog', { name: 'Version history', exact: true });
+  await history.getByRole('button', { name: 'Restore', exact: true }).click();
+  const confirmation = page.getByRole('dialog', { name: 'Save your changes?', exact: true });
+  await expect(confirmation).toBeVisible();
+  await confirmation.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await expect(history).toBeVisible();
+  await expect(editor).toContainText('Unsaved Text');
+  await history.getByRole('button', { name: 'Restore', exact: true }).click();
+  await confirmation.getByRole('button', { name: 'Discard changes', exact: true }).click();
+  await expect(history).not.toBeVisible();
+  await expect(editor).toContainText('Saved Text');
+  await expect(editor).not.toContainText('Unsaved Text');
+});
 
 async function expectStatistic(section: Locator, name: string, value: string): Promise<void> {
   await expect(section.locator('dt').filter({ hasText: new RegExp(`^${name}$`) }).locator('..').locator('dd')).toHaveText(value);

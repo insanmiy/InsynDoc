@@ -263,13 +263,19 @@ export class DocumentSession {
 
   snapshotStatus = (): Promise<SnapshotStatus | null> => documentSnapshotStatus(this.state.token, this.state.name);
 
-  restoreSnapshot = (id: string): Promise<void> => this.run('Restoring snapshot', async () => {
-    const bytes = await readDocumentSnapshot(this.state.token, this.state.name, id);
-    await this.adapter!.validate(bytes);
-    await this.adapter!.load(bytes);
-    this.revision += 1;
-    this.update({ dirty: true });
-  });
+  restoreSnapshot = async (id: string): Promise<boolean> => {
+    let restored = false;
+    await this.run('Restoring Snapshot', async () => {
+      const bytes = await readDocumentSnapshot(this.state.token, this.state.name, id);
+      await this.adapter!.validate(bytes);
+      if (!await this.canReplace()) return;
+      await this.adapter!.load(bytes);
+      this.revision += 1;
+      this.update({ dirty: true });
+      restored = true;
+    });
+    return restored;
+  };
 
   listTemplates = (): Promise<TemplateInfo[]> => listDocumentTemplates();
 

@@ -1,13 +1,15 @@
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useLayoutEffect, useRef, type ReactNode } from 'react';
 import { Icon } from './Icon';
 
 export function Modal({ open, title, onClose, children, className = '' }: {
   open: boolean; title: string; onClose: () => void; children: ReactNode; className?: string;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
-  useEffect(() => {
-    if (open && !ref.current?.open) ref.current?.showModal();
-    if (!open && ref.current?.open) ref.current.close();
+  useLayoutEffect(() => {
+    const dialog = ref.current;
+    if (!open || !dialog) return;
+    if (!dialog.open) dialog.showModal();
+    return () => { if (dialog.open) dialog.close(); };
   }, [open]);
   return <dialog ref={ref} className={`modal ${className}`} aria-label={title}
     onCancel={(event) => { event.preventDefault(); onClose(); }}

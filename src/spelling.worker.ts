@@ -1,7 +1,7 @@
 import nspell from 'nspell';
 import { LocalLinter, Dialect, createBinaryModuleFromUrl } from 'harper.js';
 import { checkWriting, WRITING_LINT_CONFIG } from './grammar-engine';
-import { suggestSpelling, type SpellingRequest, type SpellingResponse } from './spelling-engine';
+import { createSpellingFallback, suggestSpelling, type SpellingRequest, type SpellingResponse } from './spelling-engine';
 
 let grammar: Promise<LocalLinter> | null = null;
 function loadGrammar(): Promise<LocalLinter> {
@@ -14,6 +14,7 @@ function loadGrammar(): Promise<LocalLinter> {
 }
 
 let dictionary: Promise<ReturnType<typeof nspell>> | null = null;
+let fallback: ((word: string) => string[]) | undefined;
 
 function loadDictionary(): Promise<ReturnType<typeof nspell>> {
   dictionary ??= Promise.all([
@@ -23,7 +24,9 @@ function loadDictionary(): Promise<ReturnType<typeof nspell>> {
     if (!affix.ok || !words.ok) throw new Error('The spelling dictionary could not be loaded.');
     // Treat All Dictionary Words Equally When Generating Suggestions.
     const rules = (await affix.text()).replace(/^NOSUGGEST[^\r\n]*(?:\r?\n|$)/gm, '');
-    return nspell(rules, await words.text());
+    const dictionaryText = await words.text();
+    fallback = createSpellingFallback(dictionaryText);
+    return nspell(rules, dictionaryText);
   });
   return dictionary;
 }
@@ -37,7 +40,9 @@ self.onmessage = async (event: MessageEvent<SpellingRequest>): Promise<void> => 
       const linter = await loadGrammar();
       response = { type: 'checked', id: request.id, ...await checkWriting(request.paragraphs, (word) => checker.correct(word), request.excluded, linter, request.ignoredGrammar) };
     } else {
-      response = { type: 'suggested', id: request.id, suggestions: suggestSpelling(request.word, checker, request.personalWords, request.corrections) };
+      response = { type: 'suggested', id: request.id, suggestions: suggestSpelling(request.word, {
+        correct: (word) => checker.correct(word), suggest: (word) => checker.suggest(word), fallback
+      }, request.personalWords, request.corrections) };
     }
   } catch {
     response = { type: 'error', id: request.id };

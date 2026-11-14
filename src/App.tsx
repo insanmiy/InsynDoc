@@ -254,7 +254,7 @@ export function App() {
       <div className="header-actions">
         <button className="secondary-button import-document" aria-label="Import DOCX" disabled={unavailable} onClick={() => void session.open()} title="Import DOCX (Ctrl+O)"><Icon name="folder" size={16}/><span>Import</span></button>
         <button className="icon-button" aria-label="Settings" title="Settings (Ctrl+,)" onClick={() => setSettingsOpen(true)}><Icon name="settings"/></button>
-        <DownloadMenu disabled={unavailable} onDownload={(format) => void session.download(format)}/>
+        <DownloadMenu disabled={unavailable} onDownload={(format) => session.download(format)}/>
       </div>
     </header>
 

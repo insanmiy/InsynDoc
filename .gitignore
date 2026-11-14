@@ -19,6 +19,7 @@ public/fonts/
 THIRD_PARTY_NOTICES.md
 *.md
 !readme.md
+!CHANGELOG.md
 .Testing/
 
 # Local Toolchains And Caches

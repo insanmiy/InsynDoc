@@ -57,11 +57,21 @@ jobs:
         with:
           toolchain: stable
 
+      - name: Prepare Release Notes
+        shell: powershell
+        run: node scripts/release-notes.mjs $env:GITHUB_REF_NAME
+
       - name: Install Dependencies
         run: npm ci
 
       - name: Prepare App Assets
         run: node scripts/prepare-assets.mjs
+
+      - name: Run Frontend Tests
+        run: npx vitest run
+
+      - name: Run Release Note Tests
+        run: node --test tests/release-notes.test.mjs
 
       - name: Run Rust Tests
         run: npm run test:rust -- --locked
@@ -94,7 +104,7 @@ jobs:
           $tag = '${{ github.ref_name }}'
           $manifest = [ordered]@{
             version = $version
-            notes = ''
+            notes = (Get-Content artifacts/release-notes.md -Raw -Encoding UTF8).Trim()
             pub_date = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')
             platforms = [ordered]@{
               'windows-x86_64' = [ordered]@{
@@ -116,4 +126,5 @@ jobs:
             src-tauri/target/release/bundle/nsis/latest.json
             artifacts/insyndoc-installer-sha256.txt
             THIRD_PARTY_NOTICES.md
-          generate_release_notes: true
+          body_path: artifacts/release-notes.md
+          generate_release_notes: false

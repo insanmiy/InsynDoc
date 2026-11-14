@@ -90,8 +90,8 @@ export function VersionHistory({ session, onClose }: { session: DocumentSession;
     setRestoring(snapshot.id);
     setError(null);
     try {
-      await session.restoreSnapshot(snapshot.id);
-      onClose();
+      if (await session.restoreSnapshot(snapshot.id)) onClose();
+      else setError(session.getSnapshot().error);
     } catch (reason: unknown) { setError(reason instanceof Error ? reason.message : String(reason)); }
     finally { setRestoring(null); }
   }

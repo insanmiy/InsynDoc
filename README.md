@@ -83,6 +83,20 @@ The installer is written under `src-tauri/target/release/bundle/nsis/`. You can 
 | `npm run test:rust` | Run the Rust tests. |
 | `npm run dist` | Build the Windows NSIS installer. |
 
+## Release notes
+
+Keep user-visible changes in [CHANGELOG.md](CHANGELOG.md) under `Unreleased`, grouped into Added, Changed, and Fixed as needed.
+
+Before publishing a release, move its entries into a section such as `## [1.0.3] - 2026-11-14`, leaving an empty `Unreleased` section for future work. Use the actual release version and date. The version must match the application version and the release tag, such as `v1.0.3`.
+
+The release workflow reads that version's changelog section for both GitHub release notes and in-app update notes. It stops if the section is missing, empty, or duplicated. To check the notes locally before tagging, run:
+
+```powershell
+node scripts/release-notes.mjs v1.0.3
+```
+
+Use your release's version in the command. The extracted notes are written to `artifacts/release-notes.md` for review.
+
 ## Privacy and storage
 
 Documents are opened and saved locally. InsynDoc does not require an account or a hosted service. Preferences, including personal spelling words and learned corrections, are stored on this device.

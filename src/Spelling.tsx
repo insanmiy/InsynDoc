@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { createPortal } from 'react-dom';
 import { useDocxEditor } from '@docx-editor.dev/react';
 import { paragraphOrderOfPart, paragraphTextOf } from '@docx-editor.dev/core/store';
+import type { HighlightRect } from '@docx-editor.dev/core/contracts/editor';
 import { replaceDocumentMatches } from './document-replacement';
 import { isSpellingWord, spellingKey, type SpellingIssue, type SpellingParagraph, type SpellingRequest, type SpellingResponse } from './spelling-engine';
 import { learnSpellingCorrection } from './spelling-learning';
@@ -38,7 +39,9 @@ export function Spelling({ preferences, onPreferences, request, documentKey }: {
   const lastRequest = useRef(0);
   const reviewPending = useRef(false);
   const focusedButton = useRef<HTMLButtonElement | null>(null);
+  const hoverTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const dismiss = useCallback(() => {
+    clearTimeout(hoverTimer.current);
     reviewPending.current = false;
     setPopup(null);
     setCustomWord(null);
@@ -52,6 +55,10 @@ export function Spelling({ preferences, onPreferences, request, documentKey }: {
   useEffect(() => {
     const escape = (event: KeyboardEvent): void => {
       if (event.key !== 'Escape' || !popupElement.current || document.querySelector('dialog[open]')) return;
+      if (document.querySelector('[role="menu"]') || !(event.target instanceof Element && event.target.closest('.document-stage, .spelling-popover'))) {
+        dismiss();
+        return;
+      }
       event.preventDefault();
       event.stopImmediatePropagation();
       dismiss();
@@ -79,6 +86,9 @@ export function Spelling({ preferences, onPreferences, request, documentKey }: {
     let checked = false;
     let timer: ReturnType<typeof setTimeout>;
     let issues: SpellingIssue[] = [];
+    let hoverOpened = false;
+    let hoveredIssue = '';
+    let hoveredRect: HighlightRect | undefined;
     const excluded = [...preferences.spellingWords, ...ignored];
     const post = (message: SpellingRequest): void => {
       if (!worker) {
@@ -92,7 +102,10 @@ export function Spelling({ preferences, onPreferences, request, documentKey }: {
       left: Math.max(8, Math.min(rect?.left ?? window.innerWidth - 320, window.innerWidth - 304)),
       top: Math.max(8, Math.min(rect?.bottom ? rect.bottom + 8 : 150, window.innerHeight - 320))
     });
-    const openIssue = (issue: SpellingIssue, rect?: { left: number; bottom: number }, focus = false): void => {
+    const openIssue = (issue: SpellingIssue, rect?: HighlightRect, focus = false): void => {
+      hoverOpened = !focus;
+      hoveredIssue = JSON.stringify([issue.blockId, issue.start, issue.length]);
+      hoveredRect = rect;
       reviewPending.current = false;
       setCustomWord(null);
       setPopup({ issue, suggestions: issue.suggestions ?? null, focus, ...position(rect) });
@@ -136,7 +149,7 @@ export function Spelling({ preferences, onPreferences, request, documentKey }: {
       }
       inFlight = true;
       queued = false;
-      post({ type: 'check', id: version, paragraphs, excluded: [...excluded, ...learnedCorrections.current.map((entry) => entry.replacement)], ignoredGrammar });
+      post({ type: 'check', id: version, paragraphs, excluded, ignoredGrammar });
     };
     const schedule = (): void => {
       checked = false;
@@ -172,14 +185,38 @@ export function Spelling({ preferences, onPreferences, request, documentKey }: {
       }
       if (queued) check();
     };
-    const pick = (event: MouseEvent): void => {
+    const pointerdown = (event: PointerEvent): void => {
+      clearTimeout(hoverTimer.current);
       if (event.target instanceof Node && popupElement.current?.contains(event.target)) return;
-      if (event.ctrlKey || event.metaKey || event.altKey || document.querySelector('dialog[open]')) { dismiss(); return; }
+      dismiss();
+      if (event.pointerType !== 'touch' || event.ctrlKey || event.metaKey || event.altKey || document.querySelector('dialog[open]')) return;
+      if (!(event.target instanceof Element) || !event.target.closest('.document-stage')) return;
       const hit = editor.getHighlightsAt<SpellingIssue>(event.clientX, event.clientY).find((candidate) => candidate.name === 'spelling');
-      if (!hit) { dismiss(); return; }
+      if (!hit) return;
       event.preventDefault();
-      event.stopImmediatePropagation();
-      openIssue({ ...hit.range, start: hit.start, length: hit.length }, hit.rect);
+      openIssue({ ...hit.range, start: hit.start, length: hit.length }, hit.rect, true);
+    };
+    const hover = (event: PointerEvent): void => {
+      clearTimeout(hoverTimer.current);
+      if (event.pointerType === 'touch' || event.buttons || event.ctrlKey || event.metaKey || event.altKey) return;
+      if (event.target instanceof Node && popupElement.current?.contains(event.target)) return;
+      if (document.querySelector('dialog[open], [role="menu"]') || popupElement.current?.contains(document.activeElement)) return;
+      const overDocument = event.target instanceof Element && Boolean(event.target.closest('.document-stage'));
+      const { clientX, clientY } = event;
+      hoverTimer.current = setTimeout(() => {
+        const hit = overDocument ? editor.getHighlightsAt<SpellingIssue>(clientX, clientY).find((candidate) => candidate.name === 'spelling') : undefined;
+        if (!hit) {
+          const bounds = popupElement.current?.getBoundingClientRect();
+          if (hoverOpened && hoveredRect && bounds
+            && clientX >= Math.min(hoveredRect.left, bounds.left) - 8 && clientX <= Math.max(hoveredRect.right, bounds.right) + 8
+            && clientY >= Math.min(hoveredRect.top, bounds.top) - 8 && clientY <= Math.max(hoveredRect.bottom, bounds.bottom) + 8) return;
+          if (hoverOpened) dismiss();
+          return;
+        }
+        const key = JSON.stringify([hit.range.blockId, hit.start, hit.length]);
+        if (key === hoveredIssue && popupElement.current) return;
+        openIssue({ ...hit.range, start: hit.start, length: hit.length }, hit.rect);
+      }, 250);
     };
     const keydown = (event: KeyboardEvent): void => {
       if (document.querySelector('dialog[open]')) return;
@@ -191,10 +228,14 @@ export function Spelling({ preferences, onPreferences, request, documentKey }: {
       if (!(event.target instanceof Node) || !popupElement.current?.contains(event.target)) dismiss();
     };
     const resized = (): void => dismiss();
+    const focused = (event: FocusEvent): void => {
+      if (event.target instanceof Element && !event.target.closest('.document-stage, .spelling-popover')) dismiss();
+    };
     const stopChange = editor.on('change', schedule);
-    document.addEventListener('click', pick, true);
-    document.addEventListener('contextmenu', pick, true);
+    document.addEventListener('pointerdown', pointerdown, true);
+    document.addEventListener('pointermove', hover);
     document.addEventListener('keydown', keydown);
+    document.addEventListener('focusin', focused);
     document.addEventListener('scroll', scrolled, true);
     window.addEventListener('resize', resized);
     const runWhenIdle = window.requestIdleCallback ?? ((callback: () => void): number => window.setTimeout(callback, 2000));
@@ -205,12 +246,14 @@ export function Spelling({ preferences, onPreferences, request, documentKey }: {
       scheduleCheck.current = () => undefined;
       cancelWhenIdle(idleHandle);
       clearTimeout(timer);
+      clearTimeout(hoverTimer.current);
       worker?.terminate();
       stopChange();
       editor.clearHighlights('spelling');
-      document.removeEventListener('click', pick, true);
-      document.removeEventListener('contextmenu', pick, true);
+      document.removeEventListener('pointerdown', pointerdown, true);
+      document.removeEventListener('pointermove', hover);
       document.removeEventListener('keydown', keydown);
+      document.removeEventListener('focusin', focused);
       document.removeEventListener('scroll', scrolled, true);
       window.removeEventListener('resize', resized);
     };

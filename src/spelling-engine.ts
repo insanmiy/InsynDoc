@@ -32,6 +32,13 @@ export function spellingKey(word: string): string {
 
 // Break Equally Close Matches In Favor Of Common English Function Words.
 const commonWords = new Set('a an and are as at be been but by can could did do does for from had has have he her here him his how i if in into is it its may me more my no not of on one or our out she should so some than that the their them then there these they this those through to too up us was we were what when where which who why will with would you your'.split(' '));
+const commonDocumentWords = new Set('about after again also another back because before between both change check come day different document each edit end even example file find first form get give good great help important just know language last leave life like line list little long look make many most much name need new next number only open other over page part people performance place point read right same save say school see sentence set show small start still system take tell text thing think time use very want way well word work world write writing year'.split(' '));
+const keyboardPositions = new Map<string, { row: number; column: number }>();
+for (const [row, letters] of ['qwertyuiop', 'asdfghjkl', 'zxcvbnm'].entries()) {
+  for (const [column, letter] of Array.from(letters).entries()) {
+    keyboardPositions.set(letter, { row, column: column + row * 0.25 });
+  }
+}
 const spellingWord = /^[\p{L}]+(?:['\u2019][\p{L}]+)*$/u;
 
 export function isSpellingWord(word: unknown): word is string {
@@ -45,10 +52,16 @@ function suggestionDistance(source: string, target: string): number {
     const current = [sourceIndex];
     for (let targetIndex = 1; targetIndex <= target.length; targetIndex++) {
       const insertionCost = target[targetIndex - 1] === "'" ? 0.4 : 1;
+      const sourcePosition = keyboardPositions.get(source[sourceIndex - 1]);
+      const targetPosition = keyboardPositions.get(target[targetIndex - 1]);
+      const adjacent = sourcePosition && targetPosition
+        && Math.abs(sourcePosition.row - targetPosition.row) <= 1
+        && Math.abs(sourcePosition.column - targetPosition.column) <= 1;
+      const substitutionCost = source[sourceIndex - 1] === target[targetIndex - 1] ? 0 : adjacent ? 0.65 : 1;
       current[targetIndex] = Math.min(
         previous[targetIndex] + 1,
         current[targetIndex - 1] + insertionCost,
-        previous[targetIndex - 1] + (source[sourceIndex - 1] === target[targetIndex - 1] ? 0 : 1)
+        previous[targetIndex - 1] + substitutionCost
       );
       if (sourceIndex > 1 && targetIndex > 1 && source[sourceIndex - 1] === target[targetIndex - 2] && source[sourceIndex - 2] === target[targetIndex - 1]) {
         current[targetIndex] = Math.min(current[targetIndex], previousPrevious[targetIndex - 2] + 0.75);
@@ -60,13 +73,50 @@ function suggestionDistance(source: string, target: string): number {
   return previous[target.length];
 }
 
-export function suggestSpelling(word: string, checker: { correct: (word: string) => boolean; suggest: (word: string) => string[] }, personalWords: readonly string[] = [], corrections: readonly SpellingCorrection[] = []): string[] {
+export function createSpellingFallback(dictionary: string): (word: string) => string[] {
+  const wordsByLength = new Map<number, { word: string; consonants: string }[]>();
+  for (const entry of dictionary.split(/\r?\n/)) {
+    const word = entry.split('/')[0];
+    if (!/^[a-z]{6,26}$/.test(word)) continue;
+    const words = wordsByLength.get(word.length) ?? [];
+    words.push({ word, consonants: word.replace(/[aeiouy]/g, '') });
+    wordsByLength.set(word.length, words);
+  }
+  const cache = new Map<string, string[]>();
+  return (word) => {
+    const key = spellingKey(word);
+    if (!/^[a-z]{6,24}$/.test(key)) return [];
+    const cached = cache.get(key);
+    if (cached) return [...cached];
+    const consonants = key.replace(/[aeiouy]/g, '');
+    if (consonants.length < 3) return [];
+    const candidates: { word: string; distance: number }[] = [];
+    const maximumDistance = Math.min(4, Math.floor(key.length / 2.5));
+    for (let length = key.length - 2; length <= key.length + 2; length++) {
+      for (const candidate of wordsByLength.get(length) ?? []) {
+        if (Math.abs(candidate.consonants.length - consonants.length) > 1) continue;
+        if (suggestionDistance(consonants, candidate.consonants) > 1) continue;
+        const distance = suggestionDistance(key, candidate.word);
+        if (distance <= maximumDistance) candidates.push({ word: candidate.word, distance });
+      }
+    }
+    const suggestions = candidates.sort((left, right) => left.distance - right.distance).slice(0, 5).map((candidate) => candidate.word);
+    if (cache.size >= 128) cache.delete(cache.keys().next().value!);
+    cache.set(key, suggestions);
+    return [...suggestions];
+  };
+}
+
+export function suggestSpelling(word: string, checker: { correct: (word: string) => boolean; suggest: (word: string) => string[]; fallback?: (word: string) => string[] }, personalWords: readonly string[] = [], corrections: readonly SpellingCorrection[] = []): string[] {
   if (!isSpellingWord(word)) return [];
   const normalized = word.replace(/\u2019/g, "'");
   const key = spellingKey(word);
   if (checker.correct(normalized) || personalWords.some((personal) => spellingKey(personal) === key)) return [];
   // Keep Expensive Dictionary Generation Bounded, Even For Long Personal Words.
-  const candidates = normalized.length <= 32 ? checker.suggest(normalized) : [];
+  const candidates = normalized.length <= 32 ? checker.suggest(normalized).slice(0, 64) : [];
+  if (normalized.length <= 24 && !candidates.some((candidate) => suggestionDistance(key, spellingKey(candidate)) <= 1.25)) {
+    candidates.push(...(checker.fallback?.(normalized) ?? []).slice(0, 5));
+  }
   const personalForms = new Map<string, string>();
   const learnedForms = new Map<string, string>();
   const learnedCounts = new Map<string, number>();
@@ -87,9 +137,9 @@ export function suggestSpelling(word: string, checker: { correct: (word: string)
     candidate,
     index,
     learned: learnedCounts.get(spellingKey(candidate)) ?? 0,
-    distance: suggestionDistance(key, spellingKey(candidate)),
-    common: commonWords.has(spellingKey(candidate))
-  })).sort((left, right) => right.learned - left.learned || left.distance - right.distance || Number(right.common) - Number(left.common) || left.index - right.index);
+    score: suggestionDistance(key, spellingKey(candidate))
+      - (commonWords.has(spellingKey(candidate)) || commonDocumentWords.has(spellingKey(candidate)) ? 0.35 : 0)
+  })).sort((left, right) => right.learned - left.learned || left.score - right.score || left.index - right.index);
   const suggestions = new Map<string, string>();
   for (const { candidate } of ranked) {
     const personal = personalForms.get(spellingKey(candidate));

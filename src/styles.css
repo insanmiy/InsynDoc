@@ -423,7 +423,7 @@ button svg { flex-shrink: 0; }
 .browser-actions { display: flex; justify-content: flex-end; margin-top: 12px; }
 .spelling-mark { background: transparent !important; }
 .app-shell .docx-editor.dark .docx-text-highlight-overlay { mix-blend-mode: multiply; }
-.spelling-mark::after { content: ''; position: absolute; inset: auto 0 0; height: 4px; background: var(--app-error); mask: url('/spelling-underline.png') repeat-x left bottom / 8px 4px; }
+.spelling-mark::after { content: ''; position: absolute; inset: auto 0 0; height: 4px; background: #b3261e; mask: url('/spelling-underline.png') repeat-x left bottom / 8px 4px; }
 .spelling-popover { position: fixed; z-index: 120; width: 288px; max-width: calc(100% - 16px); max-height: calc(100% - 16px); overflow-y: auto; padding: 12px; border: 1px solid var(--app-border); border-radius: 12px; box-shadow: var(--app-shadow); background: var(--app-surface); color: var(--app-text); font: 13px var(--ui-font); }
 .spelling-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .spelling-heading strong { overflow-wrap: anywhere; }
