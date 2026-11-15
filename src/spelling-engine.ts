@@ -18,7 +18,7 @@ export interface SpellingIssue {
 }
 
 export type SpellingRequest =
-  | { type: 'check'; id: number; paragraphs: SpellingParagraph[]; excluded: string[]; ignoredGrammar?: string[] }
+  | { type: 'check'; id: number; paragraphs: SpellingParagraph[]; excluded: string[]; ignoredGrammar?: string[]; grammar?: boolean }
   | { type: 'suggest'; id: number; word: string; personalWords?: string[]; corrections?: SpellingCorrection[] };
 
 export type SpellingResponse =

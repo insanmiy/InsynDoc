@@ -107,7 +107,7 @@ export function Settings({ open, onClose, preferences, onChange, appVersion, onC
       <h3 id="editor-heading">Editor preferences</h3>
       <p>Choose the tools visible in your workspace.</p>
       {([
-        ['checkSpelling', 'Check spelling', 'Check English (US) spelling and sentence context on this device.'],
+        ['checkSpelling', 'Check Spelling', 'Check English (US) Spelling As You Type. Run Check Spelling And Grammar From Tools For A Full Review.'],
         ['showRuler', 'Show ruler', 'Adjust page margins and indents.'],
         ['showOutline', 'Show document outline', 'Navigate between your headings.'],
         ['showWordCount', 'Show word count', 'Keep document statistics in the status bar.'],

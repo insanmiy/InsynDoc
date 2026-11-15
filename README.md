@@ -22,7 +22,7 @@ Create, edit, and export DOCX documents. Your documents and preferences stay on 
 - Create a new document or open an existing DOCX file.
 - Edit and format text, lists, tables, headers, footers, and page layout.
 - Find text, replace text, navigate by page or heading, and view word statistics.
-- Check English spelling and sentence context locally, with a personal dictionary.
+- Check English Spelling As You Type And Review Grammar On Demand, With A Personal Dictionary.
 - Export documents as DOCX or PDF.
 - Choose light, dark, or system theme, ruler units, word goal, and editor preferences.
 - Use focus mode, keyboard shortcuts, and automatic formatting.
@@ -39,12 +39,15 @@ Download the [Windows installer](https://github.com/insanmiy/InsynDoc/releases/l
 2. Write and format your document using the toolbar and menus.
 3. Save your changes with **Ctrl+S**, or use the Download menu to export a copy.
 
+Spelling Is Checked Automatically While You Type. Choose **Tools > Check Spelling And Grammar** Or Press **Ctrl+Alt+X** For A Full Review. Grammar Checks Run On Demand To Keep Editing Memory Use Lower. Editing Cancels An Unfinished Review.
+
 | Shortcut | Action |
 | --- | --- |
 | `Ctrl+N` | New document |
 | `Ctrl+O` | Open a document |
 | `Ctrl+S` | Save |
 | `Ctrl+Shift+S` | Export a DOCX copy |
+| `Ctrl+Alt+X` | Check Spelling And Grammar |
 | `Ctrl+F` | Find text |
 | `Ctrl+G` | Go to a page |
 | `Ctrl+/` | Show keyboard shortcuts |

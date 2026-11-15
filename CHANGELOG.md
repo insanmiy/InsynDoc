@@ -12,6 +12,7 @@ User-visible changes are recorded here. Entries under Unreleased are not yet par
 
 ### Changed
 
+- Spelling Stays Automatic While Grammar Review Runs On Demand From Tools Or Ctrl+Alt+X. Review Memory Is Released After Each Check, And Editing Cancels An Unfinished Review.
 - Startup shows an immediate loading screen and opens startup documents without parsing them twice. Settings, font loading, and spelling checks are deferred to keep the editor responsive.
 - The interface font is bundled locally for consistent offline rendering.
 - Page counts update after edits, bulk paste, undo, and redo without repeatedly reading layout during typing.

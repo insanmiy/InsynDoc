@@ -235,7 +235,7 @@ function WorkspaceContent(props: WorkspaceProps) {
     { label: 'Save document', shortcut: 'Ctrl+S', run: () => void session.save() },
     { label: 'Save as', shortcut: '', run: () => void session.saveAs() },
     { label: 'Export DOCX', shortcut: 'Ctrl+Shift+S', run: () => void session.exportCopy() },
-    { label: 'Check spelling', shortcut: 'Ctrl+Alt+X', run: () => setSpellingRequest((value) => value + 1) },
+    { label: 'Check Spelling And Grammar', shortcut: 'Ctrl+Alt+X', run: () => setSpellingRequest((value) => value + 1) },
     { label: 'Find in document', shortcut: 'Ctrl+F', run: () => props.onFind() },
     { label: 'Find and replace', shortcut: 'Ctrl+Shift+I', run: () => props.onFind(true) },
     { label: 'Bold', shortcut: 'Ctrl+B', run: () => runFormattingCommand({ type: 'toggleMark', mark: 'bold' }) },
@@ -475,7 +475,7 @@ function WorkspaceContent(props: WorkspaceProps) {
         </DocxEditor.Menu.Submenu>
       </DocxEditor.Menu.Format>
       <DocxEditor.Menu.Menu id="tools" label="Tools" preset={false}>
-        <MenuAction icon={<Icon name="spelling" size={18}/>} onSelect={() => setSpellingRequest((value) => value + 1)} shortcut="Ctrl+Alt+X" disabled={!preferences.checkSpelling}>Check spelling</MenuAction>
+        <MenuAction icon={<Icon name="spelling" size={18}/>} onSelect={() => setSpellingRequest((value) => value + 1)} shortcut="Ctrl+Alt+X" disabled={!preferences.checkSpelling}>Check Spelling And Grammar</MenuAction>
         <MenuAction icon={<Icon name="wordCount" size={18}/>} onSelect={props.onWordCount}>Word count</MenuAction>
         <MenuAction icon={<Icon name="keyboard" size={18}/>} onSelect={props.onShortcuts} shortcut="Ctrl+/">Keyboard shortcuts</MenuAction>
         <MenuAction icon={<Icon name="replace" size={18}/>} onSelect={() => props.onFind(true)} shortcut="Ctrl+Shift+I">Find and replace</MenuAction>

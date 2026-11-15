@@ -83,18 +83,25 @@ export function Spelling({ preferences, onPreferences, request, documentKey }: {
     let suggestionVersion = 0;
     let inFlight = false;
     let queued = false;
-    let checked = false;
+    let checkingGrammar = false;
     let timer: ReturnType<typeof setTimeout>;
     let issues: SpellingIssue[] = [];
     let hoverOpened = false;
     let hoveredIssue = '';
     let hoveredRect: HighlightRect | undefined;
     const excluded = [...preferences.spellingWords, ...ignored];
+    const stopWorker = (): void => {
+      worker?.terminate();
+      worker = null;
+      inFlight = false;
+      checkingGrammar = false;
+    };
     const post = (message: SpellingRequest): void => {
       if (!worker) {
-        worker = new Worker(new URL('./spelling.worker.ts', import.meta.url), { type: 'module' });
-        worker.onerror = unavailable;
-        worker.onmessage = onWorkerMessage;
+        const currentWorker = new Worker(new URL('./spelling.worker.ts', import.meta.url), { type: 'module' });
+        worker = currentWorker;
+        currentWorker.onerror = () => { if (worker === currentWorker) unavailable(); };
+        currentWorker.onmessage = (event: MessageEvent<SpellingResponse>) => { if (worker === currentWorker) onWorkerMessage(event); };
       }
       worker.postMessage(message);
     };
@@ -112,12 +119,7 @@ export function Spelling({ preferences, onPreferences, request, documentKey }: {
       suggestionVersion++;
       if (!issue.suggestions) post({ type: 'suggest', id: suggestionVersion, word: issue.word, personalWords: preferences.spellingWords, corrections: learnedCorrections.current });
     };
-    openFirst.current = () => {
-      if (!checked) {
-        reviewPending.current = true;
-        setPopup({ issue: null, suggestions: [], message: 'Checking spelling...', focus: true, ...position() });
-        return;
-      }
+    const showFirstIssue = (): void => {
       if (issues[0]) {
         const issue = issues[0];
         const issueVersion = version;
@@ -125,7 +127,14 @@ export function Spelling({ preferences, onPreferences, request, documentKey }: {
         requestAnimationFrame(() => { if (!disposed && issueVersion === version) openIssue(issue, undefined, true); });
         return;
       }
-      setPopup({ issue: null, suggestions: [], message: 'No spelling issues found in English (US). Sentence context checked too.', focus: true, ...position() });
+      setPopup({ issue: null, suggestions: [], message: 'No Spelling Or Grammar Issues Found In English (US).', focus: true, ...position() });
+    };
+    openFirst.current = () => {
+      if (reviewPending.current) return;
+      reviewPending.current = true;
+      setPopup({ issue: null, suggestions: [], message: 'Checking Spelling And Grammar...', focus: true, ...position() });
+      clearTimeout(timer);
+      check();
     };
     const check = (): void => {
       if (disposed) return;
@@ -139,20 +148,21 @@ export function Spelling({ preferences, onPreferences, request, documentKey }: {
           if (text) paragraphs.push({ blockId, text });
         }
       }
-      if (paragraphs.length === 0 && !worker) {
-        checked = true;
+      if (paragraphs.length === 0) {
+        stopWorker();
         issues = [];
         setTruncated(false);
         editor.clearHighlights('spelling');
-        if (reviewPending.current) { reviewPending.current = false; openFirst.current(); }
+        if (reviewPending.current) { reviewPending.current = false; showFirstIssue(); }
         return;
       }
       inFlight = true;
       queued = false;
-      post({ type: 'check', id: version, paragraphs, excluded, ignoredGrammar });
+      checkingGrammar = reviewPending.current;
+      post({ type: 'check', id: version, paragraphs, excluded, ignoredGrammar, grammar: checkingGrammar });
     };
     const schedule = (): void => {
-      checked = false;
+      if (checkingGrammar) stopWorker();
       queued = false;
       version++;
       dismiss();
@@ -162,6 +172,15 @@ export function Spelling({ preferences, onPreferences, request, documentKey }: {
     scheduleCheck.current = schedule;
     const unavailable = (): void => {
       if (disposed) return;
+      const grammarFailed = checkingGrammar;
+      stopWorker();
+      if (grammarFailed) {
+        dismiss();
+        setError('Grammar Review Is Unavailable. Automatic Spelling Is Still Available.');
+        clearTimeout(timer);
+        timer = setTimeout(check, 450);
+        return;
+      }
       editor.clearHighlights('spelling');
       dismiss();
       setError('Spelling is unavailable. Your document can still be edited.');
@@ -175,15 +194,20 @@ export function Spelling({ preferences, onPreferences, request, documentKey }: {
         if (result.id === suggestionVersion) setPopup((current) => current?.issue ? { ...current, suggestions: result.suggestions } : current);
         return;
       }
+      const reviewedGrammar = checkingGrammar;
+      const rerun = queued;
+      queued = false;
       inFlight = false;
+      // Terminating The Review Worker Releases Its WASM Memory, Including Module Level Caches.
+      if (reviewedGrammar) stopWorker();
       if (result.id === version) {
-        checked = true;
+        if (reviewedGrammar) setError(null);
         issues = result.issues;
         setTruncated(result.truncated);
         editor.setHighlights('spelling', issues, { className: 'spelling-mark', color: 'transparent', priority: 1 });
-        if (reviewPending.current) { reviewPending.current = false; openFirst.current(); }
+        if (reviewPending.current && reviewedGrammar) { reviewPending.current = false; showFirstIssue(); }
       }
-      if (queued) check();
+      if (rerun || reviewPending.current) check();
     };
     const pointerdown = (event: PointerEvent): void => {
       clearTimeout(hoverTimer.current);
@@ -247,7 +271,7 @@ export function Spelling({ preferences, onPreferences, request, documentKey }: {
       cancelWhenIdle(idleHandle);
       clearTimeout(timer);
       clearTimeout(hoverTimer.current);
-      worker?.terminate();
+      stopWorker();
       stopChange();
       editor.clearHighlights('spelling');
       document.removeEventListener('pointerdown', pointerdown, true);
