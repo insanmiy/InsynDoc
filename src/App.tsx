@@ -90,6 +90,7 @@ export function App() {
     };
     syncCapsLock();
     media.addEventListener('change', update);
+    update();
     window.addEventListener('focus', syncCapsLock);
     window.addEventListener('keydown', updateCapsLock, true);
     window.addEventListener('keyup', updateCapsLock, true);
@@ -108,10 +109,17 @@ export function App() {
   useLayoutEffect(() => {
     document.documentElement.dataset.theme = theme;
     document.documentElement.style.colorScheme = theme;
-    void setWindowTheme(theme).catch(() => undefined);
   }, [theme]);
 
+  useLayoutEffect(() => {
+    void setWindowTheme(preferences.theme).catch(() => undefined);
+  }, [preferences.theme]);
+
   useEffect(() => { storePreferences(preferences); }, [preferences]);
+
+  useLayoutEffect(() => {
+    document.documentElement.dataset.interface = preferences.interfaceStyle;
+  }, [preferences.interfaceStyle]);
 
   useEffect(() => { if (settingsOpen) setSettingsLoaded(true); }, [settingsOpen]);
 
@@ -245,7 +253,7 @@ export function App() {
 
   return <div className={`app-shell ${focusMode ? 'focus-mode' : ''}`} data-theme={theme}>
     <header className="app-header">
-      <div className="app-logo"><img src="/branding/insyndoc-logo.png" alt="InsynDoc" width="44" height="44"/></div>
+      <div className="app-logo"><img src="/branding/insyndoc-logo.png" alt="InsynDoc" width="44" height="44"/><span className="rail-brand-name" aria-hidden="true">InsynDoc</span></div>
       <div className="document-heading">
         <div className="document-title-row"><h1>{renaming ? <input className="document-name-input" aria-label="Document name" autoFocus value={titleDraft} onFocus={(event) => event.currentTarget.select()} onChange={(event) => setTitleDraft(event.target.value)} onBlur={() => { setRenaming(false); void session.rename(titleDraft); }} onKeyDown={(event) => { if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') { event.preventDefault(); setRenaming(false); void session.rename(titleDraft).then(() => { if (!session.getSnapshot().error) void (event.shiftKey ? session.exportCopy() : session.save()); }); return; } if (event.key === 'Enter') { event.preventDefault(); event.currentTarget.blur(); } if (event.key === 'Escape') { event.preventDefault(); setRenaming(false); } }}/>
           : <button className="document-name-button" disabled={unavailable} title="Rename document" onClick={() => { setTitleDraft(state.name.replace(/\.docx$/i, '')); setRenaming(true); }}><span>{state.name}</span><Icon name="edit" size={14}/></button>}</h1><span className={`document-save-indicator ${state.dirty ? 'has-changes' : ''}`} title={state.dirty ? 'Unsaved changes' : 'Your document stays on this device'}><Icon name={state.dirty ? 'save' : 'check'} size={16}/><span>{state.dirty ? 'Unsaved changes' : state.token ? 'Saved locally' : 'New document'}</span></span></div>
@@ -253,7 +261,7 @@ export function App() {
       </div>
       <div className="header-actions">
         <button className="secondary-button import-document" aria-label="Import DOCX" disabled={unavailable} onClick={() => void session.open()} title="Import DOCX (Ctrl+O)"><Icon name="folder" size={16}/><span>Import</span></button>
-        <button className="icon-button" aria-label="Settings" title="Settings (Ctrl+,)" onClick={() => setSettingsOpen(true)}><Icon name="settings"/></button>
+        <button className="icon-button" aria-label="Settings" title="Settings (Ctrl+,)" onClick={() => setSettingsOpen(true)}><Icon name="settings"/><span className="rail-action-label">Settings</span></button>
         <DownloadMenu disabled={unavailable} onDownload={(format) => session.download(format)}/>
       </div>
     </header>

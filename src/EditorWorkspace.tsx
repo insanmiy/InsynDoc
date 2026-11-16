@@ -124,6 +124,15 @@ function WorkspaceContent(props: WorkspaceProps) {
   const state = useSyncExternalStore(props.session.subscribe, props.session.getSnapshot);
   const { preferences, onPreferences, session } = props;
   useLayoutEffect(() => {
+    const menu = props.menuHost?.querySelector('[role="menubar"]');
+    if (!menu) return;
+    const wideWindow = matchMedia('(min-width: 1100px)');
+    const updateOrientation = () => menu.setAttribute('aria-orientation', preferences.interfaceStyle === 'rail' && wideWindow.matches ? 'vertical' : 'horizontal');
+    updateOrientation();
+    wideWindow.addEventListener('change', updateOrientation);
+    return () => wideWindow.removeEventListener('change', updateOrientation);
+  }, [props.menuHost, preferences.interfaceStyle]);
+  useLayoutEffect(() => {
     if (!editor || !state.ready || state.busy) return;
     return installAutoformat(editor, { smartPunctuation: preferences.smartPunctuation, snippets: preferences.snippetExpansions });
   }, [editor, state.ready, state.busy, state.token, preferences.smartPunctuation, preferences.snippetExpansions]);
@@ -396,9 +405,18 @@ function WorkspaceContent(props: WorkspaceProps) {
     return () => { disposed = true; clearTimeout(timer); stopPageCount(); stopChange(); };
   }, [editor, props.onPageCount, props.onStatistics]);
 
-  const menus = <div className={`docx-editor docs-menu ${props.theme === 'dark' ? 'dark' : ''}`}>
-    <DocxEditor.Menu preset={false} t={translate} reportIssue={false}>
-      <DocxEditor.Menu.File preset={false}>
+  const menus = <div className={`docx-editor docs-menu ${props.theme === 'dark' ? 'dark' : ''}`} onKeyDownCapture={(event) => {
+    if (preferences.interfaceStyle !== 'rail' || !matchMedia('(min-width: 1100px)').matches) return;
+    if (!(event.target instanceof HTMLElement) || !event.target.classList.contains('docx-menubar__trigger')) return;
+    const mappedKey = event.key === 'ArrowDown' ? 'ArrowRight' : event.key === 'ArrowUp' ? 'ArrowLeft' : null;
+    if (!mappedKey) return;
+    event.preventDefault();
+    event.stopPropagation();
+    // The Editor Menu Exposes Horizontal Keyboard Navigation Only.
+    event.target.dispatchEvent(new KeyboardEvent('keydown', { key: mappedKey, bubbles: true }));
+  }}>
+    <DocxEditor.Menu preset={false} t={translate} reportIssue={false} overflow={preferences.interfaceStyle !== 'rail'}>
+      <DocxEditor.Menu.File preset={false} icon={<Icon name="document" size={18}/>}>
         <MenuAction icon={<Icon name="newDocument" size={18}/>} onSelect={() => void session.newDocument()} shortcut="Ctrl+N">New</MenuAction>
         <MenuAction icon={<Icon name="folder" size={18}/>} onSelect={() => void session.open()} shortcut="Ctrl+O">Open</MenuAction>
         <DocxEditor.Menu.Submenu label="Open recent" paths={tableChromeIconPaths('file_upload')}>
@@ -420,13 +438,13 @@ function WorkspaceContent(props: WorkspaceProps) {
         <MenuAction icon={<Icon name="pages" size={18}/>} onSelect={() => setHistoryOpen(true)}>Version history</MenuAction>
         <DocxEditor.Menu.Separator/><DocxEditor.Menu.PageSetup/>
       </DocxEditor.Menu.File>
-      <DocxEditor.Menu.Menu id="edit" label="Edit" preset={false}>
+      <DocxEditor.Menu.Menu id="edit" label="Edit" preset={false} icon={<Icon name="edit" size={18}/>}>
         <DocxEditor.Menu.Item slotId="history.undo" labelKey="formattingBar.undo" shortcutKey="shortcut.history.undo"/><DocxEditor.Menu.Item slotId="history.redo" labelKey="formattingBar.redo" shortcutKey="shortcut.history.redo"/>
         <DocxEditor.Menu.Separator/><MenuAction icon={<Icon name="selectAll" size={18}/>} onSelect={() => editor?.exec({ type: 'selectAll' })} shortcut="Ctrl+A">Select all</MenuAction>
         <MenuAction icon={<Icon name="search" size={18}/>} onSelect={() => props.onFind()} shortcut="Ctrl+F">Find</MenuAction>
         <MenuAction icon={<Icon name="replace" size={18}/>} onSelect={() => props.onFind(true)} shortcut="Ctrl+Shift+I">Find and replace</MenuAction>
       </DocxEditor.Menu.Menu>
-      <DocxEditor.Menu.Menu id="view" label="View" preset={false}>
+      <DocxEditor.Menu.Menu id="view" label="View" preset={false} icon={<Icon name="monitor" size={18}/>}>
         <MenuAction icon={<Icon name="pages" size={18}/>} active={state.view === 'pages'} onSelect={() => session.setView('pages')}>Separate pages</MenuAction>
         <MenuAction icon={<Icon name="page" size={18}/>} active={state.view === 'continuous'} onSelect={() => session.setView('continuous')}>Continuous</MenuAction>
         <DocxEditor.Menu.Separator/>
@@ -437,7 +455,7 @@ function WorkspaceContent(props: WorkspaceProps) {
         <MenuAction icon={<Icon name="focus" size={18}/>} active={props.focusMode} onSelect={props.onFocusMode} shortcut="Ctrl+Shift+F">Focus mode</MenuAction>
         <DocxEditor.Menu.Separator/><MenuAction icon={<Icon name="goToPage" size={18}/>} onSelect={props.onGoToPage} shortcut="Ctrl+G">Go to page</MenuAction>
       </DocxEditor.Menu.Menu>
-      <DocxEditor.Menu.Insert>
+      <DocxEditor.Menu.Insert icon={<Icon name="table" size={18}/>}>
         <DocxEditor.Menu.Item slotId="insert.footnote" shortcutKey="shortcut.insert.footnote"/>
         <DocxEditor.Menu.Item slotId="insert.endnote" shortcutKey="shortcut.insert.endnote"/>
         <DocxEditor.Menu.Item slotId="insert.pageBreak" shortcutKey="shortcut.insert.pageBreak"/>
@@ -457,7 +475,7 @@ function WorkspaceContent(props: WorkspaceProps) {
           <DocxEditor.Menu.Item slotId="insert.pageXofY"/>
         </DocxEditor.Menu.Submenu>
       </DocxEditor.Menu.Insert>
-      <DocxEditor.Menu.Format>
+      <DocxEditor.Menu.Format icon={<Icon name="ruler" size={18}/>}>
         <DocxEditor.Menu.Item slotId="text.bold" labelKey="formattingBar.bold" shortcutKey="shortcut.text.bold"/>
         <DocxEditor.Menu.Item slotId="text.italic" labelKey="formattingBar.italic" shortcutKey="shortcut.text.italic"/>
         <DocxEditor.Menu.Item slotId="text.underline" labelKey="formattingBar.underline" shortcutKey="shortcut.text.underline"/>
@@ -474,14 +492,14 @@ function WorkspaceContent(props: WorkspaceProps) {
           <DocxEditor.Menu.Item slotId="script.sub" labelKey="formattingBar.subscript" shortcutKey="shortcut.script.sub"/>
         </DocxEditor.Menu.Submenu>
       </DocxEditor.Menu.Format>
-      <DocxEditor.Menu.Menu id="tools" label="Tools" preset={false}>
+      <DocxEditor.Menu.Menu id="tools" label="Tools" preset={false} icon={<Icon name="spelling" size={18}/>}>
         <MenuAction icon={<Icon name="spelling" size={18}/>} onSelect={() => setSpellingRequest((value) => value + 1)} shortcut="Ctrl+Alt+X" disabled={!preferences.checkSpelling}>Check Spelling And Grammar</MenuAction>
         <MenuAction icon={<Icon name="wordCount" size={18}/>} onSelect={props.onWordCount}>Word count</MenuAction>
         <MenuAction icon={<Icon name="keyboard" size={18}/>} onSelect={props.onShortcuts} shortcut="Ctrl+/">Keyboard shortcuts</MenuAction>
         <MenuAction icon={<Icon name="replace" size={18}/>} onSelect={() => props.onFind(true)} shortcut="Ctrl+Shift+I">Find and replace</MenuAction>
         <DocxEditor.Menu.Separator/><MenuAction icon={<Icon name="settings" size={18}/>} onSelect={props.onSettings} shortcut="Ctrl+,">Settings</MenuAction>
       </DocxEditor.Menu.Menu>
-      <DocxEditor.Menu.Menu id="help" label="Help" preset={false}>
+      <DocxEditor.Menu.Menu id="help" label="Help" preset={false} icon={<Icon name="info" size={18}/>}>
         <MenuAction icon={<Icon name="search" size={18}/>} onSelect={() => { openToolFinder(); }} shortcut="Alt+/">Search the menus</MenuAction>
         <MenuAction icon={<Icon name="keyboard" size={18}/>} onSelect={props.onShortcuts} shortcut="Ctrl+/">Keyboard shortcuts</MenuAction>
       </DocxEditor.Menu.Menu>

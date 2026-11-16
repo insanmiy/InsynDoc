@@ -2,6 +2,14 @@ import { parseSpellingCorrections, type SpellingCorrection } from './spelling-le
 
 export type Theme = 'light' | 'dark' | 'system';
 
+export const INTERFACE_STYLES = [
+  { value: 'classic', label: 'Classic', description: 'The original familiar workspace.' },
+  { value: 'rail', label: 'Rail', description: 'Document menus in a dedicated side rail.' },
+  { value: 'canvas', label: 'Canvas', description: 'An open canvas with tools along the bottom.' },
+  { value: 'studio', label: 'Studio', description: 'Floating panels and rounded controls.' }
+] as const;
+export type InterfaceStyle = typeof INTERFACE_STYLES[number]['value'];
+
 export interface SnippetExpansion {
   trigger: string;
   text: string;
@@ -9,6 +17,7 @@ export interface SnippetExpansion {
 
 export interface Preferences {
   theme: Theme;
+  interfaceStyle: InterfaceStyle;
   showRuler: boolean;
   showOutline: boolean;
   showWordCount: boolean;
@@ -28,6 +37,7 @@ export interface Preferences {
 
 export const PREFERENCES_KEY = 'insyndoc.preferences.v1';
 export const DEFAULT_PREFERENCES: Preferences = {
+  interfaceStyle: 'studio',
   theme: 'light', showRuler: true, showOutline: true, showWordCount: true, rulerUnit: 'inch', wordGoal: 0, browserPath: null, checkSpelling: true, updateNotifications: true, spellingWords: [], spellingCorrections: [],
   smartPunctuation: true, snippetExpansions: [], sanitizeMetadataOnExport: true, autoRecovery: true, localFonts: true
 };
@@ -59,6 +69,7 @@ export function parsePreferences(value: string | null): Preferences {
     if (!parsed || typeof parsed !== 'object') return { ...DEFAULT_PREFERENCES };
     const settings = parsed as Record<string, unknown>;
     return {
+      interfaceStyle: INTERFACE_STYLES.find((style) => style.value === settings.interfaceStyle)?.value ?? DEFAULT_PREFERENCES.interfaceStyle,
       theme: ['light', 'dark', 'system'].includes(String(settings.theme)) ? settings.theme as Theme : 'light',
       showRuler: typeof settings.showRuler === 'boolean' ? settings.showRuler : true,
       showOutline: typeof settings.showOutline === 'boolean' ? settings.showOutline : true,

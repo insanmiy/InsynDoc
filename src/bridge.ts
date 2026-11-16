@@ -1,6 +1,7 @@
 import { invoke, isTauri } from '@tauri-apps/api/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import type { ExportFormat } from './document-export';
+import type { Theme } from './preferences';
 
 export interface SavedFile {
   token: string;
@@ -215,8 +216,8 @@ export async function setWindowTitle(name: string, dirty: boolean): Promise<void
   if (isTauri()) await getCurrentWindow().setTitle(document.title);
 }
 
-export async function setWindowTheme(theme: 'light' | 'dark'): Promise<void> {
-  if (isTauri()) await getCurrentWindow().setTheme(theme);
+export async function setWindowTheme(theme: Theme): Promise<void> {
+  if (isTauri()) await getCurrentWindow().setTheme(theme === 'system' ? null : theme);
 }
 
 export async function isCapsLockOn(): Promise<boolean | null> {

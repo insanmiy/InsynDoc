@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { chooseLinkBrowser } from './bridge';
 import { Modal } from './Modal';
 import { Icon, type IconName } from './Icon';
-import { parseSnippetExpansions, type Preferences, type SnippetExpansion, type Theme } from './preferences';
+import { INTERFACE_STYLES, parseSnippetExpansions, type Preferences, type SnippetExpansion, type Theme } from './preferences';
 import type { UpdateCheckResult } from './updater';
 
 const themes: { value: Theme; label: string; icon: IconName }[] = [
@@ -79,6 +79,18 @@ export function Settings({ open, onClose, preferences, onChange, appVersion, onC
           aria-pressed={preferences.theme === theme.value} onClick={() => onChange({ ...preferences, theme: theme.value })}>
           <span className="theme-preview" aria-hidden="true"><span className="preview-toolbar"/><span className="preview-sidebar"/><span className="preview-page"><i/><i/><i/></span></span>
           <span className="theme-caption"><Icon name={theme.icon} size={17}/>{theme.label}{preferences.theme === theme.value && <Icon name="check" size={17}/>}</span>
+        </button>)}
+      </div>
+      <h4 className="settings-subheading">Interface style</h4>
+      <p>Choose from {INTERFACE_STYLES.length} workspaces. Each supports light and dark mode. Changes apply immediately and are saved on this device.</p>
+      <div className="interface-options" role="group" aria-label="Interface style">
+        {INTERFACE_STYLES.map((style) => <button key={style.value} type="button"
+          className={`interface-option interface-preview-${style.value}`} aria-label={style.label}
+          aria-pressed={preferences.interfaceStyle === style.value}
+          onClick={() => onChange({ ...preferences, interfaceStyle: style.value })}>
+          <span className="interface-preview" aria-hidden="true"><i/><i/><i/></span>
+          <span className="interface-caption"><strong>{style.label}</strong>{preferences.interfaceStyle === style.value && <Icon name="check" size={16}/>}</span>
+          <small>{style.description}</small>
         </button>)}
       </div>
     </section>
