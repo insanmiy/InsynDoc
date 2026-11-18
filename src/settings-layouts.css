@@ -1,0 +1,112 @@
+/* Hallmark · v2.0.0 · shape: app screen · genre: modern-minimal · theme: Console (adapted to InsynDoc) · posture: restrained · nav: Settings sidebar · footer: Done · signature: live preference controls */
+/* Hallmark · critique: The sidebar tracks one continuous reading pane and uses the editor theme colors. */
+
+.modal.settings-modal {
+  --settings-inset: 24px;
+  width: 860px;
+  height: 680px;
+  max-width: calc(100% - 32px);
+  max-height: calc(100dvh - 32px);
+  overflow: clip;
+}
+
+.settings-modal > .modal-content {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  height: 100%;
+  max-height: calc(100dvh - 34px);
+}
+
+.settings-modal .modal-header {
+  flex-shrink: 0;
+  margin: 0;
+  padding: 16px var(--settings-inset) 4px;
+}
+
+.settings-modal .settings-intro {
+  margin: 0;
+  padding: 8px var(--settings-inset) 12px;
+  border-bottom: 1px solid var(--app-border);
+}
+
+.settings-modal :is(button, input, select, h3):focus-visible {
+  outline: 2px solid var(--app-accent);
+}
+
+.settings-modal button:enabled:active { box-shadow: inset 0 0 0 1px currentColor; }
+.settings-modal button:disabled { cursor: not-allowed; }
+
+.settings-layout-body {
+  display: grid;
+  grid-template: minmax(0, 1fr) / 172px minmax(0, 1fr);
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.settings-panels {
+  --settings-scroll-inset: 12px;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-padding-block-start: var(--settings-scroll-inset);
+  padding: 0 var(--settings-inset);
+}
+
+.settings-modal .modal-footer {
+  padding: 12px var(--settings-inset);
+  border-top: 1px solid var(--app-border);
+}
+
+.settings-modal .settings-navigation {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  overflow-y: auto;
+  margin: 0;
+  padding: 16px 12px;
+  background: var(--app-bg);
+  border-inline-end: 1px solid var(--app-border);
+}
+
+.settings-modal .settings-navigation button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  background: transparent;
+  border-color: transparent;
+  text-align: start;
+}
+
+.settings-modal .settings-navigation button:hover { background: var(--app-hover); }
+.settings-modal .settings-navigation button[aria-current="location"] {
+  background: var(--app-accent-soft);
+  color: var(--app-accent-ink);
+  border-color: var(--app-accent);
+  font-weight: 600;
+}
+
+.settings-modal .settings-section { padding-block: 24px; }
+.settings-modal .settings-section h3 { font-size: 23px; overflow-wrap: break-word; }
+
+/* Leave enough scroll room to align the final section with the others. */
+.settings-modal .settings-section:last-child {
+  min-block-size: calc(100% - var(--settings-scroll-inset));
+  border-bottom: 0;
+}
+
+@media (max-width: 700px) {
+  .settings-modal { --settings-inset: 16px; }
+  .settings-layout-body { grid-template-columns: 126px minmax(0, 1fr); }
+}
+
+@media (max-width: 540px) {
+  .settings-layout-body { grid-template-columns: 104px minmax(0, 1fr); }
+  .settings-modal .settings-navigation { padding-inline: 4px; }
+  .settings-modal .settings-navigation svg { display: none; }
+  .settings-modal :is(.theme-options, .snippet-form) { flex-wrap: wrap; }
+  .settings-modal .theme-option { flex-basis: 82px; }
+  .settings-modal .snippet-form input { flex-basis: 105px; }
+}

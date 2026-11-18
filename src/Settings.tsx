@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { chooseLinkBrowser, isDesktopApp } from './bridge';
 import { Modal } from './Modal';
 import { Icon, type IconName } from './Icon';
 import { INTERFACE_STYLES, parseSnippetExpansions, type Preferences, type SnippetExpansion, type Theme } from './preferences';
 import type { UpdateCheckResult } from './updater';
+import './settings-layouts.css';
 
 const themes: { value: Theme; label: string; icon: IconName }[] = [
   { value: 'light', label: 'Light', icon: 'sun' },
@@ -12,6 +13,17 @@ const themes: { value: Theme; label: string; icon: IconName }[] = [
 ];
 
 type UpdateStatus = UpdateCheckResult['status'] | 'idle' | 'checking';
+
+const sections = [
+  { id: 'appearance', label: 'Appearance', title: 'Appearance', icon: 'monitor', description: 'Choose a theme for the app. Your document colors stay the same.' },
+  { id: 'writing', label: 'Writing', title: 'Writing preferences', icon: 'edit', description: 'Set your measurement units and writing target.' },
+  { id: 'editor', label: 'Editor', title: 'Editor preferences', icon: 'document', description: 'Choose the tools visible in your workspace.' },
+  { id: 'updates', label: 'Updates', title: 'Updates', icon: 'download', description: 'Keep InsynDoc on the latest version.' },
+  { id: 'links', label: 'Hyperlinks', title: 'Hyperlinks', icon: 'newDocument', description: 'Open links with your system default or a browser you choose.' },
+  { id: 'uninstall', label: 'Uninstall', title: 'Uninstall', icon: 'trash', description: 'InsynDoc will close when the Windows uninstaller opens. Confirm or cancel removal there.' }
+] as const satisfies readonly { id: string; label: string; title: string; icon: IconName; description: string }[];
+
+type SettingsSection = typeof sections[number]['id'];
 
 export function Settings({ open, onClose, preferences, onChange, appVersion, onCheckForUpdates, onUninstall, uninstallDisabled }: {
   open: boolean; onClose: () => void; preferences: Preferences; onChange: (settings: Preferences) => void;
@@ -24,7 +36,27 @@ export function Settings({ open, onClose, preferences, onChange, appVersion, onC
   const [snippetTrigger, setSnippetTrigger] = useState('');
   const [snippetText, setSnippetText] = useState('');
   const [snippetError, setSnippetError] = useState<string | null>(null);
+  const [activeSection, setActiveSection] = useState<SettingsSection>('appearance');
+  const panels = useRef<HTMLDivElement>(null);
   const desktopApp = isDesktopApp();
+  const visibleSections = sections.filter((section) => desktopApp || section.id !== 'uninstall');
+
+  function syncActiveSection(panel: HTMLDivElement): void {
+    const readingLine = panel.getBoundingClientRect().top + 48;
+    let currentSection: SettingsSection = 'appearance';
+    for (const { id } of visibleSections) {
+      const heading = panel.querySelector(`#${id}-heading`);
+      if (!heading || heading.getBoundingClientRect().top > readingLine) break;
+      currentSection = id;
+    }
+    setActiveSection(currentSection);
+  }
+
+  function navigateTo(section: SettingsSection): void {
+    const target = panels.current?.querySelector(`#${section}-settings`);
+    target?.querySelector('h3')?.focus({ preventScroll: true });
+    target?.scrollIntoView({ block: 'start' });
+  }
 
   function addSnippet(): void {
     const expansions = parseSnippetExpansions([...preferences.snippetExpansions, { trigger: snippetTrigger, text: snippetText }]);
@@ -62,20 +94,8 @@ export function Settings({ open, onClose, preferences, onChange, appVersion, onC
     } finally { setChoosingBrowser(false); }
   }
 
-  return <Modal open={open} title="Settings" onClose={onClose} className="settings-modal">
-    <p className="modal-description settings-intro">Personalize your writing workspace. Changes are saved automatically on this device.</p>
-    <nav className="settings-navigation" aria-label="Settings sections">
-      {[
-        ['appearance-heading', 'Appearance'],
-        ['writing-heading', 'Writing'],
-        ['editor-heading', 'Editor'],
-        ['updates-heading', 'Updates'],
-        ['links-heading', 'Hyperlinks'],
-        ...(desktopApp ? [['uninstall-heading', 'Uninstall']] : [])
-      ].map(([id, label]) => <button type="button" key={id} onClick={() => document.getElementById(id)?.scrollIntoView({ block: 'start' })}>{label}</button>)}
-    </nav>
-    <section className="settings-section" aria-labelledby="appearance-heading">
-      <h3 id="appearance-heading">Appearance</h3><p>Choose a theme for the app. Your document colors stay the same.</p>
+  const sectionContents = {
+    appearance: <>
       <div className="theme-options" role="group" aria-label="App theme">
         {themes.map((theme) => <button key={theme.value} className={`theme-option theme-preview-${theme.value}`}
           type="button" aria-label={theme.label} title={theme.value === 'system' ? 'Follow your device theme' : `Use ${theme.label.toLowerCase()} theme`}
@@ -96,10 +116,8 @@ export function Settings({ open, onClose, preferences, onChange, appVersion, onC
           <small>{style.description}</small>
         </button>)}
       </div>
-    </section>
-    <section className="settings-section" aria-labelledby="writing-heading">
-      <h3 id="writing-heading">Writing preferences</h3>
-      <p>Set your measurement units and writing target.</p>
+    </>,
+    writing: <>
       <label className="setting-field"><span>Ruler units</span><select value={preferences.rulerUnit} onChange={(event) => onChange({ ...preferences, rulerUnit: event.target.value === 'cm' ? 'cm' : 'inch' })}><option value="inch">Inches</option><option value="cm">Centimeters</option></select></label>
       <label className="setting-field"><span>Word goal<small id="word-goal-description">Set to 0 to turn off. Up to 100,000 words.</small></span><input aria-label="Word goal" aria-describedby="word-goal-description" type="number" min="0" max="100000" step="1" value={preferences.wordGoal} onChange={(event) => {
         const goal = Number(event.target.value);
@@ -117,10 +135,8 @@ export function Settings({ open, onClose, preferences, onChange, appVersion, onC
         <button className="secondary-button" disabled={!snippetTrigger.trim() || !snippetText.trim()} onClick={addSnippet}>Add</button>
       </div>
       {snippetError && <p className="form-error" role="alert">{snippetError}</p>}
-    </section>
-    <section className="settings-section" aria-labelledby="editor-heading">
-      <h3 id="editor-heading">Editor preferences</h3>
-      <p>Choose the tools visible in your workspace.</p>
+    </>,
+    editor: <>
       {([
         ['checkSpelling', 'Check Spelling', 'Check English (US) Spelling As You Type. Run Check Spelling And Grammar From Tools For A Full Review.'],
         ['showRuler', 'Show ruler', 'Adjust page margins and indents.'],
@@ -136,10 +152,8 @@ export function Settings({ open, onClose, preferences, onChange, appVersion, onC
       </label>)}
       {preferences.spellingWords.length > 0 && <div className="personal-dictionary-setting"><span>{preferences.spellingWords.length} {preferences.spellingWords.length === 1 ? 'word' : 'words'} in your personal dictionary</span><button className="text-button" onClick={() => onChange({ ...preferences, spellingWords: [] })}>Reset personal dictionary</button></div>}
       {preferences.spellingCorrections.length > 0 && <div className="personal-dictionary-setting"><span>Suggestions learn from corrections you accept on this device.</span><button className="text-button" onClick={() => onChange({ ...preferences, spellingCorrections: [] })}>Reset learned suggestions</button></div>}
-    </section>
-    <section className="settings-section" aria-labelledby="updates-heading">
-      <h3 id="updates-heading">Updates</h3>
-      <p>Keep InsynDoc on the latest version.</p>
+    </>,
+    updates: <>
       <label className="setting-row">
         <span><strong id="update-notifications-label">Notify me about updates</strong><small id="update-notifications-description">Show a prompt when a new version is available.</small></span>
         <input type="checkbox" role="switch" aria-labelledby="update-notifications-label" aria-describedby="update-notifications-description" checked={preferences.updateNotifications} onChange={(event) => onChange({ ...preferences, updateNotifications: event.target.checked })}/>
@@ -154,9 +168,8 @@ export function Settings({ open, onClose, preferences, onChange, appVersion, onC
         </div>
         <button className="secondary-button" disabled={updateStatus === 'checking'} onClick={() => void checkUpdates()}>{updateStatus === 'checking' ? 'Checking...' : 'Check for updates'}</button>
       </div>
-    </section>
-    <section className="settings-section" aria-labelledby="links-heading">
-      <h3 id="links-heading">Hyperlinks</h3><p>Open links with your system default or a browser you choose.</p>
+    </>,
+    links: <>
       <label className="setting-field"><span>Link browser</span><select aria-label="Link browser" disabled={choosingBrowser} value={preferences.browserPath ? 'custom' : 'system'} onChange={(event) => {
         if (event.target.value === 'system') { setBrowserError(null); onChange({ ...preferences, browserPath: null }); }
         else void chooseBrowser();
@@ -164,12 +177,30 @@ export function Settings({ open, onClose, preferences, onChange, appVersion, onC
       {preferences.browserPath && <p className="browser-path" title={preferences.browserPath}>{preferences.browserPath}</p>}
       <div className="browser-actions"><button className="secondary-button" disabled={choosingBrowser} onClick={() => void chooseBrowser()}>{choosingBrowser ? 'Choosing browser...' : 'Choose browser'}</button></div>
       {browserError && <p className="form-error" role="alert">{browserError}</p>}
-    </section>
-    {desktopApp && <section className="settings-section" aria-labelledby="uninstall-heading">
-      <h3 id="uninstall-heading">Uninstall</h3>
-      <p>InsynDoc will close when the Windows uninstaller opens. Confirm or cancel removal there.</p>
-      <div className="browser-actions"><button type="button" className="secondary-button" disabled={uninstallDisabled} onClick={onUninstall}>Uninstall InsynDoc</button></div>
-    </section>}
+    </>,
+    uninstall: <div className="browser-actions"><button type="button" className="secondary-button" disabled={uninstallDisabled} onClick={onUninstall}>Uninstall InsynDoc</button></div>
+  };
+
+  return <Modal open={open} title="Settings" onClose={onClose} className="settings-modal">
+    <p className="modal-description settings-intro">Changes are saved automatically.</p>
+    <div className="settings-layout-body">
+      <nav className="settings-navigation" aria-label="Settings sections">
+        {visibleSections.map(({ id, label, icon }) => <button type="button" key={id}
+          aria-current={activeSection === id ? 'location' : undefined} aria-controls={`${id}-settings`}
+          onClick={() => navigateTo(id)}>
+          <Icon name={icon} size={17}/>
+          {label}
+        </button>)}
+      </nav>
+      <div className="settings-panels" ref={panels} onScroll={(event) => syncActiveSection(event.currentTarget)}>
+        {visibleSections.map(({ id, title, description }) => <section key={id} className="settings-section"
+          id={`${id}-settings`} aria-labelledby={`${id}-heading`}>
+          <h3 id={`${id}-heading`} tabIndex={-1}>{title}</h3>
+          <p>{description}</p>
+          {sectionContents[id]}
+        </section>)}
+      </div>
+    </div>
     <footer className="modal-footer"><button className="primary-button" onClick={onClose}>Done</button></footer>
   </Modal>;
 }

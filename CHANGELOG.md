@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [1.0.3] - 2026-11-18
+
 ### Added
 
 - **Interface layouts.** Choose Classic, Rail, Canvas, or Studio in Settings.
@@ -11,6 +13,7 @@
 
 ### Changed
 
+- **Settings sidebar.** Jump to any section from the sidebar. The highlight follows the section you scroll to.
 - **Startup.** The app window can appear while the DOCX editor loads. InsynDoc reads startup documents once and defers settings, font loading, and spelling checks.
 - **Page counts.** Counts update after edits, large pastes, undo, and redo, with fewer layout measurements while you type.
 - **Grammar review.** Start a review from the Tools menu or press `Ctrl+Alt+X`. Spelling checks run automatically. Editing cancels a review in progress, and InsynDoc frees review memory when the check ends.
