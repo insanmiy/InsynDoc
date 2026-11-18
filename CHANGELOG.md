@@ -1,69 +1,63 @@
 # Changelog
 
-User-visible changes are recorded here. Entries under Unreleased are not yet part of a published release.
-
 ## [Unreleased]
 
 ### Added
 
-- Save as creates a new active document, while export continues to save a separate copy.
-- Word count can show statistics for selected text, including Unicode characters and character counts with and without spaces.
-- A maintained changelog supplies GitHub release notes and in-app update notes.
+- **Interface layouts.** Choose Classic, Rail, Canvas, or Studio in Settings.
+- **Save as.** Save to a new file and continue editing that file. Export still saves a separate copy.
+- **Selection statistics.** Word count can report statistics for selected text and supports Unicode characters. It shows character counts with and without spaces.
+- **Windows uninstaller.** Open the InsynDoc uninstaller from Settings. InsynDoc checks for unsaved changes first.
 
 ### Changed
 
-- Spelling Stays Automatic While Grammar Review Runs On Demand From Tools Or Ctrl+Alt+X. Review Memory Is Released After Each Check, And Editing Cancels An Unfinished Review.
-- Startup shows an immediate loading screen and opens startup documents without parsing them twice. Settings, font loading, and spelling checks are deferred to keep the editor responsive.
-- The interface font is bundled locally for consistent offline rendering.
-- Page counts update after edits, bulk paste, undo, and redo without repeatedly reading layout during typing.
-- Installed Windows fonts are discovered through the registry and cached.
-- Application labels, messages, document templates, and the README now use sentence case.
-- Hovering over a spelling mark shows suggestions without moving the caret. Clicking in the document continues to position the caret normally, and keyboard spelling review remains available.
-- Spelling suggestions consider nearby keyboard keys and give common words a small ranking preference.
-- Difficult misspellings can use additional suggestions even when the dictionary returns weak matches.
+- **Startup.** The app window can appear while the DOCX editor loads. InsynDoc reads startup documents once and defers settings, font loading, and spelling checks.
+- **Page counts.** Counts update after edits, large pastes, undo, and redo, with fewer layout measurements while you type.
+- **Grammar review.** Start a review from the Tools menu or press `Ctrl+Alt+X`. Spelling checks run automatically. Editing cancels a review in progress, and InsynDoc frees review memory when the check ends.
+- **Spelling suggestions.** Hover over a spelling mark to see suggestions without moving the caret. Clicking still moves the caret, and keyboard review remains available.
+- **Suggestion ranking.** Spelling suggestions consider nearby keyboard keys and give common words a small boost. Difficult misspellings can get additional suggestions when dictionary matches are weak.
+- **Fonts.** InsynDoc bundles its interface font for consistent offline rendering and caches the list of installed fonts it reads from the Windows registry.
+- **Text style.** App labels, messages, document templates, and the README use sentence case.
 
 ### Fixed
 
-- Version History Now Confirms Unsaved Changes Before Restoring And Keeps The History Dialog Open When Cancelled.
-- Spelling Suggestions Support Touch, Stay Open While Crossing To The Popup, And Respect Escape In Other Menus.
-- Download Menus Preserve Keyboard Focus After Export And Support Directional Opening And Tab Navigation.
-- Closing Templates And Version History Returns Focus To The Invoking Control.
-- Spelling Underlines Remain Readable On White Document Pages In Dark Mode.
-- The Caps Lock indicator reads the Windows keyboard state when the app opens or regains focus.
-- Accepting a spelling correction no longer silently adds its replacement to the dictionary. Only the explicit Add to dictionary action approves a custom word.
+- **Version History.** InsynDoc prompts about unsaved changes before restoring a version. Cancelling leaves Version History open.
+- **Dictionary.** Only **Add to dictionary** saves a custom word. Accepting a spelling suggestion now leaves the dictionary intact.
+- **Spelling popup.** Suggestions support touch and stay open as the pointer moves to the popup. The popup leaves Escape available to other menus.
+- **Spelling underlines.** Underlines stay readable on white document pages in dark mode.
+- **Keyboard navigation.** Download menus support opening with the arrow keys and navigating with Tab. They preserve keyboard focus after export. Closing Templates or Version History returns focus to the control that opened it.
+- **System theme.** The system theme follows changes to Windows appearance while InsynDoc is open.
+- **Caps Lock.** The indicator reflects the Windows keyboard state when InsynDoc opens or regains focus.
 
 ### Development
 
-- Asset preparation is cached when its inputs have not changed, frontend bundles are split, and type checking and frontend compilation run in parallel.
-- Editor benchmarks measure paste performance, continued typing, and page counts.
-- Added regression coverage for save as, selection statistics, page counts, spelling suggestions, dictionary approval, and spelling hover interactions.
-- Build and release workflows run frontend tests and release-note extraction tests. Releases require a nonempty changelog section matching the version tag.
+- **Builds.** Asset preparation reuses cached output when inputs match. Frontend bundles are split, and type checking runs alongside frontend compilation.
+- **Editor benchmarks.** Measure paste performance, typing after paste, and page counts.
+- **Regression tests.** Cover Save as, selection statistics, page counts, spelling suggestions, dictionary approval, and spelling hover interactions.
+- **Release notes.** GitHub releases and in-app updates use this changelog. Publishing requires a nonempty section matching the version tag. Build and release workflows run frontend tests and check release note extraction.
 
 ## [1.0.2] - 2026-11-10
 
 ### Added
 
-- Import Markdown, HTML, plain text, and OpenDocument text files into editable documents.
-- A template gallery includes resume, business letter, APA paper, and meeting notes templates, with support for saving and deleting custom templates.
-- Automatic local recovery snapshots save pending document changes every two minutes, with version history and snapshot restoration.
-- Smart punctuation converts straight quotes to curly quotes and double dashes to em dashes while typing.
-- Custom snippet triggers expand into saved replacement text.
-- An export privacy preference removes hidden author, company, timestamp, and revision metadata from exported copies.
-- Local font discovery allows documents to use fonts installed on the device while offline.
+- **File import.** Open Markdown, HTML, plain text, and OpenDocument text files as editable documents.
+- **Templates.** Start with a resume, business letter, APA paper, or meeting notes template. You can also save and delete custom templates.
+- **Version History.** InsynDoc saves local recovery snapshots of pending document changes every two minutes. Use Version History to restore a snapshot.
+- **Smart punctuation.** Straight quotes become curly quotes, and double dashes become em dashes as you type.
+- **Snippets.** Type a custom trigger to insert its saved replacement text.
+- **Export privacy.** A preference removes hidden author, company, timestamp, and revision metadata from exported copies.
+- **Local fonts.** Documents can use installed fonts while offline.
 
 ### Changed
 
-- Editor menus display the existing keyboard shortcuts and include missing action icons.
-- README setup, usage, and development instructions were expanded.
+- **Editor menus.** Menus show existing keyboard shortcuts and add icons for more actions.
 
 ### Fixed
 
-- Resized images retain their dimensions when exported to DOCX.
-- Corrected the layout of update settings.
-- Restored README visibility in the repository.
+- **DOCX export.** Resized images keep their dimensions in the exported file.
+- **Update settings.** Corrected the layout of the update controls.
 
 ### Development
 
-- Configured the local Windows GitHub Actions runner for build and release jobs.
-- App assets are prepared before Rust tests in CI, and CI retries intermittent end-to-end test failures.
-- Removed unused test and font helper scripts.
+- **CI.** The local Windows GitHub Actions runner handles build and release jobs. CI prepares app assets before Rust tests and retries intermittent end-to-end test failures.
+- **Repository maintenance.** Restored README visibility, expanded its setup, usage, and development instructions, and removed unused test and font helper scripts.
