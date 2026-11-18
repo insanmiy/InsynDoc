@@ -1,28 +1,29 @@
 import { describe, expect, it, vi } from 'vitest';
-import { DocumentSession, type DocumentAdapter } from '../src/document-session';
+import { DocumentSession, type DocumentAdapter, type UnsavedChoice } from '../src/document-session';
 import type { DesktopBridge, SavedFile } from '../src/bridge';
 
-async function createSession() {
+async function createSession(choice: UnsavedChoice = 'cancel') {
   const save = vi.fn<DesktopBridge['save']>(async (_bytes, token, saveAs, name) => ({
     token: saveAs ? 'copy-token' : token ?? 'original-token',
     name: saveAs ? 'Copy.docx' : name ?? 'Original.docx'
   }));
   const remember = vi.fn(async () => undefined);
+  const close = vi.fn(async () => undefined);
   const bridge: DesktopBridge = {
     open: async () => ({ token: 'original-token', name: 'Original.docx', bytes: new Uint8Array([1, 2]) }),
-    save, remember, close: async () => undefined
+    save, remember, close
   };
   const adapter: DocumentAdapter = {
     load: async () => undefined,
     validate: async () => undefined,
     save: vi.fn(async () => new Uint8Array([1, 2]))
   };
-  const session = new DocumentSession(bridge, async () => 'cancel');
+  const session = new DocumentSession(bridge, async () => choice);
   session.attach(adapter);
   await session.open();
   save.mockClear();
   remember.mockClear();
-  return { session, adapter, save, remember };
+  return { session, adapter, save, remember, close };
 }
 
 describe('Save As', () => {
@@ -85,5 +86,40 @@ describe('Save As', () => {
     expect(save).toHaveBeenCalledWith(new Uint8Array([1, 2]), 'original-token', true, 'Original.docx');
     expect(session.getSnapshot()).toMatchObject({ token: 'original-token', name: 'Original.docx', dirty: true });
     expect(remember).not.toHaveBeenCalled();
+  });
+});
+
+describe('Closing to uninstall', () => {
+  it('Saves unsaved work before opening the uninstaller and closing the app', async () => {
+    const { session, save, close } = await createSession('save');
+    const openUninstaller = vi.fn(async () => undefined);
+    session.changed();
+
+    await session.close(openUninstaller);
+
+    expect(save).toHaveBeenCalledBefore(openUninstaller);
+    expect(openUninstaller).toHaveBeenCalledBefore(close);
+  });
+
+  it('Keeps the app open when the user cancels the save prompt', async () => {
+    const { session, close } = await createSession();
+    const openUninstaller = vi.fn(async () => undefined);
+    session.changed();
+
+    await session.close(openUninstaller);
+
+    expect(openUninstaller).not.toHaveBeenCalled();
+    expect(close).not.toHaveBeenCalled();
+    expect(session.getSnapshot()).toMatchObject({ dirty: true, busy: false });
+  });
+
+  it('Keeps the app open and reports a failure to launch the uninstaller', async () => {
+    const { session, close } = await createSession();
+    const openUninstaller = vi.fn(async () => { throw new Error('The uninstaller was not found.'); });
+
+    await session.close(openUninstaller);
+
+    expect(close).not.toHaveBeenCalled();
+    expect(session.getSnapshot()).toMatchObject({ busy: false, error: 'The uninstaller was not found.' });
   });
 });

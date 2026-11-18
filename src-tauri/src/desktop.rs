@@ -20,6 +20,16 @@ async fn open_external_link(url: String, browser_path: Option<String>) -> Result
 }
 
 #[tauri::command]
+async fn open_uninstaller() -> Result<(), String> {
+    #[cfg(target_os = "windows")]
+    return tauri::async_runtime::spawn_blocking(crate::uninstall::open)
+        .await.map_err(|error| format!("Could not open the InsynDoc uninstaller. {error}"))?;
+
+    #[cfg(not(target_os = "windows"))]
+    Err("The InsynDoc uninstaller is only available on Windows.".into())
+}
+
+#[tauri::command]
 async fn choose_link_browser() -> Result<Option<String>, String> {
     tauri::async_runtime::spawn_blocking(|| {
         let dialog = rfd::FileDialog::new().set_title("Choose a browser application");
@@ -447,7 +457,7 @@ pub fn run() {
             let _ = tauri::async_runtime::spawn_blocking(fonts::installed_fonts);
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![open_external_link, choose_link_browser, open_startup_document, open_document, save_document, rename_document, document_statistics, recent_documents, remember_document, clear_recent_documents, open_recent_document, export_plain_text, download_document, download_pdf, write_document_snapshot, list_document_snapshots, read_document_snapshot, document_snapshot_status, save_document_template, list_document_templates, read_document_template, delete_document_template, installed_fonts, read_font_file, caps_lock_on])
+        .invoke_handler(tauri::generate_handler![open_external_link, choose_link_browser, open_uninstaller, open_startup_document, open_document, save_document, rename_document, document_statistics, recent_documents, remember_document, clear_recent_documents, open_recent_document, export_plain_text, download_document, download_pdf, write_document_snapshot, list_document_snapshots, read_document_snapshot, document_snapshot_status, save_document_template, list_document_templates, read_document_template, delete_document_template, installed_fonts, read_font_file, caps_lock_on])
         .run(tauri::generate_context!())
         .expect("Could not start InsynDoc");
 }

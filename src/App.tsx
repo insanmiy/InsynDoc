@@ -1,6 +1,6 @@
 import { Component, lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import type { Editor } from '@docx-editor.dev/core/contracts/editor';
-import { countDocumentText, desktop, isCapsLockOn, watchExternalLinks, setWindowTitle, setWindowTheme, watchClose, type TextStatistics } from './bridge';
+import { countDocumentText, desktop, isCapsLockOn, openUninstaller, watchExternalLinks, setWindowTitle, setWindowTheme, watchClose, type TextStatistics } from './bridge';
 import { DocumentSession, type DocumentAdapter, type UnsavedChoice } from './document-session';
 import { readPreferences, storePreferences, type Preferences } from './preferences';
 import { Modal } from './Modal';
@@ -231,6 +231,11 @@ export function App() {
     return result;
   }, []);
 
+  function uninstall(): void {
+    setSettingsOpen(false);
+    void session.close(openUninstaller);
+  }
+
   const dismissUpdate = useCallback(() => {
     updatePreferences({ ...preferences, updateNotifications: false });
     setUpdate(null);
@@ -289,7 +294,7 @@ export function App() {
       <div><div ref={setZoomHost} className="status-zoom" inert={unavailable}/><span className="status-separator"/><button aria-label="Continuous view" aria-pressed={state.view === 'continuous'} title={state.view === 'pages' ? 'Switch to continuous view' : 'Switch to separate pages'} disabled={unavailable} onClick={() => session.setView(state.view === 'pages' ? 'continuous' : 'pages')}><Icon name="page" size={14}/>View: {state.view === 'pages' ? 'Separate pages' : 'Continuous'}</button></div>
     </footer>
 
-    {settingsLoaded && <Suspense fallback={null}><Settings open={settingsOpen} onClose={() => setSettingsOpen(false)} preferences={preferences} onChange={updatePreferences} appVersion={appVersion} onCheckForUpdates={checkUpdates}/></Suspense>}
+    {settingsLoaded && <Suspense fallback={null}><Settings open={settingsOpen} onClose={() => setSettingsOpen(false)} preferences={preferences} onChange={updatePreferences} appVersion={appVersion} onCheckForUpdates={checkUpdates} onUninstall={uninstall} uninstallDisabled={state.busy || !state.ready || updateInstalling}/></Suspense>}
     <Modal open={goToPageOpen} title="Go to page" onClose={() => setGoToPageOpen(false)} className="page-modal">
       <form noValidate onSubmit={(event) => {
         event.preventDefault();

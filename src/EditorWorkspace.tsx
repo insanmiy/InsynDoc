@@ -19,7 +19,6 @@ import { installAutoformat } from './autoformat';
 import { TemplateGallery, VersionHistory } from './DocumentPanels';
 import { createBlankDocument } from './blank-document';
 import { paragraphTextOf } from '@docx-editor.dev/core/store';
-import '@docx-editor.dev/core/styles/editor.css';
 
 const editorShortcuts = new Map<string, string>([
   ['history.undo', 'Ctrl+Z'],

@@ -287,8 +287,9 @@ export class DocumentSession {
     this.update({ notice: `Saved template ${template.name}` });
   });
 
-  close = async (): Promise<void> => {
+  close = async (beforeClose?: () => Promise<void>): Promise<void> => {
     if (this.state.busy) {
+      if (beforeClose) return;
       if (!this.state.dirty) {
         await this.bridge.close();
         return;
@@ -300,6 +301,7 @@ export class DocumentSession {
     try {
       const discardEmpty = this.state.dirty && this.adapter?.isEmpty?.() === true;
       if (!discardEmpty && !await this.canReplace()) return;
+      if (beforeClose) await beforeClose();
       await this.bridge.close();
     } catch (error: unknown) {
       this.update({ error: error instanceof Error ? error.message : String(error) });

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { chooseLinkBrowser } from './bridge';
+import { chooseLinkBrowser, isDesktopApp } from './bridge';
 import { Modal } from './Modal';
 import { Icon, type IconName } from './Icon';
 import { INTERFACE_STYLES, parseSnippetExpansions, type Preferences, type SnippetExpansion, type Theme } from './preferences';
@@ -13,9 +13,10 @@ const themes: { value: Theme; label: string; icon: IconName }[] = [
 
 type UpdateStatus = UpdateCheckResult['status'] | 'idle' | 'checking';
 
-export function Settings({ open, onClose, preferences, onChange, appVersion, onCheckForUpdates }: {
+export function Settings({ open, onClose, preferences, onChange, appVersion, onCheckForUpdates, onUninstall, uninstallDisabled }: {
   open: boolean; onClose: () => void; preferences: Preferences; onChange: (settings: Preferences) => void;
   appVersion: string; onCheckForUpdates: () => Promise<UpdateCheckResult>;
+  onUninstall: () => void; uninstallDisabled: boolean;
 }) {
   const [browserError, setBrowserError] = useState<string | null>(null);
   const [choosingBrowser, setChoosingBrowser] = useState(false);
@@ -23,6 +24,7 @@ export function Settings({ open, onClose, preferences, onChange, appVersion, onC
   const [snippetTrigger, setSnippetTrigger] = useState('');
   const [snippetText, setSnippetText] = useState('');
   const [snippetError, setSnippetError] = useState<string | null>(null);
+  const desktopApp = isDesktopApp();
 
   function addSnippet(): void {
     const expansions = parseSnippetExpansions([...preferences.snippetExpansions, { trigger: snippetTrigger, text: snippetText }]);
@@ -68,7 +70,8 @@ export function Settings({ open, onClose, preferences, onChange, appVersion, onC
         ['writing-heading', 'Writing'],
         ['editor-heading', 'Editor'],
         ['updates-heading', 'Updates'],
-        ['links-heading', 'Hyperlinks']
+        ['links-heading', 'Hyperlinks'],
+        ...(desktopApp ? [['uninstall-heading', 'Uninstall']] : [])
       ].map(([id, label]) => <button type="button" key={id} onClick={() => document.getElementById(id)?.scrollIntoView({ block: 'start' })}>{label}</button>)}
     </nav>
     <section className="settings-section" aria-labelledby="appearance-heading">
@@ -162,6 +165,11 @@ export function Settings({ open, onClose, preferences, onChange, appVersion, onC
       <div className="browser-actions"><button className="secondary-button" disabled={choosingBrowser} onClick={() => void chooseBrowser()}>{choosingBrowser ? 'Choosing browser...' : 'Choose browser'}</button></div>
       {browserError && <p className="form-error" role="alert">{browserError}</p>}
     </section>
+    {desktopApp && <section className="settings-section" aria-labelledby="uninstall-heading">
+      <h3 id="uninstall-heading">Uninstall</h3>
+      <p>InsynDoc will close when the Windows uninstaller opens. Confirm or cancel removal there.</p>
+      <div className="browser-actions"><button type="button" className="secondary-button" disabled={uninstallDisabled} onClick={onUninstall}>Uninstall InsynDoc</button></div>
+    </section>}
     <footer className="modal-footer"><button className="primary-button" onClick={onClose}>Done</button></footer>
   </Modal>;
 }

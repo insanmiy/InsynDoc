@@ -10,9 +10,12 @@ export default defineConfig({
     target: 'es2022',
     rollupOptions: {
       output: {
+        onlyExplicitManualChunks: true,
         manualChunks(id: string): string | undefined {
           if (!id.includes('node_modules')) return undefined;
-          if (id.includes('@docx-editor.dev')) return 'docx-editor';
+          if (/\/node_modules\/(react|react-dom|scheduler)\//.test(id)) return 'react';
+          // Keep the editor stylesheet in the entry's CSS cascade.
+          if (id.includes('@docx-editor.dev') && !id.endsWith('.css')) return 'docx-editor';
           if (id.includes('harper.js') || id.includes('nspell') || id.includes('dictionary-en')) return 'spelling';
           if (id.includes('fflate')) return 'fflate';
           return undefined;

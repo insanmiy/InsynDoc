@@ -8,6 +8,8 @@ mod downloads;
 mod snapshots;
 mod templates;
 mod fonts;
+#[cfg(target_os = "windows")]
+mod uninstall;
 
 #[cfg(not(test))]
 mod desktop;

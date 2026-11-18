@@ -235,6 +235,14 @@ export async function openExternalLink(url: string, browserPath: string | null):
   await invoke('open_external_link', { url, browserPath });
 }
 
+export function isDesktopApp(): boolean {
+  return isTauri();
+}
+
+export async function openUninstaller(): Promise<void> {
+  await invoke('open_uninstaller');
+}
+
 export function watchExternalLinks(browserPath: () => string | null, onError: (message: string) => void): () => void {
   if (!isTauri()) return () => undefined;
   const originalOpen = window.open;
